@@ -57,7 +57,7 @@ window.onload = function() {
 
     var canvas = document.getElementById("render-canvas");
 
-    speck = new Speck(canvas, 256);
+    speck = new Speck(canvas, 384);
 
     var structs = {};
     structs.protein = fs.readFileSync(__dirname + "/samples/4E0O.xyz", 'utf8');
