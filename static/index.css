@@ -1,0 +1,21 @@
+body {
+    margin: 0px;
+    padding: 32px;
+    -moz-user-select: -moz-none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+#render-canvas {
+    width: 768px;
+    height: 768px;
+    background: radial-gradient(#fff, #aaa);
+    border: 1px solid black;
+}
+
+#structure {
+    margin-left: 32px;
+    margin-right: 32px;
+}

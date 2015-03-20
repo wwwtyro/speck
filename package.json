@@ -1,0 +1,17 @@
+{
+  "name": "spacebox",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "brfs": "~1.2.0",
+    "gl-matrix": "~2.1.0",
+    "webgl.js": "~0.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT"
+}
