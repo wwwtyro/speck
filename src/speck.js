@@ -25,6 +25,7 @@ module.exports = function (canvas, resolution) {
                 x: 0.0,
                 y: 0.0
             }
+            self.SPP = 1;
 
             // Initialize canvas/gl.
             canvas.width = canvas.height = resolution;
@@ -125,6 +126,7 @@ module.exports = function (canvas, resolution) {
             program.setUniform("uRotation", "Matrix4fv", false, self.rotation);
             program.setUniform("uScale", "1f", self.scale);
             program.setUniform("uElementScale", "1f", self.elementScale);
+            program.setUniform("uSPP", "1i", self.SPP);
             program.setUniform("uTranslation", "2fv", [self.translation.x, self.translation.y]);
             program.setUniform("uRand", "4fv", [Math.random(), Math.random(), Math.random(), Math.random()]);
             self.renderable.render();

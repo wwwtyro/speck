@@ -3930,6 +3930,39 @@ module.exports.Renderable = function(gl, program, buffers, primitiveCount) {
     self.initialize();
 };
 
+module.exports.InstancedRenderable = function(gl, program, buffers, primitiveCount, instancedExt) {
+
+    var self = this;
+
+    self.initialize = function() {
+    }
+
+    self.render = function() {
+        program.use();
+        for (name in buffers) {
+            var buffer = buffers[name].buffer;
+            var size = buffers[name].size;
+            try {
+                var location = program.attribs[name].location;
+            } catch (e) {
+                console.log("Could not find location for", name);
+                throw e;
+            }
+            buffer.bind();
+            gl.enableVertexAttribArray(location);
+            gl.vertexAttribPointer(location, size, gl.FLOAT, false, 0, 0);
+            instancedExt.vertexAttribDivisorANGLE(location, buffers[name].divisor);                
+        }
+        instancedExt.drawArraysInstancedANGLE(gl.TRIANGLES, 0, 6*2*3, primitiveCount)
+        for (name in self.buffers) {
+            gl.disableVertexAttribArray(program.attributes[name].location);
+        }
+    }
+
+    self.initialize();
+};
+
+
 
 
 module.exports.Program = function(gl, vertexSource, fragmentSource) {
@@ -4031,7 +4064,136 @@ module.exports.Program = function(gl, vertexSource, fragmentSource) {
 },{}],"/home/rye/Dropbox/src/speck/node_modules/webgl.js/src/index.js":[function(require,module,exports){
 module.exports = require('./core.js');
 
-},{"./core.js":"/home/rye/Dropbox/src/speck/node_modules/webgl.js/src/core.js"}],"/home/rye/Dropbox/src/speck/src/elements.js":[function(require,module,exports){
+},{"./core.js":"/home/rye/Dropbox/src/speck/node_modules/webgl.js/src/core.js"}],"/home/rye/Dropbox/src/speck/src/atoms.js":[function(require,module,exports){
+"use strict";
+
+var elements = require("./elements");
+
+module.exports = function() {
+
+    var self = this;
+
+    self.initialize = function() {
+        self.atoms = [];
+        self.clearBounds();
+    };
+
+    self.clearBounds = function() {
+        self.bounds = {
+            x: Infinity,
+            y: Infinity,
+            z: Infinity,
+            X: -Infinity,
+            Y: -Infinity,
+            Z: -Infinity
+        };
+    }
+
+    self.addAtom = function(symbol, x, y, z) {
+        self.atoms.push({
+            symbol: symbol,
+            x: x,
+            y: y,
+            z: z
+        });
+        var r = elements[symbol].radius;
+        self.bounds.x = Math.min(x-r, self.bounds.x);
+        self.bounds.X = Math.max(x+r, self.bounds.X);
+        self.bounds.y = Math.min(y-r, self.bounds.y);
+        self.bounds.Y = Math.max(y+r, self.bounds.Y);
+        self.bounds.z = Math.min(z-r, self.bounds.z);
+        self.bounds.Z = Math.max(z+r, self.bounds.Z);
+    };
+
+    self.center = function() {
+        var shift = {
+            x: -self.bounds.x - (self.bounds.X - self.bounds.x)/2,
+            y: -self.bounds.y - (self.bounds.Y - self.bounds.y)/2,
+            z: -self.bounds.z - (self.bounds.Z - self.bounds.z)/2
+        };
+        for (var i = 0; i < self.atoms.length; i++) {
+            var a = self.atoms[i];
+            a.x += shift.x;
+            a.y += shift.y;
+            a.z += shift.z;
+        }
+    }
+
+    self.getRadius = function() {
+        var dx = self.bounds.X - self.bounds.x;
+        var dy = self.bounds.Y - self.bounds.y;
+        var dz = self.bounds.Z - self.bounds.z;
+        return Math.sqrt(dx*dx + dy*dy + dz*dz)/2.0;
+    }
+
+    self.clear = function() {
+        self.atoms = [];
+        self.clearBounds();
+    };
+
+    self.initialize();
+}
+},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js"}],"/home/rye/Dropbox/src/speck/src/cube.js":[function(require,module,exports){
+
+var n = -1;
+var p = 1;
+
+module.exports = {
+
+	position: [
+
+		// -X
+		n, n, n,
+		n, n, p,
+		n, p, p,
+		n, n, n,
+		n, p, p,
+		n, p, n,
+
+		// +X
+		p, n, p,
+		p, n, n,
+		p, p, n,
+		p, n, p,
+		p, p, n,
+		p, p, p,
+
+		// -Y
+		n, n, n,
+		p, n, n,
+		p, n, p,
+		n, n, n,
+		p, n, p,
+		n, n, p,
+
+		// +Y
+		n, p, p,
+		p, p, p,
+		p, p, n,
+		n, p, p,
+		p, p, n,
+		n, p, n,
+
+		// -Z
+		p, n, n,
+		n, n, n,
+		n, p, n,
+		p, n, n, 
+		n, p, n,
+		p, p, n,
+
+		// +Z
+		n, n, p,
+		p, n, p,
+		p, p, p,
+		n, n, p,
+		p, p, p,
+		n, p, p
+
+	]
+
+};
+},{}],"/home/rye/Dropbox/src/speck/src/elements.js":[function(require,module,exports){
 module.exports = {};
 module.exports[  0] = module.exports[ 'Xx'] = {'symbol':  'Xx', 'name':       'unknown', 'mass':   1.00000000, 'radius':  1.0000, 'color': [1.000, 0.078, 0.576], 'number': 0};
 module.exports[  1] = module.exports[  'H'] = {'symbol':   'H', 'name':      'hydrogen', 'mass':   1.00794000, 'radius':  0.3100, 'color': [1.000, 1.000, 1.000], 'number': 1};
@@ -4153,67 +4315,173 @@ module.exports[116] = module.exports['Uuh'] = {'symbol': 'Uuh', 'name':         
 module.exports[117] = module.exports['Uus'] = {'symbol': 'Uus', 'name':           'Uus', 'mass': 294.00000000, 'radius':  1.6500, 'color': [0.922, 0.000, 0.149], 'number': 117};
 module.exports[118] = module.exports['Uuo'] = {'symbol': 'Uuo', 'name':           'Uuo', 'mass': 296.00000000, 'radius':  1.5700, 'color': [0.922, 0.000, 0.149], 'number': 118};
 
-},{}],"/home/rye/Dropbox/src/speck/src/main.js":[function(require,module,exports){
+},{}],"/home/rye/Dropbox/src/speck/src/imposter-renderer.js":[function(require,module,exports){
+"use strict";
+
+var glm = require('gl-matrix');
+var core = require('webgl.js');
+
+var cube = require("./cube");
+var elements = require("./elements");
+
+module.exports = function (canvas, resolution) {
+
+        var self = this;
+
+        var gl, canvas, program, fragDepthExt, instancedExt;
+        var range;
+
+        self.initialize = function() {
+
+            // Initialize canvas/gl.
+            canvas.width = canvas.height = resolution;
+            gl = canvas.getContext('webgl');
+            gl.enable(gl.DEPTH_TEST);
+            gl.enable(gl.CULL_FACE);
+
+            fragDepthExt = gl.getExtension("EXT_frag_depth");
+            instancedExt = gl.getExtension("ANGLE_instanced_arrays");
+
+            // Initialize shaders.
+            var raw = "#version 100\nprecision highp float;\n\nattribute vec3 aImposter;\nattribute vec3 aPosition;\nattribute float aRadius;\nattribute vec3 aColor;\n\nuniform mat4 uView;\nuniform mat4 uProjection;\nuniform mat4 uModel;\nuniform float uAtomScale;\n\nvarying vec3 vColor;\nvarying vec3 vPosition;\nvarying float vRadius;\n\nvoid main() {\n    gl_Position = uProjection * uView * uModel * vec4(uAtomScale * aRadius * aImposter + aPosition, 1.0);\n    vColor = aColor;\n    vRadius = aRadius * uAtomScale;\n    vPosition = vec3(uModel * vec4(aPosition, 1));\n}\n\n\n// __split__\n\n\n#version 100\n#extension GL_EXT_frag_depth: enable\nprecision highp float;\n\nuniform mat4 uView;\nuniform mat4 uProjection;\nuniform mat4 uModel;\n\nuniform vec2 uBottomLeft;\nuniform vec2 uTopRight;\nuniform vec2 uRes;\nuniform float uAtomScale;\n\nvarying vec3 vPosition;\nvarying float vRadius;\nvarying vec3 vColor;\n\n\nfloat raySphereIntersect(vec3 r0, vec3 rd) {\n    float a = dot(rd, rd);\n    vec3 s0_r0 = r0 - vPosition;\n    float b = 2.0 * dot(rd, s0_r0);\n    float c = dot(s0_r0, s0_r0) - (vRadius * vRadius);\n    if (b*b - 4.0*a*c < 0.0) {\n        return -1.0;\n    }\n    return (-b - sqrt((b*b) - 4.0*a*c))/(2.0*a);\n}\n\nvoid main() {\n    vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/uRes) * (uTopRight - uBottomLeft), 0.0);\n    vec3 rd = vec3(0, 0, -1);\n    float t = raySphereIntersect(r0, rd);\n    if (t < 0.0) {\n        discard;\n    }\n    vec3 coord = r0 + rd * t;\n    vec3 normal = normalize(coord - vPosition);\n    float fade = dot(normal, vec3(0, 0, 1)) * 0.5 + 0.5;\n    gl_FragColor = vec4(fade * vColor, 1);\n\n\n    float far = gl_DepthRange.far;\n    float near = gl_DepthRange.near;\n    vec4 clipSpacePosition = uProjection * uView * vec4(coord, 1);\n    float ndcDepth = clipSpacePosition.z / clipSpacePosition.w;\n    float depth = (((far-near) * ndcDepth) + near + far) / 2.0;\n    gl_FragDepthEXT = depth;\n}\n";
+            raw = raw.split('// __split__');
+            program = new core.Program(gl, raw[0], raw[1]);
+
+            // Initialize viewport.
+            gl.viewport(0, 0, resolution, resolution);
+
+            self.renderable = null;
+            range = 1.0;
+
+        }
+
+
+        self.setAtoms = function(atoms) {
+
+            var attribs = {
+                aImposter: {
+                    buffer: new core.Buffer(gl),
+                    size: 3,
+                    divisor: 0
+                },
+                aPosition: {
+                    buffer: new core.Buffer(gl),
+                    size: 3,
+                    divisor: 1
+                },
+                aRadius: {
+                    buffer: new core.Buffer(gl),
+                    size: 1,
+                    divisor: 1
+                },
+                aColor: {
+                    buffer: new core.Buffer(gl),
+                    size: 3,
+                    divisor: 1
+                },
+            };
+
+            var position = [];
+            var radius = [];
+            var color = [];
+
+            for (var i = 0; i < atoms.atoms.length; i++) {
+                var a = atoms.atoms[i];
+                position.push.apply(position, [a.x, a.y, a.z]);
+                radius.push(elements[a.symbol].radius);
+                var c = elements[a.symbol].color;
+                color.push.apply(color, [c[0], c[1], c[2]]);
+            }
+
+            var imposter = cube.position;
+            
+            attribs.aImposter.buffer.set(new Float32Array(imposter));
+            attribs.aPosition.buffer.set(new Float32Array(position));
+            attribs.aRadius.buffer.set(new Float32Array(radius));
+            attribs.aColor.buffer.set(new Float32Array(color));
+
+            var count = position.length / 3;
+
+            // Create the renderable.
+            self.renderable = new core.InstancedRenderable(gl, program, attribs, count, instancedExt);
+
+            range = atoms.getRadius() * 2.0;
+        }
+
+        self.render = function(view) {
+            if (self.renderable == null) {
+                return;
+            }
+            var projection = glm.mat4.create();
+            glm.mat4.ortho(projection, view.left, view.right, view.bottom, view.top, 1, 1 + 2 * range);
+            var viewMat = glm.mat4.create();
+            glm.mat4.lookAt(viewMat, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
+            var model = glm.mat4.create();
+            glm.mat4.translate(model, model, [0, 0, -(1 + range)]);
+            glm.mat4.multiply(model, model, view.rotation);
+            program.setUniform("uProjection", "Matrix4fv", false, projection);
+            program.setUniform("uView", "Matrix4fv", false, viewMat);
+            program.setUniform("uModel", "Matrix4fv", false, model);
+            program.setUniform("uBottomLeft", "2fv", [view.left, view.bottom]);
+            program.setUniform("uTopRight", "2fv", [view.right, view.top]);
+            program.setUniform("uAtomScale", "1f", view.atomScale);
+            program.setUniform("uRes", "2fv", [resolution, resolution]);
+            self.renderable.render();
+        }
+
+        self.initialize();
+
+}
+
+},{"./cube":"/home/rye/Dropbox/src/speck/src/cube.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","gl-matrix":"/home/rye/Dropbox/src/speck/node_modules/gl-matrix/dist/gl-matrix.js","webgl.js":"/home/rye/Dropbox/src/speck/node_modules/webgl.js/src/index.js"}],"/home/rye/Dropbox/src/speck/src/main.js":[function(require,module,exports){
 "use strict";
 
 var glm = require('gl-matrix');
 var Speck = require('./speck');
+var Imposter = require('./imposter-renderer');
 
 var xyz = require('./xyz');
 var elements = require('./elements');
+var View = require("./view");
+var Atoms = require("./atoms");
 
-var speck;
+var atoms = new Atoms();
+var imposter = null;
 
 function loadStructure(data) {
 
-    speck.clearSpheres();
-
-    var bounds = {
-        x: Infinity,
-        y: Infinity,
-        z: Infinity,
-        X: -Infinity,
-        Y: -Infinity,
-        Z: -Infinity
-    };
+    atoms.clear();
 
     for (var i = 0; i < data.length; i++) {
         var a = data[i];
         var x = a.position[0];
         var y = a.position[1];
         var z = a.position[2];
-        bounds.x = Math.min(x, bounds.x);
-        bounds.X = Math.max(x, bounds.X);
-        bounds.y = Math.min(y, bounds.y);
-        bounds.Y = Math.max(y, bounds.Y);
-        bounds.z = Math.min(z, bounds.z);
-        bounds.Z = Math.max(z, bounds.Z);
     }
 
-    var shift = {
-        x: -bounds.x - (bounds.X - bounds.x)/2,
-        y: -bounds.y - (bounds.Y - bounds.y)/2,
-        z: -bounds.z - (bounds.Z - bounds.z)/2
-    };
     
     for (var i = 0; i < data.length; i++) {
         var a = data[i];
-        var x = a.position[0] + shift.x;
-        var y = a.position[1] + shift.y;
-        var z = a.position[2] + shift.z;
-        var r = elements[a.symbol].color[0];
-        var g = elements[a.symbol].color[1];
-        var b = elements[a.symbol].color[2];
-        var radius = elements[a.symbol].radius;
-        speck.addSphere(x,y,z, r,g,b, radius);
+        var x = a.position[0];
+        var y = a.position[1];
+        var z = a.position[2];
+        atoms.addAtom(a.symbol, x,y,z);
     }
+
+    atoms.center();
+
+    imposter.setAtoms(atoms);
+
 }
+
 
 window.onload = function() {
 
     var canvas = document.getElementById("render-canvas");
 
-    speck = new Speck(canvas, 384);
+    imposter = new Imposter(canvas, 768);
+
+    var view = new View();
 
     var structs = {};
     structs.protein = "681\n4E0O.pdb\nN         14.45600       -7.90000       10.95800\nC         13.86500       -7.78000       12.29000\nC         13.12700       -9.06500       12.68200\nC         11.85000       -9.33100       11.88500\nC         10.59800       -9.60200       12.72800\nN         10.37400       -8.60400       13.77200\nC         14.90600       -7.43400       13.35400\nO         16.07900       -7.80100       13.23700\nN         14.16100       -6.67500       14.37700\nC         15.10600       -6.10700       15.31800\nC         14.47100       -5.88700       16.69000\nO         13.24300       -5.87600       16.83300\nC         15.64300       -4.77700       14.77700\nO         14.63100       -3.79300       14.65300\nN         15.33300       -5.71900       17.68600\nC         14.93100       -5.41400       19.05500\nC         14.94200       -5.42100       19.06400\nC         14.33300       -4.00400       19.09600\nO         14.88900       -3.08500       18.50300\nC         16.12100       -5.56800       20.02900\nC         16.14300       -5.58300       20.04600\nC         17.24200       -4.59200       19.70800\nC         15.79900       -5.08500       21.44700\nC         15.67700       -5.45900       21.48300\nC         16.61400       -7.04600       20.10900\nN         13.20500       -3.83500       19.79000\nC         12.59100       -2.51500       19.90000\nC         12.17500       -2.35500       21.33700\nO         11.51600       -3.24900       21.88200\nC         11.38900       -2.35600       18.94600\nC         10.81300       -0.92700       18.97900\nC          9.93700       -0.58400       17.78700\nO          9.54600       -1.43900       16.98100\nN          9.63400        0.69300       17.63700\nN         12.63600       -1.26500       21.97200\nC         12.30500       -0.97600       23.36700\nC         11.69300        0.41100       23.37700\nO         12.27600        1.33700       22.79900\nC         13.54100       -1.05600       24.30600\nC         14.29000       -2.43400       24.24200\nC         13.13200       -0.67800       25.75800\nC         13.50900       -3.70400       24.76000\nN         10.51900        0.56000       24.02800\nC          9.79600        1.82000       24.02500\nC          9.51100        2.25400       25.43900\nO          9.10800        1.43800       26.26400\nC          8.46700        1.69500       23.18200\nC          7.65500        3.00800       23.21900\nC          8.78000        1.32200       21.72200\nN          9.69700        3.55200       25.70500\nC          9.28800        4.19500       26.94300\nC          8.25500        5.24600       26.50600\nO          8.57000        6.09700       25.67500\nC         10.48200        4.93300       27.60900\nC         10.08700        5.80500       28.77400\nC          9.78500        5.25200       30.01600\nC          9.95500        7.18900       28.62400\nC          9.41500        6.05300       31.09200\nC          9.61100        7.99800       29.69900\nC          9.34200        7.42700       30.93200\nO          9.05300        8.23900       31.99400\nN          7.03700        5.17600       27.02200\nC          6.04000        6.17700       26.65300\nC          5.31000        6.64200       27.91000\nO          4.51100        5.87500       28.45200\nC          5.05900        5.56800       25.61300\nC          4.14800        6.62400       25.00500\nC          3.12000        6.00500       24.06900\nC          2.34200        7.05400       23.31300\nN          1.24800        6.44100       22.50600\nN          4.17300        6.53300       33.01700\nC          4.63100        6.03000       31.72200\nC          5.93200        6.73200       31.28600\nC          5.76600        8.19200       30.80500\nC          4.87000        8.34400       29.57000\nN          5.57500        7.92800       28.35800\nC          4.82900        4.51800       31.79200\nO          4.92400        3.94100       32.88000\nN          4.84300        3.98300       30.54700\nC          4.99400        2.52600       30.40000\nC          6.34100        2.22700       29.75400\nO          6.86100        3.06500       29.03900\nC          3.90400        1.97700       29.47900\nC          2.49300        2.09000       30.01400\nC          1.52200        1.51000       29.01200\nO          1.34000        2.13000       27.93900\nO          1.02300        0.38800       29.25500\nN          6.85400        0.99400       29.92700\nC          8.13600        0.60200       29.37100\nC          8.01300       -0.78800       28.76800\nO          7.53900       -1.72800       29.44500\nC          9.23500        0.66800       30.47400\nC         10.59400        0.15000       30.06900\nC         10.95800       -1.17000       30.32300\nC         11.52800        0.99200       29.46700\nC         12.21300       -1.65900       29.93300\nC         12.79100        0.51100       29.09800\nC         13.12900       -0.81500       29.35500\nN          8.38000       -0.98800       27.45400\nN          8.46900       -2.21300       27.12400\nC          8.99500       -2.55900       25.94200\nO          9.41600       -1.74300       25.13000\nC          9.09400       -4.06500       25.58100\nC          9.70900       -4.38400       24.36200\nC          8.53500       -5.06900       26.37100\nC          7.33800       -5.81100       28.30000\nO          7.89200       -4.72700       27.52700\nC          8.68300       -6.40300       25.97000\nC          9.29900       -6.71300       24.75500\nC          9.83700       -5.70400       23.95500\nN         10.45600       -5.92900       22.77800\nC         10.50500       -7.08600       22.11600\nO          9.99700       -8.13000       22.49900\nC         11.23500       -7.08300       20.77900\nO         11.77700       -6.03000       20.47200\nC         14.32800       -9.28200       20.07300\nC         14.63900       -9.51500       17.64300\nC         15.70100       -9.30300       20.29400\nC         15.54700       -9.85200       16.62800\nC         16.54500       -9.52400       19.21300\nC         15.17500      -10.74000       15.61900\nBr        18.40600       -9.55400       19.45500\nBr        16.38800      -11.22200       14.24900\nC         16.06700       -9.74400       17.93700\nC         13.90000      -11.29000       15.61300\nC         14.70000       -9.75700       17.71500\nC         12.99000      -10.96000       16.61900\nC         13.84500       -9.51300       18.78300\nC         13.34300      -10.04800       17.61600\nC         12.38200       -9.57300       18.52600\nC         12.35000       -9.77600       18.72500\nC         11.74400       -8.24200       18.80000\nC         11.76100       -8.37300       18.80000\nN         11.23000       -8.29100       20.15800\nC         10.58400       -8.22300       17.84800\nO          9.56200       -8.86100       18.06200\nN         10.82200       -7.48000       16.76100\nC          9.83000       -7.34200       15.69200\nC         10.53800       -7.37100       14.34700\nO         11.21500       -6.41200       13.99700\nC          9.02300       -6.04700       15.88400\nN         -0.53400       14.60500       26.47100\nC          0.72100       14.38200       25.74800\nC          1.28400       15.69900       25.20100\nC          0.45300       16.33600       24.07400\nC          0.37300       15.49500       22.79700\nN          1.67500       15.33100       22.15600\nC          1.74900       13.73400       26.66800\nO          1.61800       13.77400       27.89500\nN          2.78600       13.10000       25.88000\nC          3.73200       12.34300       26.69000\nC          5.12200       12.27900       26.05100\nO          5.27400       12.35900       24.82900\nC          3.22200       10.91600       26.87200\nO          3.13800       10.23800       25.62800\nN          6.12700       12.06200       26.88500\nC          7.48100       11.80800       26.42400\nC          7.51400       10.38400       25.84200\nO          6.90500        9.47700       26.41600\nC          8.47400       12.00000       27.58900\nC          9.89300       11.61900       27.17000\nC          8.44900       13.46500       28.05800\nN          8.17900       10.21400       24.68100\nC          8.31500        8.92800       24.00800\nC          9.76300        8.77000       23.57900\nO         10.31300        9.66200       22.93600\nC          7.39600        8.82900       22.79000\nC          7.45900        7.42000       22.17100\nC          6.30500        7.05800       21.26300\nO          5.43400        7.87600       20.93700\nN          6.28100        5.80400       20.84400\nN         10.37700        7.64700       23.97000\nC         11.77300        7.33600       23.67700\nC         11.79400        5.94800       23.12500\nO         11.21300        5.03900       23.74000\nC         12.62900        7.41400       24.96300\nC         12.54000        8.82100       25.64500\nC         14.08600        7.00100       24.63800\nC         13.30400       10.01200       24.86000\nN         12.44400        5.78500       21.96000\nC         12.49300        4.51100       21.26900\nC         13.94200        4.09500       21.01600\nO         14.78700        4.90500       20.61700\nC         11.67800        4.56300       19.92300\nC         11.72400        3.20800       19.20900\nC         10.20700        4.93900       20.17900\nN         14.20500        2.82300       21.23000\nC         15.45900        2.15800       20.88300\nC         15.05800        1.07800       19.86800\nO         14.20100        0.25900       20.17400\nC         16.11200        1.52500       22.12700\nC         17.28100        0.61100       21.80300\nC         18.52800        1.13200       21.46600\nC         17.13000       -0.77700       21.79800\nC         19.58700        0.29700       21.10100\nC         18.20800       -1.62100       21.51200\nC         19.44200       -1.07600       21.19000\nO         20.51500       -1.90000       20.93200\nN         15.55200        1.14600       18.64000\nC         15.19100        0.18400       17.61700\nC         16.46700       -0.29100       16.92300\nO         17.06800        0.50200       16.20600\nC         14.17100        0.80100       16.62300\nC         13.62800       -0.22500       15.60800\nC         12.75000        0.47100       14.55300\nC         12.42200       -0.39700       13.36400\nN         11.87800        0.42400       12.24200\nN         21.51600       -0.27600       15.93900\nC         20.23800        0.25100       16.42200\nC         19.78500       -0.47300       17.70400\nC         19.39200       -1.95300       17.43300\nC         18.18400       -2.09500       16.49300\nN         16.95400       -1.55800       17.11000\nC         20.33700        1.75100       16.65800\nO         21.43900        2.27600       16.83700\nN         19.16000        2.37800       16.60200\nC         19.02300        3.82700       16.72600\nC         18.27200        4.14200       17.98700\nO         17.51600        3.28900       18.44400\nC         18.33300        4.43500       15.48600\nC         19.17400        4.32700       14.21000\nC         20.57100        4.92300       14.27800\nO         21.55900        4.15600       14.21700\nO         20.67800        6.15200       14.47500\nN         18.45900        5.37400       18.52500\nC         17.86300        5.79400       19.80700\nC         17.26300        7.18700       19.69600\nO         17.97600        8.11300       19.25500\nC         18.98000        5.79200       20.87400\nC         18.51700        6.24200       22.22900\nC         18.70100        7.55300       22.64200\nC         17.86500        5.36000       23.08600\nC         18.27000        7.96800       23.90000\nC         17.43800        5.78000       24.34700\nC         17.63300        7.09200       24.73700\nN         15.99600        7.36400       20.07100\nN         15.62400        8.57400       20.07700\nC         14.40400        8.90700       20.51300\nO         13.59500        8.10200       20.98400\nC         14.03100       10.42100       20.52800\nC         12.82300       10.71700       21.15400\nC         14.86500       11.43900       19.99700\nC         16.98900       12.22800       19.02900\nO         16.06900       11.13200       19.39500\nC         14.44400       12.77200       20.13500\nC         13.24700       13.05300       20.81700\nC         12.39300       12.04400       21.28100\nN         11.21300       12.26700       21.91800\nC         10.49200       13.39200       21.89700\nO         10.78200       14.42000       21.26300\nC          9.19400       13.40000       22.71000\nO          8.86000       12.41500       23.36700\nC          8.56400       15.71200       25.79300\nC          5.93400       15.75900       26.02200\nC          8.71900       15.71900       27.17700\nC          4.96600       16.28900       26.88700\nC          7.60200       15.89000       27.97900\nC          4.34300       17.49900       26.58800\nBr         7.80300       15.92000       29.83700\nBr         3.02300       18.26600       27.71300\nC          6.32900       16.07900       27.45800\nC          4.68900       18.20100       25.44300\nC          6.16800       16.08800       26.08200\nC          5.63400       17.68400       24.57100\nC          7.28600       15.91000       25.27200\nC          6.24800       16.45500       24.84400\nC          7.09800       15.96800       23.80000\nC          7.33300       16.03900       23.87400\nC          7.23000       14.59200       23.19000\nC          7.24100       14.67700       23.19400\nN          8.55600       14.53100       22.60200\nC          6.26100       14.65500       22.03700\nO          6.26800       15.59500       21.25400\nN          4.99000       14.35500       22.39300\nC          3.79600       14.37500       21.53400\nC          2.52300       14.21800       22.33900\nO          2.37800       13.22500       23.04400\nC          3.87900       13.35100       20.37500\nC          4.31800       11.93300       20.76800\nC          4.39000       10.98700       19.57200\nC          3.13700       10.15800       19.41100\nN          3.26600        9.17600       18.30300\nN          6.29700       17.34500      -12.97800\nC          6.39100       16.55100      -11.75800\nC          6.92600       17.38400      -10.59300\nC          8.34400       17.93200      -10.77900\nC          9.47000       16.93400      -10.48700\nN          9.29900       16.20900       -9.22700\nC          5.04700       15.94400      -11.38300\nO          3.99300       16.41100      -11.81400\nN          5.21400       14.79900      -10.50700\nC          3.97600       14.16100      -10.09600\nC          3.97800       13.80100       -8.61700\nO          5.04300       13.71400       -7.97900\nC          3.68400       12.93400      -10.96000\nO          4.67400       11.92800      -10.84700\nN          2.77200       13.62700       -8.06400\nC          2.61500       13.25300       -6.66300\nC          3.20000       11.85800       -6.41400\nO          3.03000       10.94900       -7.23200\nC          1.14000       13.34800       -6.19000\nC          0.26300       12.31100       -6.89300\nC          1.04400       13.21600       -4.66100\nN          3.90500       11.71300       -5.28500\nC          4.49400       10.44500       -4.89500\nC          4.29900       10.24300       -3.38600\nO          4.77900       11.05500       -2.57500\nC          5.97000       10.34200       -5.30400\nC          6.45600        8.89700       -5.18300\nC          7.86700        8.70200       -5.68600\nO          8.22600        9.09100       -6.80500\nN          8.69400        8.07900       -4.87400\nN          3.60600        9.15100       -3.02900\nC          3.33200        8.80400       -1.62600\nC          3.90400        7.41100       -1.38800\nO          3.60800        6.48600       -2.14000\nC          1.80400        8.89300       -1.28700\nC          1.19600       10.27400       -1.65100\nC          1.53200        8.50100        0.18300\nC          1.72500       11.53300       -0.82600\nN          4.75500        7.28300       -0.37000\nC          5.41700        6.02200       -0.03600\nC          5.09300        5.59300        1.39300\nO          5.12000        6.40700        2.33200\nC          6.96500        6.14500       -0.23000\nC          7.68800        4.84600        0.17900\nC          7.31200        6.50900       -1.67000\nN          4.83000        4.27900        1.54500\nC          4.69200        3.63300        2.82200\nC          5.81300        2.60200        2.79200\nO          5.85900        1.79500        1.85700\nC          3.33400        2.92200        2.93200\nC          3.25700        2.02300        4.14400\nC          2.91200        2.53100        5.39300\nC          3.54400        0.65800        4.04600\nC          2.80900        1.69900        6.50900\nC          3.47400       -0.17400        5.15800\nC          3.11600        0.35000        6.39000\nO          2.98800       -0.50300        7.45500\nN          6.74800        2.65400        3.76100\nC          7.83400        1.68000        3.79700\nC          7.94800        1.16900        5.22800\nO          8.32000        1.94800        6.10200\nC          9.15300        2.32800        3.29700\nC         10.30800        1.32400        3.18700\nC         11.62800        2.01800        2.90700\nC         12.76200        1.02200        2.81500\nN         14.07700        1.64200        3.14400\nN          6.97700        1.23500       10.44500\nC          7.11900        1.72800        9.08100\nC          6.09600        1.05100        8.15800\nC          6.39600       -0.42600        7.85600\nC          7.69900       -0.67800        7.07800\nN          7.62000       -0.16400        5.70600\nC          6.95300        3.23600        9.03800\nO          6.21700        3.81400        9.84400\nN          7.26300        3.84400        7.87800\nC          7.18600        5.28900        7.67200\nC          6.20800        5.58800        6.54900\nO          5.94800        4.72400        5.70700\nC          8.56800        5.87000        7.34200\nC          9.50500        5.96500        8.54300\nC         10.94200        6.37400        8.25900\nO         11.25500        6.74400        7.10300\nO         11.75800        6.33500        9.20900\nN          5.65400        6.80700        6.54700\nC          4.69000        7.20100        5.53100\nC          5.00900        8.61000        5.02600\nO          5.10700        9.54800        5.82500\nC          3.24100        7.12300        6.09900\nC          2.15600        7.59100        5.14900\nC          1.69900        8.91300        5.18000\nC          1.56800        6.70600        4.24800\nC          0.70500        9.35200        4.29500\nC          0.57100        7.14300        3.36300\nC          0.15000        8.46400        3.38900\nN          5.16600        8.86800        3.71300\nN          5.33900       10.05200        3.35100\nC          5.26900       10.39700        2.06200\nO          5.13100        9.58700        1.14900\nC          5.40600       11.89100        1.70500\nC          5.25300       12.22400        0.35100\nC          5.62100       12.89700        2.66100\nC          5.63400       13.62200        4.96400\nO          5.75300       12.56300        3.99400\nC          5.71400       14.23400        2.22700\nC          5.60500       14.53800        0.87400\nC          5.35000       13.54400       -0.07500\nN          5.25700       13.78800       -1.39800\nC          5.51200       14.94300       -2.02400\nO          5.86600       15.98700       -1.47200\nC          5.35400       14.92300       -3.53700\nO          4.94700       13.87400       -4.04500\nC          2.84700       16.98500       -5.52000\nC          3.85300       17.31700       -7.60200\nC          1.50200       17.03100       -5.88100\nC          3.22300       17.69500       -8.78700\nC          1.16600       17.30900       -7.20000\nC          3.63400       18.84200       -9.46000\nBr        -0.63900       17.32700       -7.71700\nBr         2.77600       19.34600      -11.06800\nC          2.12300       17.58200       -8.16500\nC          4.68200       19.60800       -8.96500\nC          3.46400       17.57900       -7.79800\nC          5.31900       19.22900       -7.78300\nC          3.81700       17.28500       -6.48100\nC          4.91700       18.07400       -7.10700\nC          5.27500       17.30700       -6.11300\nC          5.61200       17.70500       -5.81500\nC          5.70600       15.95200       -5.60900\nC          5.75800       16.20200       -5.59200\nN          5.62600       15.95500       -4.16000\nC          7.14600       15.78300       -6.02900\nO          8.08700       16.26800       -5.41400\nN          7.48700       14.85500       -6.95800\nC          8.79700       14.59300       -7.56300\nC          8.77700       15.01400       -9.02800\nO          7.90900       14.56700       -9.77900\nC          9.17900       13.10000       -7.43100\nC         10.61100       12.76700       -7.87900\nC         10.85900       11.26200       -7.86300\nC         12.29800       10.89000       -8.13400\nN         12.65400       11.03500       -9.56800\nN         13.88200       -7.20300        5.99500\nC         13.07100       -6.67800        4.90000\nC         12.77400       -7.78100        3.88100\nC         13.98200       -8.23000        3.07300\nC         14.54200       -7.16600        2.14400\nN         13.61500       -6.83300        1.06300\nC         11.76000       -6.08300        5.41300\nO         11.36100       -6.33000        6.55900\nN         11.05100       -5.22100        4.38700\nC          9.78300       -4.62900        4.79400\nC          8.80900       -4.43300        3.63100\nO          9.19600       -4.47200        2.45600\nC         10.01600       -3.29500        5.50500\nO         10.61600       -2.33600        4.64900\nN          7.53300       -4.19700        3.98000\nC          6.46800       -3.90200        3.02000\nC          6.71600       -2.51400        2.47700\nO          6.94400       -1.58300        3.25800\nC          5.06100       -3.98000        3.66500\nC          3.95400       -3.77200        2.63400\nC          4.87100       -5.30100        4.36600\nN          6.62500       -2.36500        1.15200\nC          6.79000       -1.06700        0.51500\nC          5.61800       -0.88700       -0.42900\nO          5.34900       -1.78400       -1.22900\nC          8.12200       -1.00700       -0.23700\nC          8.56300        0.41300       -0.55400\nC          9.94200        0.44500       -1.16700\nO         10.87700       -0.23600       -0.71700\nN         10.09100        1.23700       -2.21400\nN          4.87300        0.21300       -0.27500\nC          3.68200        0.50900       -1.09100\nC          3.89500        1.91900       -1.64400\nO          4.20500        2.82500       -0.88400\nC          2.35900        0.42100       -0.26900\nC          2.12000       -1.01300        0.33000\nC          1.15500        0.88400       -1.14000\nC          1.81500       -2.13600       -0.71100\nN          3.78200        2.07300       -2.96800\nC          4.01000        3.34700       -3.63100\nC          2.79100        3.74700       -4.42000\nO          2.19700        2.92600       -5.12100\nC          5.28400        3.27000       -4.56000\nC          5.49900        4.57000       -5.34600\nC          6.55100        2.94400       -3.75700\nN          2.47200        5.04500       -4.37400\nC          1.45300        5.65300       -5.22200\nC          2.23600        6.74300       -5.97400\nO          2.90000        7.54000       -5.33000\nC          0.32800        6.25300       -4.37600\nC         -0.62300        7.14800       -5.14800\nC         -1.61900        6.60900       -5.95600\nC         -0.54700        8.53200       -5.04100\nC         -2.49400        7.42900       -6.66700\nC         -1.43000        9.36000       -5.72600\nC         -2.40700        8.80400       -6.53400\nO         -3.27600        9.63500       -7.19400\nN          2.25900        6.71300       -7.31300\nC          2.99000        7.71200       -8.09600\nC          2.11100        8.15500       -9.24600\nO          1.86600        7.34500      -10.13900\nC          4.35100        7.14700       -8.58800\nC          5.25300        8.19700       -9.22700\nC          6.57000        7.61000       -9.69900\nC          7.39600        8.62800      -10.44300\nN          8.58700        8.00800      -11.07600\nN         -1.98700        8.01500      -12.15800\nC         -1.03800        7.45200      -11.20900\nC         -1.13400        8.20000       -9.87400\nC         -0.76000        9.69000       -9.94900\nC          0.71300        9.96000      -10.25100\nN          1.59600        9.39200       -9.22900\nC         -1.36100        5.97200      -10.99300\nO         -2.36300        5.46400      -11.51100\nN         -0.10000        5.42500      -10.71300\nC          0.00700        3.98200      -10.48600\nC          0.10800        3.67100       -9.00900\nO          0.57500        4.49900       -8.22800\nC          1.21200        3.38000      -11.23300\nC          1.18800        3.57200      -12.74300\nC          0.26800        2.62200      -13.48100\nO          0.69800        1.47900      -13.75500\nO         -0.88400        3.01500      -13.77500\nN         -0.27700        2.43900       -8.63400\nC         -0.24300        2.04600       -7.22700\nC          0.32200        0.64700       -7.07900\nO         -0.13900       -0.24300       -7.79100\nC         -1.67900        2.10400       -6.67800\nC         -1.84800        1.63100       -5.26000\nC         -2.19700        0.30800       -4.98600\nC         -1.66400        2.50400       -4.19500\nC         -2.32600       -0.13300       -3.66500\nC         -1.80700        2.06500       -2.88000\nC         -2.15900        0.75900       -2.62400\nN          1.27200        0.37300       -6.19100\nN          1.64800       -0.81200       -6.04100\nC          2.57200       -1.10600       -5.15000\nO          3.11900       -0.27100       -4.42400\nC          2.92900       -2.59100       -4.99100\nC          3.74800       -2.90300       -3.91700\nC          2.35600       -3.61100       -5.78800\nC          0.87100       -4.36300       -7.53800\nO          1.54200       -3.26900       -6.83600\nC          2.64600       -4.95300       -5.47600\nC          3.53300       -5.24000       -4.42500\nC          4.08600       -4.23400       -3.63700\nN          4.93100       -4.44300       -2.59800\nC          5.60800       -5.56500       -2.31900\nO          5.56200       -6.59300       -2.98400\nC          6.53300       -5.57000       -1.10100\nO          6.73800       -4.52000       -0.50000\nC          5.97400       -7.93200        2.08900\nC          8.17300       -7.90700        3.13400\nC          5.23900       -8.02600        3.26900\nC          8.65300       -8.34700        4.37200\nC          5.88700       -8.17800        4.49100\nC          9.47400       -9.46700        4.44300\nBr         4.87900       -8.19900        6.09400\nBr        10.11400      -10.09700        6.10700\nC          7.26800       -8.31100        4.54100\nC          9.83000      -10.16100        3.29800\nC          8.00600       -8.28000        3.35900\nC          9.35800       -9.72600        2.06300\nC          7.35600       -8.08500        2.14000\nC          8.55900       -8.59100        1.97800\nC          8.15500       -8.10100        0.87000\nC          8.03400       -8.23200        0.61400\nC          8.21300       -6.74500        0.18900\nC          8.20800       -6.78300        0.19300\nN          7.17000       -6.65500       -0.81500\nC          9.53600       -6.66600       -0.52300\nO          9.81000       -7.46300       -1.41000\nN         10.41600       -5.93100        0.18600\nC         11.81800       -5.69700       -0.15900\nC         12.68900       -5.85300        1.08400\nO         12.50400       -5.12900        2.05900\nC         11.99400       -4.31400       -0.80400\nC          2.82600       -2.52400       26.43600\nC          4.19000       -2.01700       26.89700\nO          4.00800       -1.13400       28.03400\nC          4.98400       -3.21700       27.39400\nC          4.95500       -1.31900       25.75800\nC          4.69700        0.16800       25.46600\nO          3.37700        0.58300       25.73600\nC          5.68400        1.10000       26.14900\nC         13.14800      -11.56000       25.42300\nC         12.40200      -10.22700       25.39500\nO         11.54300      -10.19400       24.23200\nC         11.50200      -10.15500       26.62100\nC         13.33900       -9.01100       25.38000\nC         14.24900       -8.85100       24.15600\nO         13.47500       -8.80000       22.97300\nC         15.08300       -7.58000       24.29300\nP         23.42800       -1.27000       19.11100\nO         24.97700       -1.47600       19.33000\nO         23.37500       -0.23800       17.91200\nO         22.86100       -2.67800       18.67500\nO         22.77100       -0.77500       20.48500\nC         14.80400        5.13300       17.10100\nC         14.56400        6.37700       16.25500\nO         14.48900        5.95500       14.87000\nC         13.21600        6.96700       16.65100\nC         15.71700        7.36700       16.48300\nC         15.89300        8.54500       15.51300\nO         16.52300        9.60300       16.20100\nC         16.79200        8.18500       14.33700\nC          8.32100        8.45300       18.63100\nC          9.66000        9.14300       18.38900\nO         10.67700        8.41300       19.13000\nC         10.01400        9.02900       16.90800\nC          9.65700       10.58400       18.93000\nC          8.88200       11.65900       18.15600\nO          7.94300       12.26400       19.02100\nC          9.83400       12.73200       17.63600\nC         10.80300       12.63700       -2.44400\nC          9.42900       13.12100       -1.98400\nO          9.62700       14.38900       -1.31000\nC          8.55200       13.39800       -3.19900\nC          8.71000       12.22800       -0.95400\nC          8.89300       10.70700       -0.98600\nO          8.50900       10.18700        0.26500\nC          8.01400       10.04400       -2.03300\nP         -5.22300        9.08500       -9.94500\nO         -4.26600       10.31500      -10.01500\nO         -6.70300        9.46400      -10.34000\nO         -4.73800        7.99400      -10.99600\nO         -5.25000        8.54200       -8.45600\nP         -2.90900       11.56100      -13.28800\nO         -2.28700       12.71200      -12.39600\nO         -3.06000       12.00400      -14.80400\nO         -1.89600       10.35700      -13.25300\nO         -4.34000       11.21300      -12.71300\nC          1.98700       -5.85200       -0.63600\nC          2.26200       -7.13800        0.13700\nO          3.64200       -7.52200       -0.06800\nC          2.08900       -6.87400        1.62100\nC          1.33200       -8.29200       -0.24600\nC          1.31300       -8.72600       -1.71200\nO          2.63300       -8.90200       -2.18800\nC          0.53300      -10.02600       -1.83500\nC          3.57500        2.56400       -8.40000\nC          4.21000        1.27100       -8.89100\nO          4.99100        1.59300      -10.07200\nC          5.14400        0.75500       -7.80300\nC          3.10800        0.25000       -9.20100\nC          3.38800       -0.78600      -10.29500\nO          4.20600       -1.81600       -9.79100\nC          2.08700       -1.38400      -10.82200\nO          5.57800       -0.44300       32.00800\nO         13.37600        3.17000       24.80100\nO          1.89500        5.16500       28.18200\nO          8.79300        7.22800       34.42700\nO         18.21000       -5.81300       16.72900\nO          7.14800       -3.03300       31.74400\nO          1.04500        5.57700       30.72000\nO          5.83100       -5.38000       32.05200\nO          6.23100        6.23500       34.89100\nO         15.80400       -1.94500       13.04300\nO          6.88300        0.90600       33.94700\nO         18.28100       -8.41700       15.04400\nO         20.62000        6.83700       17.44600\nO         20.19200        9.47900       19.00500\nO         24.10300       -0.58600       22.83800\nO         21.58600       -2.58900       14.70700\nO         21.86500        1.51500       13.74400\nO         21.39700       -9.49400       19.59000\nO         16.77100        1.22100       13.58400\nO         24.50500       -2.16000       14.83500\nO         22.32600       -4.22000       16.50400\nO         19.86500       -1.99300       13.14600\nO         19.61500        0.77200       12.61000\nO         26.48600       -1.40600       22.00500\nO         25.81500       -3.68500       18.99700\nO         23.45000        4.26800       16.62600\nO          7.67900       15.94900       32.63800\nO         15.00500        3.59100       13.45000\nO          0.59600       14.07200       -9.89300\nO          1.84500        4.72900       -0.67300\nO          5.88600        8.28300        8.98400\nO          4.30700        9.61300      -12.18800\nO          4.44400       10.84300        8.15200\nO          8.14900       12.09600      -10.87500\nO         11.03600        2.79200        6.55200\nO          6.44000       12.36400      -12.93400\nO          9.96900        7.43400       -8.11000\nO         -2.04200       13.17900       -9.78500\nO          3.11200        6.35800      -12.33700\nO         -1.99200        1.02000      -10.58300\nO         -1.81300       -2.01200       -8.96700\nO         -4.21000        0.46500      -12.44900\nO         -3.29000       17.19000       -9.08100\nO         -7.21300        8.22800       -6.92100\nO          0.40700        9.54100      -14.41100\nO         -8.10400       11.53400      -11.08400\nO         -5.21600        5.82400       -9.41100\nO         -1.93700        9.75300      -15.98700\nO          0.47500       12.77300      -12.48600\nO         -1.48700        6.53800      -14.59200\n";
@@ -4227,7 +4495,6 @@ window.onload = function() {
     var selector = document.getElementById("structure");
     selector.addEventListener("change", function() {
         loadStructure(xyz(structs[selector.value])[0]);
-        speck.clear();
     });
     
     var lastX = 0.0;
@@ -4265,36 +4532,31 @@ window.onload = function() {
         lastX = e.clientX;
         lastY = e.clientY;
         if (e.shiftKey) {
-            speck.translation.x -= dx*0.005*speck.scale;
-            speck.translation.y += dy*0.005*speck.scale;
+            view.translate(-dx*0.005, dy*0.005);
         } else {
-            var m = glm.mat4.create();
-            glm.mat4.rotateY(m, m, dx * 0.005);
-            glm.mat4.rotateX(m, m, dy * 0.005);
-            glm.mat4.multiply(speck.rotation, m, speck.rotation);
+            view.rotate(dx * 0.005, dy * 0.005);
         }
-        speck.clear();
     });
     canvas.addEventListener("mousewheel", function(e) {
         if (e.wheelDelta > 0) {
             if (e.shiftKey) {
-                speck.elementScale *= 1/0.9
+                view.scaleAtoms(1/0.9);
             } else {
-                speck.scale *= 0.9;
+                view.zoom(0.9);
             }
         } else {
             if (e.shiftKey) {
-                speck.elementScale *= 0.9
+                view.scaleAtoms(0.9);
             } else {
-                speck.scale *= 1/0.9;
+                view.zoom(1/0.9);
             }
         }
-        speck.clear();
-    })
+        e.preventDefault();
+    });
 
 
     function loop() {
-        speck.render();
+        imposter.render(view);
         requestAnimationFrame(loop);
     }
 
@@ -4302,7 +4564,7 @@ window.onload = function() {
 
 }
 
-},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./speck":"/home/rye/Dropbox/src/speck/src/speck.js","./xyz":"/home/rye/Dropbox/src/speck/src/xyz.js","gl-matrix":"/home/rye/Dropbox/src/speck/node_modules/gl-matrix/dist/gl-matrix.js"}],"/home/rye/Dropbox/src/speck/src/speck.js":[function(require,module,exports){
+},{"./atoms":"/home/rye/Dropbox/src/speck/src/atoms.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./imposter-renderer":"/home/rye/Dropbox/src/speck/src/imposter-renderer.js","./speck":"/home/rye/Dropbox/src/speck/src/speck.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./xyz":"/home/rye/Dropbox/src/speck/src/xyz.js","gl-matrix":"/home/rye/Dropbox/src/speck/node_modules/gl-matrix/dist/gl-matrix.js"}],"/home/rye/Dropbox/src/speck/src/speck.js":[function(require,module,exports){
 "use strict";
 
 var glm = require('gl-matrix');
@@ -4330,6 +4592,7 @@ module.exports = function (canvas, resolution) {
                 x: 0.0,
                 y: 0.0
             }
+            self.SPP = 1;
 
             // Initialize canvas/gl.
             canvas.width = canvas.height = resolution;
@@ -4352,7 +4615,7 @@ module.exports = function (canvas, resolution) {
             float_texture_ext = gl.getExtension('OES_texture_float');
 
             // Initialize shaders.
-            var raw = "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvarying vec3 vPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1.0);\n    vPosition = aPosition;\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nstruct Sphere {\n    vec3 position;\n    vec3 color;\n    float radius;\n};\n\n#define BIGNUM 10000000\n\nuniform sampler2D uLastFrame;\nuniform sampler2D uSphereData;\n\nuniform vec2 uRes;\nuniform vec2 uTranslation;\n\nuniform vec4 uRand;\n\nuniform mat4 uRotation;\n\nuniform float uIteration;\nuniform float uScale;\nuniform float uElementScale;\n\nuniform int uSpheresLength;\n\nfloat SAMPLE_RADIUS = 2.0 * uScale;\nfloat TEXEL_SIZE = 1.0 / float(uSpheresLength);\nvec2 BOTTOM_LEFT = vec2(-uScale + uTranslation.x, -uScale + uTranslation.y);\nvec2 TOP_RIGHT = vec2(uScale + uTranslation.x, uScale + uTranslation.y);\n\nSphere getSphere(int index) {\n    vec4 d0 = texture2D(uSphereData, vec2(TEXEL_SIZE * (float(index) + 0.0) + 0.5 * TEXEL_SIZE, 0.0));\n    vec4 d1 = texture2D(uSphereData, vec2(TEXEL_SIZE * (float(index) + 1.0) + 0.5 * TEXEL_SIZE, 0.0));\n    Sphere s;\n    s.position = vec3(uRotation * vec4(d0.xyz, 1));\n    s.color = vec3(d0.w, d1.xy);\n    s.radius = d1.z * uElementScale;\n    return s;\n}\n\nfloat raySphereIntersect(vec3 r0, vec3 rd, Sphere s) {\n    float a = dot(rd, rd);\n    vec3 s0_r0 = r0 - s.position;\n    float b = 2.0 * dot(rd, s0_r0);\n    float c = dot(s0_r0, s0_r0) - (s.radius * s.radius);\n    if (b*b - 4.0*a*c < 0.0) {\n        return -1.0;\n    }\n    return (-b - sqrt((b*b) - 4.0*a*c))/(2.0*a);\n}\n\nvec2 randv2=fract(cos((gl_FragCoord.xy+gl_FragCoord.yx*vec2(1000.0,1000.0))+uRand.xy)*10000.0);\nvec2 rand2() {\n    randv2+=vec2(1.0,1.0);\n    return vec2(fract(sin(dot(randv2.xy ,vec2(12.9898,78.233))) * 43758.5453),\n        fract(cos(dot(randv2.xy ,vec2(4.898,7.23))) * 23421.631));\n}\n\nvec3 cosineDirection(vec3 n) {\n    vec2 r = rand2() * 6.283; \n    vec3 dr = vec3(sin(r.x) * vec2(sin(r.y), cos(r.y)), cos(r.x));\n    return (dot(dr, n) < 0.0) ? -dr : dr;\n}\n\nint SPP = 1;\nvoid main() {\n    vec4 color = vec4(0,0,0,0);\n    for (int j = 0; j < BIGNUM; j++) {\n        if (j >= SPP) {\n            break;\n        }\n        vec4 sample;\n        vec3 r0 = vec3(BOTTOM_LEFT + (gl_FragCoord.xy/uRes) * (TOP_RIGHT - BOTTOM_LEFT), 64.0);\n        r0.xy += rand2() / uRes * SAMPLE_RADIUS;\n        float mint = 1000000.0;\n        bool intersects = false;\n        Sphere hit;\n        for (int i = 0; i < BIGNUM; i+=2) {\n            if (i >= uSpheresLength) {\n                break;\n            }\n            Sphere s = getSphere(i);\n            float t = raySphereIntersect(r0, vec3(0, 0, -1), s);\n            if (t >= 0.0 && t < mint) {\n                mint = t;\n                sample = vec4(s.color, 1);\n                intersects = true;\n                hit = s;\n            }\n        }\n        if (!intersects) {\n            sample = vec4(0,0,0,0);\n        } else {\n            r0 = r0 + mint * vec3(0, 0, -1);\n            vec3 normal = normalize(r0 - hit.position);\n            vec3 rd = cosineDirection(normal);\n            for (int i = 0; i < BIGNUM; i+=2) {\n                if (i >= uSpheresLength) {\n                    break;\n                }\n                float t = raySphereIntersect(r0, rd, getSphere(i));\n                if (t >= 0.0) {\n                    sample = vec4(0,0,0,1);\n                    break;\n                }\n            }\n        }\n        color += sample;\n    }\n\n    color /= float(SPP);\n    vec4 last = texture2D(uLastFrame, gl_FragCoord.xy / uRes);\n    gl_FragColor = color/uIteration + last * (uIteration - 1.0)/uIteration;\n}\n";
+            var raw = "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvarying vec3 vPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1.0);\n    vPosition = aPosition;\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nstruct Sphere {\n    vec3 position;\n    vec3 color;\n    float radius;\n};\n\n#define BIGNUM 10000000\n\nuniform sampler2D uLastFrame;\nuniform sampler2D uSphereData;\n\nuniform vec2 uRes;\nuniform vec2 uTranslation;\n\nuniform vec4 uRand;\n\nuniform mat4 uRotation;\n\nuniform float uIteration;\nuniform float uScale;\nuniform float uElementScale;\n\nuniform int uSpheresLength;\n\nuniform int uSPP;\n\nfloat SAMPLE_RADIUS = 2.0 * uScale;\nfloat TEXEL_SIZE = 1.0 / float(uSpheresLength);\nvec2 BOTTOM_LEFT = vec2(-uScale + uTranslation.x, -uScale + uTranslation.y);\nvec2 TOP_RIGHT = vec2(uScale + uTranslation.x, uScale + uTranslation.y);\n\nSphere getSphere(int index) {\n    vec4 d0 = texture2D(uSphereData, vec2(TEXEL_SIZE * (float(index) + 0.0) + 0.5 * TEXEL_SIZE, 0.0));\n    vec4 d1 = texture2D(uSphereData, vec2(TEXEL_SIZE * (float(index) + 1.0) + 0.5 * TEXEL_SIZE, 0.0));\n    Sphere s;\n    s.position = vec3(uRotation * vec4(d0.xyz, 1));\n    s.color = vec3(d0.w, d1.xy);\n    s.radius = d1.z * uElementScale;\n    return s;\n}\n\nfloat raySphereIntersect(vec3 r0, vec3 rd, Sphere s) {\n    float a = dot(rd, rd);\n    vec3 s0_r0 = r0 - s.position;\n    float b = 2.0 * dot(rd, s0_r0);\n    float c = dot(s0_r0, s0_r0) - (s.radius * s.radius);\n    if (b*b - 4.0*a*c < 0.0) {\n        return -1.0;\n    }\n    return (-b - sqrt((b*b) - 4.0*a*c))/(2.0*a);\n}\n\nvec2 randv2=fract(cos((gl_FragCoord.xy+gl_FragCoord.yx*vec2(1000.0,1000.0))+uRand.xy)*10000.0);\nvec2 rand2() {\n    randv2+=vec2(1.0,1.0);\n    return vec2(fract(sin(dot(randv2.xy ,vec2(12.9898,78.233))) * 43758.5453),\n        fract(cos(dot(randv2.xy ,vec2(4.898,7.23))) * 23421.631));\n}\n\nvec3 cosineDirection(vec3 n) {\n    vec2 r = rand2() * 6.283; \n    vec3 dr = vec3(sin(r.x) * vec2(sin(r.y), cos(r.y)), cos(r.x));\n    return (dot(dr, n) < 0.0) ? -dr : dr;\n}\n\nvoid main() {\n    vec4 color = vec4(0,0,0,0);\n    for (int j = 0; j < BIGNUM; j++) {\n        if (j >= uSPP) {\n            break;\n        }\n        vec4 sample;\n        vec3 r0 = vec3(BOTTOM_LEFT + (gl_FragCoord.xy/uRes) * (TOP_RIGHT - BOTTOM_LEFT), 64.0);\n        r0.xy += rand2() / uRes * SAMPLE_RADIUS;\n        float mint = 1000000.0;\n        bool intersects = false;\n        Sphere hit;\n        for (int i = 0; i < BIGNUM; i+=2) {\n            if (i >= uSpheresLength) {\n                break;\n            }\n            Sphere s = getSphere(i);\n            float t = raySphereIntersect(r0, vec3(0, 0, -1), s);\n            if (t >= 0.0 && t < mint) {\n                mint = t;\n                sample = vec4(s.color, 1);\n                intersects = true;\n                hit = s;\n            }\n        }\n        if (!intersects) {\n            sample = vec4(0,0,0,0);\n        } else {\n            r0 = r0 + mint * vec3(0, 0, -1);\n            vec3 normal = normalize(r0 - hit.position);\n            vec3 rd = cosineDirection(normal);\n            for (int i = 0; i < BIGNUM; i+=2) {\n                if (i >= uSpheresLength) {\n                    break;\n                }\n                float t = raySphereIntersect(r0, rd, getSphere(i));\n                if (t >= 0.0) {\n                    sample = vec4(0,0,0,1);\n                    break;\n                }\n            }\n        }\n        color += sample;\n    }\n\n    color /= float(uSPP);\n    vec4 last = texture2D(uLastFrame, gl_FragCoord.xy / uRes);\n    gl_FragColor = color/uIteration + last * (uIteration - 1.0)/uIteration;\n}\n";
             raw = raw.split('// __split__');
             program = new core.Program(gl, raw[0], raw[1]);
 
@@ -4430,6 +4693,7 @@ module.exports = function (canvas, resolution) {
             program.setUniform("uRotation", "Matrix4fv", false, self.rotation);
             program.setUniform("uScale", "1f", self.scale);
             program.setUniform("uElementScale", "1f", self.elementScale);
+            program.setUniform("uSPP", "1i", self.SPP);
             program.setUniform("uTranslation", "2fv", [self.translation.x, self.translation.y]);
             program.setUniform("uRand", "4fv", [Math.random(), Math.random(), Math.random(), Math.random()]);
             self.renderable.render();
@@ -4447,7 +4711,52 @@ module.exports = function (canvas, resolution) {
 
 }
 
-},{"gl-matrix":"/home/rye/Dropbox/src/speck/node_modules/gl-matrix/dist/gl-matrix.js","webgl.js":"/home/rye/Dropbox/src/speck/node_modules/webgl.js/src/index.js"}],"/home/rye/Dropbox/src/speck/src/xyz.js":[function(require,module,exports){
+},{"gl-matrix":"/home/rye/Dropbox/src/speck/node_modules/gl-matrix/dist/gl-matrix.js","webgl.js":"/home/rye/Dropbox/src/speck/node_modules/webgl.js/src/index.js"}],"/home/rye/Dropbox/src/speck/src/view.js":[function(require,module,exports){
+"use strict";
+
+var glm = require("gl-matrix");
+
+module.exports = function() {
+
+    var self = this;
+
+    self.initialize = function() {
+        self.bottom = -1;
+        self.top = 1;
+        self.left = -1;
+        self.right = 1;
+        self.atomScale = 1;
+        self.rotation = glm.mat4.create();
+    };
+
+    self.zoom = function(amount) {
+        self.bottom *= amount;
+        self.top *= amount;
+        self.left *= amount;
+        self.right *= amount;
+    };
+
+    self.translate = function(dx, dy) {
+        self.bottom += dy;
+        self.top += dy;
+        self.left += dx;
+        self.right += dx;
+    };
+
+    self.rotate = function(dx, dy) {
+        var m = glm.mat4.create();
+        glm.mat4.rotateY(m, m, dx);
+        glm.mat4.rotateX(m, m, dy);
+        glm.mat4.multiply(self.rotation, m, self.rotation);
+    };
+
+    self.scaleAtoms = function(amount) {
+        self.atomScale *= amount;
+    };
+
+    self.initialize();
+}
+},{"gl-matrix":"/home/rye/Dropbox/src/speck/node_modules/gl-matrix/dist/gl-matrix.js"}],"/home/rye/Dropbox/src/speck/src/xyz.js":[function(require,module,exports){
 module.exports = function(data) {
     var lines = data.split('\n');
     var natoms = parseInt(lines[0]);

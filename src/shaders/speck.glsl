@@ -41,6 +41,8 @@ uniform float uElementScale;
 
 uniform int uSpheresLength;
 
+uniform int uSPP;
+
 float SAMPLE_RADIUS = 2.0 * uScale;
 float TEXEL_SIZE = 1.0 / float(uSpheresLength);
 vec2 BOTTOM_LEFT = vec2(-uScale + uTranslation.x, -uScale + uTranslation.y);
@@ -80,11 +82,10 @@ vec3 cosineDirection(vec3 n) {
     return (dot(dr, n) < 0.0) ? -dr : dr;
 }
 
-int SPP = 1;
 void main() {
     vec4 color = vec4(0,0,0,0);
     for (int j = 0; j < BIGNUM; j++) {
-        if (j >= SPP) {
+        if (j >= uSPP) {
             break;
         }
         vec4 sample;
@@ -126,7 +127,7 @@ void main() {
         color += sample;
     }
 
-    color /= float(SPP);
+    color /= float(uSPP);
     vec4 last = texture2D(uLastFrame, gl_FragCoord.xy / uRes);
     gl_FragColor = color/uIteration + last * (uIteration - 1.0)/uIteration;
 }

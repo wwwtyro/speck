@@ -2,62 +2,50 @@
 
 var glm = require('gl-matrix');
 var Speck = require('./speck');
+var Imposter = require('./imposter-renderer');
 var fs = require('fs');
 var xyz = require('./xyz');
 var elements = require('./elements');
+var View = require("./view");
+var Atoms = require("./atoms");
 
-var speck;
+var atoms = new Atoms();
+var imposter = null;
 
 function loadStructure(data) {
 
-    speck.clearSpheres();
-
-    var bounds = {
-        x: Infinity,
-        y: Infinity,
-        z: Infinity,
-        X: -Infinity,
-        Y: -Infinity,
-        Z: -Infinity
-    };
+    atoms.clear();
 
     for (var i = 0; i < data.length; i++) {
         var a = data[i];
         var x = a.position[0];
         var y = a.position[1];
         var z = a.position[2];
-        bounds.x = Math.min(x, bounds.x);
-        bounds.X = Math.max(x, bounds.X);
-        bounds.y = Math.min(y, bounds.y);
-        bounds.Y = Math.max(y, bounds.Y);
-        bounds.z = Math.min(z, bounds.z);
-        bounds.Z = Math.max(z, bounds.Z);
     }
 
-    var shift = {
-        x: -bounds.x - (bounds.X - bounds.x)/2,
-        y: -bounds.y - (bounds.Y - bounds.y)/2,
-        z: -bounds.z - (bounds.Z - bounds.z)/2
-    };
     
     for (var i = 0; i < data.length; i++) {
         var a = data[i];
-        var x = a.position[0] + shift.x;
-        var y = a.position[1] + shift.y;
-        var z = a.position[2] + shift.z;
-        var r = elements[a.symbol].color[0];
-        var g = elements[a.symbol].color[1];
-        var b = elements[a.symbol].color[2];
-        var radius = elements[a.symbol].radius;
-        speck.addSphere(x,y,z, r,g,b, radius);
+        var x = a.position[0];
+        var y = a.position[1];
+        var z = a.position[2];
+        atoms.addAtom(a.symbol, x,y,z);
     }
+
+    atoms.center();
+
+    imposter.setAtoms(atoms);
+
 }
+
 
 window.onload = function() {
 
     var canvas = document.getElementById("render-canvas");
 
-    speck = new Speck(canvas, 384);
+    imposter = new Imposter(canvas, 768);
+
+    var view = new View();
 
     var structs = {};
     structs.protein = fs.readFileSync(__dirname + "/samples/4E0O.xyz", 'utf8');
@@ -71,7 +59,6 @@ window.onload = function() {
     var selector = document.getElementById("structure");
     selector.addEventListener("change", function() {
         loadStructure(xyz(structs[selector.value])[0]);
-        speck.clear();
     });
     
     var lastX = 0.0;
@@ -109,36 +96,31 @@ window.onload = function() {
         lastX = e.clientX;
         lastY = e.clientY;
         if (e.shiftKey) {
-            speck.translation.x -= dx*0.005*speck.scale;
-            speck.translation.y += dy*0.005*speck.scale;
+            view.translate(-dx*0.005, dy*0.005);
         } else {
-            var m = glm.mat4.create();
-            glm.mat4.rotateY(m, m, dx * 0.005);
-            glm.mat4.rotateX(m, m, dy * 0.005);
-            glm.mat4.multiply(speck.rotation, m, speck.rotation);
+            view.rotate(dx * 0.005, dy * 0.005);
         }
-        speck.clear();
     });
     canvas.addEventListener("mousewheel", function(e) {
         if (e.wheelDelta > 0) {
             if (e.shiftKey) {
-                speck.elementScale *= 1/0.9
+                view.scaleAtoms(1/0.9);
             } else {
-                speck.scale *= 0.9;
+                view.zoom(0.9);
             }
         } else {
             if (e.shiftKey) {
-                speck.elementScale *= 0.9
+                view.scaleAtoms(0.9);
             } else {
-                speck.scale *= 1/0.9;
+                view.zoom(1/0.9);
             }
         }
-        speck.clear();
-    })
+        e.preventDefault();
+    });
 
 
     function loop() {
-        speck.render();
+        imposter.render(view);
         requestAnimationFrame(loop);
     }
 

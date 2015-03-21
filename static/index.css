@@ -9,8 +9,8 @@ body {
 }
 
 #render-canvas {
-    width: 512px;
-    height: 512px;
+    width: 768px;
+    height: 768px;
     background: radial-gradient(#fff, #aaa);
     border: 1px solid black;
 }
