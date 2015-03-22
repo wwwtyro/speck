@@ -11,6 +11,8 @@ var Atoms = require("./atoms");
 
 var atoms = new Atoms();
 var imposter = null;
+var speck = null;
+var needRender = true;
 
 function loadStructure(data) {
 
@@ -35,26 +37,38 @@ function loadStructure(data) {
     atoms.center();
 
     imposter.setAtoms(atoms);
+    speck.setAtoms(atoms);
+
+    needRender = true;
 
 }
 
 
 window.onload = function() {
 
-    var canvas = document.getElementById("render-canvas");
+    var container = document.getElementById("render-container");
 
-    imposter = new Imposter(canvas, 768);
+    var imposterCanvas = document.getElementById("imposter-canvas");
+    var speckCanvas = document.getElementById("pt-canvas");
+
+    var resolution = 768;
+    imposter = new Imposter(imposterCanvas, resolution);
+    speck = new Speck(speckCanvas, resolution);
+
 
     var view = new View();
+    view.setResolution(resolution);
 
     var structs = {};
-    structs.protein = fs.readFileSync(__dirname + "/samples/4E0O.xyz", 'utf8');
+    structs.protein0 = fs.readFileSync(__dirname + "/samples/4E0O.xyz", 'utf8');
+    structs.protein1 = fs.readFileSync(__dirname + "/samples/4QCI.xyz", 'utf8');
+    structs.testosterone = fs.readFileSync(__dirname + "/samples/testosterone.xyz", 'utf8');
     structs.au = fs.readFileSync(__dirname + "/samples/au.xyz", 'utf8');
     structs.caffeine = fs.readFileSync(__dirname + "/samples/caffeine.xyz", 'utf8');
     structs.benzene = fs.readFileSync(__dirname + "/samples/benzene.xyz", 'utf8');
     structs.methane = fs.readFileSync(__dirname + "/samples/methane.xyz", 'utf8');
 
-    loadStructure(xyz(structs.protein)[0]);
+    loadStructure(xyz(structs.caffeine)[0]);
 
     var selector = document.getElementById("structure");
     selector.addEventListener("change", function() {
@@ -65,7 +79,7 @@ window.onload = function() {
     var lastY = 0.0;
     var buttonDown = false;
 
-    canvas.addEventListener("mousedown", function(e) {
+    container.addEventListener("mousedown", function(e) {
         document.body.style.cursor = "none";
         if (e.button == 0) {
             buttonDown = true;
@@ -96,31 +110,40 @@ window.onload = function() {
         lastX = e.clientX;
         lastY = e.clientY;
         if (e.shiftKey) {
-            view.translate(-dx*0.005, dy*0.005);
+            view.translate(dx, dy);
         } else {
             view.rotate(dx * 0.005, dy * 0.005);
         }
+        needRender = true;
     });
-    canvas.addEventListener("mousewheel", function(e) {
+    container.addEventListener("mousewheel", function(e) {
         if (e.wheelDelta > 0) {
             if (e.shiftKey) {
-                view.scaleAtoms(1/0.9);
-            } else {
-                view.zoom(0.9);
-            }
-        } else {
-            if (e.shiftKey) {
-                view.scaleAtoms(0.9);
+                view.scaleAtoms(1/0.95);
             } else {
                 view.zoom(1/0.9);
             }
+        } else {
+            if (e.shiftKey) {
+                view.scaleAtoms(0.95);
+            } else {
+                view.zoom(0.9);
+            }
         }
+        needRender = true;
         e.preventDefault();
     });
 
-
+    var lastRenderTime = performance.now();
     function loop() {
-        imposter.render(view);
+        if (needRender) {
+            speck.reset();
+            imposter.render(view);
+            needRender = false;
+            lastRenderTime = performance.now();
+        } else if (performance.now() - lastRenderTime > 1000) {
+            speck.render(view);
+        }
         requestAnimationFrame(loop);
     }
 

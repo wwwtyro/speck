@@ -30,7 +30,7 @@ module.exports = function (canvas, resolution) {
             program = new core.Program(gl, raw[0], raw[1]);
 
             // Initialize viewport.
-            gl.viewport(0, 0, resolution, resolution);
+            // gl.viewport(0, 0, resolution, resolution);
 
             self.renderable = null;
             range = 1.0;
@@ -94,19 +94,20 @@ module.exports = function (canvas, resolution) {
             if (self.renderable == null) {
                 return;
             }
+            var rect = view.getRect();
             var projection = glm.mat4.create();
-            glm.mat4.ortho(projection, view.left, view.right, view.bottom, view.top, 1, 1 + 2 * range);
+            glm.mat4.ortho(projection, rect.left, rect.right, rect.bottom, rect.top, 0, 2 * range);
             var viewMat = glm.mat4.create();
             glm.mat4.lookAt(viewMat, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
             var model = glm.mat4.create();
-            glm.mat4.translate(model, model, [0, 0, -(1 + range)]);
-            glm.mat4.multiply(model, model, view.rotation);
+            glm.mat4.translate(model, model, [0, 0, -range]);
+            glm.mat4.multiply(model, model, view.getRotation());
             program.setUniform("uProjection", "Matrix4fv", false, projection);
             program.setUniform("uView", "Matrix4fv", false, viewMat);
             program.setUniform("uModel", "Matrix4fv", false, model);
-            program.setUniform("uBottomLeft", "2fv", [view.left, view.bottom]);
-            program.setUniform("uTopRight", "2fv", [view.right, view.top]);
-            program.setUniform("uAtomScale", "1f", view.atomScale);
+            program.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
+            program.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
+            program.setUniform("uAtomScale", "1f", view.getAtomScale());
             program.setUniform("uRes", "2fv", [resolution, resolution]);
             self.renderable.render();
         }

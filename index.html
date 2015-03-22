@@ -9,14 +9,19 @@
         <table>
             <tr>
                 <td>
-                    <canvas id="render-canvas"></canvas>
+                    <div id="render-container">
+                        <canvas id="imposter-canvas"></canvas>
+                        <canvas id="pt-canvas"></canvas>
+                    </div>
                 </td>
                 <td valign="top">
                     <select id="structure">
-            			<option value="protein">Protein 4E0O</option>
-            			<option value="au">Gold Nanoparticle</option>
+                        <option value="protein0">Protein 4E0O</option>
+                        <option value="protein1">Protein 4QCI</option>
+                        <option value="testosterone">Testosterone</option>
+                        <option value="au">Gold Nanoparticle</option>
             			<option value="benzene">Benzene</option>
-            			<option value="caffeine">Caffeine</option>
+            			<option value="caffeine" selected="selected">Caffeine</option>
             			<option value="methane">Methane</option>
                     </select>
                 </td>

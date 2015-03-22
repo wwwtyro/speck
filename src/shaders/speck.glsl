@@ -3,11 +3,8 @@ precision highp float;
 
 attribute vec3 aPosition;
 
-varying vec3 vPosition;
-
 void main() {
     gl_Position = vec4(aPosition, 1.0);
-    vPosition = aPosition;
 }
 
 
@@ -25,34 +22,33 @@ struct Sphere {
 
 #define BIGNUM 10000000
 
-uniform sampler2D uLastFrame;
 uniform sampler2D uSphereData;
 
 uniform vec2 uRes;
-uniform vec2 uTranslation;
+uniform vec2 uBottomLeft;
+uniform vec2 uTopRight;
 
 uniform vec4 uRand;
 
 uniform mat4 uRotation;
 
-uniform float uIteration;
-uniform float uScale;
 uniform float uElementScale;
+uniform float uScale;
+uniform float uOffset;
+
 
 uniform int uSpheresLength;
 
 uniform int uSPP;
 
-float SAMPLE_RADIUS = 2.0 * uScale;
+float SAMPLE_RADIUS = 2.0/uRes.x / uScale;
 float TEXEL_SIZE = 1.0 / float(uSpheresLength);
-vec2 BOTTOM_LEFT = vec2(-uScale + uTranslation.x, -uScale + uTranslation.y);
-vec2 TOP_RIGHT = vec2(uScale + uTranslation.x, uScale + uTranslation.y);
 
 Sphere getSphere(int index) {
     vec4 d0 = texture2D(uSphereData, vec2(TEXEL_SIZE * (float(index) + 0.0) + 0.5 * TEXEL_SIZE, 0.0));
     vec4 d1 = texture2D(uSphereData, vec2(TEXEL_SIZE * (float(index) + 1.0) + 0.5 * TEXEL_SIZE, 0.0));
     Sphere s;
-    s.position = vec3(uRotation * vec4(d0.xyz, 1));
+    s.position = vec3(uRotation * vec4(d0.xyz, 1)) + vec3(0, 0, uOffset);
     s.color = vec3(d0.w, d1.xy);
     s.radius = d1.z * uElementScale;
     return s;
@@ -89,8 +85,8 @@ void main() {
             break;
         }
         vec4 sample;
-        vec3 r0 = vec3(BOTTOM_LEFT + (gl_FragCoord.xy/uRes) * (TOP_RIGHT - BOTTOM_LEFT), 64.0);
-        r0.xy += rand2() / uRes * SAMPLE_RADIUS;
+        vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/uRes) * (uTopRight - uBottomLeft), 0.0);
+        r0.xy += (rand2()-0.5) * SAMPLE_RADIUS;
         float mint = 1000000.0;
         bool intersects = false;
         Sphere hit;
@@ -127,7 +123,5 @@ void main() {
         color += sample;
     }
 
-    color /= float(uSPP);
-    vec4 last = texture2D(uLastFrame, gl_FragCoord.xy / uRes);
-    gl_FragColor = color/uIteration + last * (uIteration - 1.0)/uIteration;
+    gl_FragColor = color / float(uSPP);
 }

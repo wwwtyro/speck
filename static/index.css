@@ -8,11 +8,24 @@ body {
     user-select: none;
 }
 
-#render-canvas {
-    width: 768px;
-    height: 768px;
+#render-container {
     background: radial-gradient(#fff, #aaa);
     border: 1px solid black;
+    width: 768px;
+    height: 768px;
+    overflow: hidden;
+}
+
+#imposter-canvas {
+    width: 768px;
+    height: 768px;
+}
+
+#pt-canvas {
+    position: relative;
+    top: -768px;
+    width: 768px;
+    height: 768px;
 }
 
 #structure {
