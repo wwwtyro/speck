@@ -4094,7 +4094,8 @@ module.exports = function() {
             symbol: symbol,
             x: x,
             y: y,
-            z: z
+            z: z,
+            ao: 0
         });
         var r = elements[symbol].radius;
         self.bounds.x = Math.min(x-r, self.bounds.x);
@@ -4328,8 +4329,36 @@ module.exports = function (canvas, resolution) {
 
         var self = this;
 
-        var gl, canvas, program, fragDepthExt, instancedExt;
-        var range;
+        var range,
+            samples;
+
+        var gl, 
+            canvas;
+
+        var rScene = null,
+            rDispQuad = null,
+            rAccumulator = null,
+            rAO = null;
+
+        var tSceneColor,
+            tSceneDepth,
+            tRandRotDepth,
+            tRandRotColor,
+            tAccumulator,
+            tAccumulatorOut;
+
+        var fbScene,
+            fbRandRot,
+            fbAccumulator;
+
+        var progScene,
+            progAccumulator,
+            progAO,
+            progDisplayQuad;
+
+        var extFragDepth,
+            extInstanced,
+            extDepthTexture;
 
         self.initialize = function() {
 
@@ -4338,20 +4367,137 @@ module.exports = function (canvas, resolution) {
             gl = canvas.getContext('webgl');
             gl.enable(gl.DEPTH_TEST);
             gl.enable(gl.CULL_FACE);
+            gl.clearColor(0,0,0,0);
+            gl.clearDepth(1);
 
-            fragDepthExt = gl.getExtension("EXT_frag_depth");
-            instancedExt = gl.getExtension("ANGLE_instanced_arrays");
+            window.gl = gl;
+
+            extFragDepth = gl.getExtension("EXT_frag_depth");
+            extInstanced = gl.getExtension("ANGLE_instanced_arrays");
+            extDepthTexture = gl.getExtension("WEBGL_depth_texture");
+
+            // fbScene
+            gl.activeTexture(gl.TEXTURE0);
+            tSceneColor = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tSceneColor);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+            gl.activeTexture(gl.TEXTURE1);
+            tSceneDepth = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tSceneDepth);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, resolution, resolution, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_SHORT, null);            
+
+            fbScene = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tSceneColor, 0);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, tSceneDepth, 0);
+
+            // fbRandRot
+            gl.activeTexture(gl.TEXTURE2);
+            tRandRotColor = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tRandRotColor);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+            gl.activeTexture(gl.TEXTURE3);
+            tRandRotDepth = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tRandRotDepth);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, resolution, resolution, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_SHORT, null);            
+
+            fbRandRot = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbRandRot);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tRandRotColor, 0);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, tRandRotDepth, 0);
+
+            // fbAccumulator
+            gl.activeTexture(gl.TEXTURE4);
+            tAccumulator = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tAccumulator);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+            gl.activeTexture(gl.TEXTURE5);
+            tAccumulatorOut = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tAccumulatorOut);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+            fbAccumulator = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbAccumulator);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tAccumulatorOut, 0);
+
 
             // Initialize shaders.
-            var raw = "#version 100\nprecision highp float;\n\nattribute vec3 aImposter;\nattribute vec3 aPosition;\nattribute float aRadius;\nattribute vec3 aColor;\n\nuniform mat4 uView;\nuniform mat4 uProjection;\nuniform mat4 uModel;\nuniform float uAtomScale;\n\nvarying vec3 vColor;\nvarying vec3 vPosition;\nvarying float vRadius;\n\nvoid main() {\n    gl_Position = uProjection * uView * uModel * vec4(uAtomScale * aRadius * aImposter + aPosition, 1.0);\n    vColor = aColor;\n    vRadius = aRadius * uAtomScale;\n    vPosition = vec3(uModel * vec4(aPosition, 1));\n}\n\n\n// __split__\n\n\n#version 100\n#extension GL_EXT_frag_depth: enable\nprecision highp float;\n\nuniform mat4 uView;\nuniform mat4 uProjection;\nuniform mat4 uModel;\n\nuniform vec2 uBottomLeft;\nuniform vec2 uTopRight;\nuniform vec2 uRes;\nuniform float uAtomScale;\n\nvarying vec3 vPosition;\nvarying float vRadius;\nvarying vec3 vColor;\n\n\nfloat raySphereIntersect(vec3 r0, vec3 rd) {\n    float a = dot(rd, rd);\n    vec3 s0_r0 = r0 - vPosition;\n    float b = 2.0 * dot(rd, s0_r0);\n    float c = dot(s0_r0, s0_r0) - (vRadius * vRadius);\n    if (b*b - 4.0*a*c <= 0.0) {\n        return -1.0;\n    }\n    return (-b - sqrt((b*b) - 4.0*a*c))/(2.0*a);\n}\n\nvoid main() {\n    vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/uRes) * (uTopRight - uBottomLeft), 0.0);\n    vec3 rd = vec3(0, 0, -1);\n    float t = raySphereIntersect(r0, rd);\n    if (t < 0.0) {\n        discard;\n    }\n    vec3 coord = r0 + rd * t;\n    vec3 normal = normalize(coord - vPosition);\n    float fade = dot(normal, vec3(0, 0, 1)) * 0.5 + 0.5;\n    gl_FragColor = vec4(fade * vColor, 1);\n\n\n    float far = gl_DepthRange.far;\n    float near = gl_DepthRange.near;\n    vec4 clipSpacePosition = uProjection * uView * vec4(coord, 1);\n    float ndcDepth = clipSpacePosition.z / clipSpacePosition.w;\n    float depth = (((far-near) * ndcDepth) + near + far) / 2.0;\n    gl_FragDepthEXT = depth;\n}\n";
-            raw = raw.split('// __split__');
-            program = new core.Program(gl, raw[0], raw[1]);
+            progScene = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aImposter;\nattribute vec3 aPosition;\nattribute float aRadius;\nattribute vec3 aColor;\n\nuniform mat4 uView;\nuniform mat4 uProjection;\nuniform mat4 uModel;\nuniform float uAtomScale;\n\nvarying vec3 vColor;\nvarying vec3 vPosition;\nvarying float vRadius;\n\nvoid main() {\n    gl_Position = uProjection * uView * uModel * vec4(uAtomScale * aRadius * aImposter + aPosition, 1.0);\n    vColor = aColor;\n    vRadius = aRadius * uAtomScale;\n    vPosition = vec3(uModel * vec4(aPosition, 1));\n}\n\n\n// __split__\n\n\n#version 100\n#extension GL_EXT_frag_depth: enable\nprecision highp float;\n\nuniform mat4 uView;\nuniform mat4 uProjection;\nuniform mat4 uModel;\n\nuniform vec2 uBottomLeft;\nuniform vec2 uTopRight;\nuniform vec2 uRes;\nuniform float uAtomScale;\nuniform float uDepth;\n\nvarying vec3 vPosition;\nvarying float vRadius;\nvarying vec3 vColor;\n\n\nfloat raySphereIntersect(vec3 r0, vec3 rd) {\n    float a = dot(rd, rd);\n    vec3 s0_r0 = r0 - vPosition;\n    float b = 2.0 * dot(rd, s0_r0);\n    float c = dot(s0_r0, s0_r0) - (vRadius * vRadius);\n    if (b*b - 4.0*a*c <= 0.0) {\n        return -1.0;\n    }\n    return (-b - sqrt((b*b) - 4.0*a*c))/(2.0*a);\n}\n\nvoid main() {\n    vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/uRes) * (uTopRight - uBottomLeft), 0.0);\n    vec3 rd = vec3(0, 0, -1);\n    float t = raySphereIntersect(r0, rd);\n    if (t < 0.0) {\n        discard;\n    }\n    vec3 coord = r0 + rd * t;\n    vec3 normal = normalize(coord - vPosition);\n    float fade = dot(normal, vec3(0, 0, 1)) * 0.5 + 0.5;\n    // gl_FragColor = vec4(fade * vColor, 1);\n    gl_FragColor = vec4(vColor, 1);\n    gl_FragDepthEXT = -coord.z/uDepth;\n}\n");
+            progDisplayQuad = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uTexture;\nuniform float uRes;\n\nvoid main() {\n    gl_FragColor = texture2D(uTexture, gl_FragCoord.xy/uRes);\n}\n");
+            progAccumulator = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneDepth;\nuniform sampler2D uRandRotDepth;\nuniform sampler2D uAccumulator;\nuniform mat4 uInvRot;\nuniform float uRes;\nuniform vec2 uBottomLeft;\nuniform vec2 uTopRight;\nuniform float uDepth;\n\nvoid main() {\n    vec4 dScene = texture2D(uSceneDepth, gl_FragCoord.xy/uRes);\n    vec4 dRandRot = texture2D(uRandRotDepth, gl_FragCoord.xy/uRes);\n    vec4 acc = texture2D(uAccumulator, gl_FragCoord.xy/uRes);\n\n    vec3 r = vec3(uBottomLeft + (gl_FragCoord.xy/uRes) * (uTopRight - uBottomLeft), 0.0);\n    r.z -= dScene.r * uDepth;\n    r.z += uDepth/2.0;\n    r = vec3(uInvRot * vec4(r,0));\n    r.z -= uDepth/2.0;\n    r.z = -r.z/uDepth;\n\n    if (r.z > dRandRot.r) {\n        acc.r = min(1.0, acc.r + 1.0/255.0);\n    }\n    gl_FragColor = vec4(acc.r, 0, 0, 0);\n}\n");
+            progAO = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneColor;\nuniform sampler2D uAccumulatorOut;\nuniform float uRes;\n\nvoid main() {\n    vec4 dScene = texture2D(uSceneColor, gl_FragCoord.xy/uRes);\n    vec4 dAccum = texture2D(uAccumulatorOut, gl_FragCoord.xy/uRes);\n    gl_FragColor = vec4(dScene.rgb * (1.0 - dAccum.r * 1.0), dScene.a);\n}\n");
 
-            // Initialize viewport.
-            // gl.viewport(0, 0, resolution, resolution);
+            var position = [
+                -1, -1, 0,
+                 1, -1, 0,
+                 1,  1, 0,
+                -1, -1, 0,
+                 1,  1, 0,
+                -1,  1, 0
+            ];
 
-            self.renderable = null;
+            // Initialize geometry.
+            var attribs = {
+                aPosition: {
+                    buffer: new core.Buffer(gl),
+                    size: 3
+                },
+            };
+            attribs.aPosition.buffer.set(new Float32Array(position));
+            var count = position.length / 9;
+            rDispQuad = new core.Renderable(gl, progDisplayQuad, attribs, count);
+
+            // Initialize geometry.
+            var attribs = {
+                aPosition: {
+                    buffer: new core.Buffer(gl),
+                    size: 3
+                },
+            };
+            attribs.aPosition.buffer.set(new Float32Array(position));
+            var count = position.length / 9;
+            rAccumulator = new core.Renderable(gl, progAccumulator, attribs, count);
+
+            // Initialize geometry.
+            var attribs = {
+                aPosition: {
+                    buffer: new core.Buffer(gl),
+                    size: 3
+                },
+            };
+            attribs.aPosition.buffer.set(new Float32Array(position));
+            var count = position.length / 9;
+            rAO = new core.Renderable(gl, progAO, attribs, count);
+
             range = 1.0;
+            samples = 0;
 
         }
 
@@ -4390,7 +4536,7 @@ module.exports = function (canvas, resolution) {
                 position.push.apply(position, [a.x, a.y, a.z]);
                 radius.push(elements[a.symbol].radius);
                 var c = elements[a.symbol].color;
-                color.push.apply(color, [c[0], c[1], c[2]]);
+                color.push.apply(color, [c[0] * (1 - a.ao), c[1] * (1 - a.ao), c[2] * (1 - a.ao)]);
             }
 
             var imposter = cube.position;
@@ -4402,38 +4548,100 @@ module.exports = function (canvas, resolution) {
 
             var count = position.length / 3;
 
-            // Create the renderable.
-            self.renderable = new core.InstancedRenderable(gl, program, attribs, count, instancedExt);
+            rScene = new core.InstancedRenderable(gl, progScene, attribs, count, extInstanced);
 
-            range = atoms.getRadius() * 2.0;
+            range = atoms.getRadius() * 4.0;
         }
 
-        self.render = function(view) {
-            if (self.renderable == null) {
-                return;
-            }
+        function renderScene(view) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             var rect = view.getRect();
             var projection = glm.mat4.create();
-            glm.mat4.ortho(projection, rect.left, rect.right, rect.bottom, rect.top, 0, 2 * range);
+            glm.mat4.ortho(projection, rect.left, rect.right, rect.bottom, rect.top, 0, range);
             var viewMat = glm.mat4.create();
             glm.mat4.lookAt(viewMat, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
             var model = glm.mat4.create();
-            glm.mat4.translate(model, model, [0, 0, -range]);
+            glm.mat4.translate(model, model, [0, 0, -range/2]);
             glm.mat4.multiply(model, model, view.getRotation());
-            program.setUniform("uProjection", "Matrix4fv", false, projection);
-            program.setUniform("uView", "Matrix4fv", false, viewMat);
-            program.setUniform("uModel", "Matrix4fv", false, model);
-            program.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
-            program.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
-            program.setUniform("uAtomScale", "1f", view.getAtomScale());
-            program.setUniform("uRes", "2fv", [resolution, resolution]);
-            self.renderable.render();
+            progScene.setUniform("uProjection", "Matrix4fv", false, projection);
+            progScene.setUniform("uView", "Matrix4fv", false, viewMat);
+            progScene.setUniform("uModel", "Matrix4fv", false, model);
+            progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
+            progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
+            progScene.setUniform("uAtomScale", "1f", view.getAtomScale());
+            progScene.setUniform("uRes", "2fv", [resolution, resolution]);
+            progScene.setUniform("uDepth", "1f", range);
+            rScene.render();
+        }
+
+        self.render = function(view) {
+            if (rScene == null) {
+                return;
+            }
+            renderScene(view);
+            renderRandRot(view);
+        }
+
+        function renderRandRot(view) {
+            var v = view.clone();
+            v.rotate(Math.random() * 1000, Math.random() * 1000);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbRandRot);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            var rect = v.getRect();
+            var projection = glm.mat4.create();
+            glm.mat4.ortho(projection, rect.left, rect.right, rect.bottom, rect.top, 0, range);
+            var viewMat = glm.mat4.create();
+            glm.mat4.lookAt(viewMat, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
+            var model = glm.mat4.create();
+            glm.mat4.translate(model, model, [0, 0, -range/2]);
+            glm.mat4.multiply(model, model, v.getRotation());
+            progScene.setUniform("uProjection", "Matrix4fv", false, projection);
+            progScene.setUniform("uView", "Matrix4fv", false, viewMat);
+            progScene.setUniform("uModel", "Matrix4fv", false, model);
+            progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
+            progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
+            progScene.setUniform("uAtomScale", "1f", v.getAtomScale());
+            progScene.setUniform("uRes", "2fv", [resolution, resolution]);
+            progScene.setUniform("uDepth", "1f", range);
+            rScene.render();
+
+            var invRot = glm.mat4.invert(glm.mat4.create(), view.__rotation);
+            var rect = view.getRect();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbAccumulator);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            progAccumulator.setUniform("uSceneDepth", "1i", 1);
+            progAccumulator.setUniform("uRandRotDepth", "1i", 3);
+            progAccumulator.setUniform("uAccumulator", "1i", 4);
+            progAccumulator.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
+            progAccumulator.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
+            progAccumulator.setUniform("uRes", "1f", resolution);
+            progAccumulator.setUniform("uDepth", "1f", range);
+            progAccumulator.setUniform("uInvRot", "Matrix4fv", false, invRot);
+            rAccumulator.render();
+            gl.bindTexture(gl.TEXTURE_2D, tAccumulator);
+            gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            progAO.setUniform("uSceneColor", "1i", 0);
+            progAO.setUniform("uAccumulatorOut", "1i", 5);
+            progAO.setUniform("uRes", "1f", resolution);
+            rAO.render();
+
         }
 
         self.initialize();
 
 }
 
+
+
+
+function loadProgram(gl, src) {
+    src = src.split('// __split__');
+    return new core.Program(gl, src[0], src[1]);
+}
 },{"./cube":"/home/rye/Dropbox/src/speck/src/cube.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","gl-matrix":"/home/rye/Dropbox/src/speck/node_modules/gl-matrix/dist/gl-matrix.js","webgl.js":"/home/rye/Dropbox/src/speck/node_modules/webgl.js/src/index.js"}],"/home/rye/Dropbox/src/speck/src/main.js":[function(require,module,exports){
 "use strict";
 
@@ -4571,15 +4779,18 @@ window.onload = function() {
         e.preventDefault();
     });
 
-    var lastRenderTime = performance.now();
+    var count = 0;
     function loop() {
-        if (needRender) {
-            speck.reset();
+        count++;
+        if (true) {//needRender) {
             imposter.render(view);
+            console.log("render");
             needRender = false;
-            lastRenderTime = performance.now();
-        } else if (performance.now() - lastRenderTime > 1000) {
-            speck.render(view);
+        } else {
+            // imposter.updateAO(view);
+        }
+        if (count > 256) {
+            return;
         }
         requestAnimationFrame(loop);
     }
@@ -4610,7 +4821,7 @@ module.exports = function (canvas, resolution) {
 
         self.initialize = function() {
 
-            self.SPP = 128;
+            self.SPP = 4;
 
             // Initialize canvas/gl.
             canvas.width = canvas.height = resolution;
@@ -4624,7 +4835,7 @@ module.exports = function (canvas, resolution) {
             float_texture_ext = gl.getExtension('OES_texture_float');
 
             // Initialize shaders.
-            var raw = "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1.0);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nstruct Sphere {\n    vec3 position;\n    vec3 color;\n    float radius;\n};\n\n#define BIGNUM 10000000\n\nuniform sampler2D uSphereData;\n\nuniform vec2 uRes;\nuniform vec2 uBottomLeft;\nuniform vec2 uTopRight;\n\nuniform vec4 uRand;\n\nuniform mat4 uRotation;\n\nuniform float uElementScale;\nuniform float uScale;\nuniform float uOffset;\n\n\nuniform int uSpheresLength;\n\nuniform int uSPP;\n\nfloat SAMPLE_RADIUS = 2.0/uRes.x / uScale;\nfloat TEXEL_SIZE = 1.0 / float(uSpheresLength);\n\nSphere getSphere(int index) {\n    vec4 d0 = texture2D(uSphereData, vec2(TEXEL_SIZE * (float(index) + 0.0) + 0.5 * TEXEL_SIZE, 0.0));\n    vec4 d1 = texture2D(uSphereData, vec2(TEXEL_SIZE * (float(index) + 1.0) + 0.5 * TEXEL_SIZE, 0.0));\n    Sphere s;\n    s.position = vec3(uRotation * vec4(d0.xyz, 1)) + vec3(0, 0, uOffset);\n    s.color = vec3(d0.w, d1.xy);\n    s.radius = d1.z * uElementScale;\n    return s;\n}\n\nfloat raySphereIntersect(vec3 r0, vec3 rd, Sphere s) {\n    float a = dot(rd, rd);\n    vec3 s0_r0 = r0 - s.position;\n    float b = 2.0 * dot(rd, s0_r0);\n    float c = dot(s0_r0, s0_r0) - (s.radius * s.radius);\n    if (b*b - 4.0*a*c < 0.0) {\n        return -1.0;\n    }\n    return (-b - sqrt((b*b) - 4.0*a*c))/(2.0*a);\n}\n\nvec2 randv2=fract(cos((gl_FragCoord.xy+gl_FragCoord.yx*vec2(1000.0,1000.0))+uRand.xy)*10000.0);\nvec2 rand2() {\n    randv2+=vec2(1.0,1.0);\n    return vec2(fract(sin(dot(randv2.xy ,vec2(12.9898,78.233))) * 43758.5453),\n        fract(cos(dot(randv2.xy ,vec2(4.898,7.23))) * 23421.631));\n}\n\nvec3 cosineDirection(vec3 n) {\n    vec2 r = rand2() * 6.283; \n    vec3 dr = vec3(sin(r.x) * vec2(sin(r.y), cos(r.y)), cos(r.x));\n    return (dot(dr, n) < 0.0) ? -dr : dr;\n}\n\nvoid main() {\n    vec4 color = vec4(0,0,0,0);\n    for (int j = 0; j < BIGNUM; j++) {\n        if (j >= uSPP) {\n            break;\n        }\n        vec4 sample;\n        vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/uRes) * (uTopRight - uBottomLeft), 0.0);\n        r0.xy += (rand2()-0.5) * SAMPLE_RADIUS;\n        float mint = 1000000.0;\n        bool intersects = false;\n        Sphere hit;\n        for (int i = 0; i < BIGNUM; i+=2) {\n            if (i >= uSpheresLength) {\n                break;\n            }\n            Sphere s = getSphere(i);\n            float t = raySphereIntersect(r0, vec3(0, 0, -1), s);\n            if (t >= 0.0 && t < mint) {\n                mint = t;\n                sample = vec4(s.color, 1);\n                intersects = true;\n                hit = s;\n            }\n        }\n        if (!intersects) {\n            sample = vec4(0,0,0,0);\n        } else {\n            r0 = r0 + mint * vec3(0, 0, -1);\n            vec3 normal = normalize(r0 - hit.position);\n            vec3 rd = cosineDirection(normal);\n            for (int i = 0; i < BIGNUM; i+=2) {\n                if (i >= uSpheresLength) {\n                    break;\n                }\n                float t = raySphereIntersect(r0, rd, getSphere(i));\n                if (t >= 0.0) {\n                    sample = vec4(0,0,0,1);\n                    break;\n                }\n            }\n        }\n        color += sample;\n    }\n\n    gl_FragColor = color / float(uSPP);\n}\n";
+            var raw = "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1.0);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nstruct Sphere {\n    vec3 position;\n    vec3 color;\n    float radius;\n};\n\n#define BIGNUM 1000000\n\nuniform sampler2D uSphereData;\n\nuniform vec2 uRes;\nuniform vec2 uBottomLeft;\nuniform vec2 uTopRight;\n\nuniform vec4 uRand;\n\nuniform mat4 uRotation;\n\nuniform float uElementScale;\nuniform float uScale;\nuniform float uOffset;\n\n\nuniform int uSpheresLength;\n\nuniform int uSPP;\n\nfloat SAMPLE_RADIUS = 1.0/uRes.x / uScale;\nfloat TEXEL_SIZE = 1.0 / float(uSpheresLength);\n\nSphere getSphere(int index) {\n    vec4 d0 = texture2D(uSphereData, vec2(TEXEL_SIZE * (float(index) + 0.0) + 0.5 * TEXEL_SIZE, 0.0));\n    vec4 d1 = texture2D(uSphereData, vec2(TEXEL_SIZE * (float(index) + 1.0) + 0.5 * TEXEL_SIZE, 0.0));\n    Sphere s;\n    s.position = vec3(uRotation * vec4(d0.xyz, 1)) + vec3(0, 0, uOffset);\n    s.color = vec3(d0.w, d1.xy);\n    s.radius = d1.z * uElementScale;\n    return s;\n}\n\nfloat raySphereIntersect(vec3 r0, vec3 rd, Sphere s) {\n    float a = dot(rd, rd);\n    vec3 s0_r0 = r0 - s.position;\n    float b = 2.0 * dot(rd, s0_r0);\n    float c = dot(s0_r0, s0_r0) - (s.radius * s.radius);\n    if (b*b - 4.0*a*c < 0.0) {\n        return -1.0;\n    }\n    return (-b - sqrt((b*b) - 4.0*a*c))/(2.0*a);\n}\n\nvec2 randv2=fract(cos((gl_FragCoord.xy+gl_FragCoord.yx*vec2(1000.0,1000.0))+uRand.xy)*10000.0);\nvec2 rand2() {\n    randv2+=vec2(1.0,1.0);\n    return vec2(fract(sin(dot(randv2.xy ,vec2(12.9898,78.233))) * 43758.5453),\n        fract(cos(dot(randv2.xy ,vec2(4.898,7.23))) * 23421.631));\n}\n\nvec3 cosineDirection(vec3 n) {\n    vec2 r = rand2() * 6.283; \n    vec3 dr = vec3(sin(r.x) * vec2(sin(r.y), cos(r.y)), cos(r.x));\n    return (dot(dr, n) < 0.0) ? -dr : dr;\n}\n\nvoid main() {\n    vec4 color = vec4(0,0,0,0);\n    for (int j = 0; j < BIGNUM; j++) {\n        if (j >= uSPP) {\n            break;\n        }\n        vec4 sample;\n        vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/uRes) * (uTopRight - uBottomLeft), 0.0);\n        r0.xy += (rand2()-0.5) * SAMPLE_RADIUS;\n        float mint = 1000000.0;\n        bool intersects = false;\n        Sphere hit;\n        for (int i = 0; i < BIGNUM; i+=2) {\n            if (i >= uSpheresLength) {\n                break;\n            }\n            Sphere s = getSphere(i);\n            float t = raySphereIntersect(r0, vec3(0, 0, -1), s);\n            if (t >= 0.0 && t < mint) {\n                mint = t;\n                sample = vec4(s.color, 1);\n                intersects = true;\n                hit = s;\n            }\n        }\n        if (!intersects) {\n            sample = vec4(0,0,0,0);\n        } else {\n            r0 = r0 + mint * vec3(0, 0, -1);\n            vec3 normal = normalize(r0 - hit.position);\n            vec3 rd = cosineDirection(normal);\n            for (int i = 0; i < BIGNUM; i+=2) {\n                if (i >= uSpheresLength) {\n                    break;\n                }\n                float t = raySphereIntersect(r0, rd, getSphere(i));\n                if (t >= 0.0) {\n                    sample = vec4(0,0,0,1);\n                    break;\n                }\n            }\n        }\n        color += sample;\n    }\n\n    gl_FragColor = color / float(uSPP);\n}\n";
             raw = raw.split('// __split__');
             program = new core.Program(gl, raw[0], raw[1]);
 
@@ -4717,65 +4928,76 @@ module.exports = function (canvas, resolution) {
 
 var glm = require("gl-matrix");
 
-module.exports = function() {
+module.exports = function View() {
 
     var self = this;
 
-    var aspect = 1.0;
-    var zoom = 0.1;
-    var translation = {x: 0.0, y: 0.0};
-    var atomScale = 1.0;
-    var rotation = glm.mat4.create();
-    var resolution = 768;
+    self.__aspect = 1.0;
+    self.__zoom = 0.1;
+    self.__translation = {x: 0.0, y: 0.0};
+    self.__atomScale = 1.5;
+    self.__rotation = glm.mat4.create();
+    self.__resolution = 768;
 
     self.initialize = function() {
     };
 
+    self.clone = function() {
+        var v = new View();
+        v.__aspect = self.__aspect;
+        v.__zoom = self.__zoom;
+        v.__translation = {x: self.__translation.x, y: self.__translation.y};
+        v.__atomScale = self.__atomScale;
+        v.__rotation = glm.mat4.clone(self.__rotation);
+        v.__resolution = self.__resolution;
+        return v;
+    }
+
     self.setResolution = function(res) {
-        resolution  = res;
+        self.__resolution  = res;
     };
 
     self.zoom = function(amount) {
-        zoom *= amount;
+        self.__zoom *= amount;
     }
 
     self.getZoom = function() {
-        return zoom;
+        return self.__zoom;
     }
 
     self.translate = function(dx, dy) {
-        translation.x -= dx/(resolution * zoom);
-        translation.y += dy/(resolution * zoom);
+        self.__translation.x -= dx/(self.__resolution * self.__zoom);
+        self.__translation.y += dy/(self.__resolution * self.__zoom);
     };
 
     self.rotate = function(dx, dy) {
         var m = glm.mat4.create();
         glm.mat4.rotateY(m, m, dx);
         glm.mat4.rotateX(m, m, dy);
-        glm.mat4.multiply(rotation, m, rotation);
+        glm.mat4.multiply(self.__rotation, m, self.__rotation);
     };
 
     self.getRotation = function() {
         var out = glm.mat4.create();
-        glm.mat4.copy(out, rotation);
+        glm.mat4.copy(out, self.__rotation);
         return out;
     };
 
     self.scaleAtoms = function(amount) {
-        atomScale *= amount;
+        self.__atomScale *= amount;
     };
 
     self.getAtomScale = function() {
-        return atomScale;
+        return self.__atomScale;
     };
 
     self.getRect = function() {
-        var width = 1.0/zoom;
-        var height = width/aspect;
-        var bottom = -height/2 + translation.y;
-        var top = height/2 + translation.y;
-        var left = -width/2 + translation.x;
-        var right = width/2 + translation.x;
+        var width = 1.0/self.__zoom;
+        var height = width/self.__aspect;
+        var bottom = -height/2 + self.__translation.y;
+        var top = height/2 + self.__translation.y;
+        var left = -width/2 + self.__translation.x;
+        var right = width/2 + self.__translation.x;
         return {
             bottom: bottom,
             top: top,

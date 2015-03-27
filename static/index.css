@@ -9,7 +9,8 @@ body {
 }
 
 #render-container {
-    background: radial-gradient(#fff, #aaa);
+    /*background: radial-gradient(#fff, #aaa);*/
+    /*background: gray;*/
     border: 1px solid black;
     width: 768px;
     height: 768px;

@@ -19,7 +19,7 @@ module.exports = function (canvas, resolution) {
 
         self.initialize = function() {
 
-            self.SPP = 128;
+            self.SPP = 4;
 
             // Initialize canvas/gl.
             canvas.width = canvas.height = resolution;

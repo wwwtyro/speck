@@ -66,7 +66,7 @@ void main() {
     vec3 coord = r0 + rd * t;
     vec3 normal = normalize(coord - vPosition);
     float fade = dot(normal, vec3(0, 0, 1)) * 0.5 + 0.5;
-    gl_FragColor = vec4(fade * vColor, 1);
-
+    // gl_FragColor = vec4(fade * vColor, 1);
+    gl_FragColor = vec4(vColor, 1);
     gl_FragDepthEXT = -coord.z/uDepth;
 }

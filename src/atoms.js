@@ -27,7 +27,8 @@ module.exports = function() {
             symbol: symbol,
             x: x,
             y: y,
-            z: z
+            z: z,
+            ao: 0
         });
         var r = elements[symbol].radius;
         self.bounds.x = Math.min(x-r, self.bounds.x);

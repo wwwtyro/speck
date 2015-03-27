@@ -20,7 +20,7 @@ struct Sphere {
     float radius;
 };
 
-#define BIGNUM 10000000
+#define BIGNUM 1000000
 
 uniform sampler2D uSphereData;
 
@@ -41,7 +41,7 @@ uniform int uSpheresLength;
 
 uniform int uSPP;
 
-float SAMPLE_RADIUS = 2.0/uRes.x / uScale;
+float SAMPLE_RADIUS = 1.0/uRes.x / uScale;
 float TEXEL_SIZE = 1.0 / float(uSpheresLength);
 
 Sphere getSphere(int index) {

@@ -134,15 +134,18 @@ window.onload = function() {
         e.preventDefault();
     });
 
-    var lastRenderTime = performance.now();
+    var count = 0;
     function loop() {
-        if (needRender) {
-            speck.reset();
+        count++;
+        if (true) {//needRender) {
             imposter.render(view);
+            console.log("render");
             needRender = false;
-            lastRenderTime = performance.now();
-        } else if (performance.now() - lastRenderTime > 1000) {
-            speck.render(view);
+        } else {
+            // imposter.updateAO(view);
+        }
+        if (count > 256) {
+            return;
         }
         requestAnimationFrame(loop);
     }

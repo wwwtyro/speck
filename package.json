@@ -5,7 +5,6 @@
   "main": "index.js",
   "dependencies": {
     "brfs": "~1.2.0",
-    "gl-matrix": "~2.1.0",
     "webgl.js": "~0.0.0"
   },
   "devDependencies": {},
