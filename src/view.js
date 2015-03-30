@@ -7,7 +7,7 @@ module.exports = function View() {
     var self = this;
 
     self.__aspect = 1.0;
-    self.__zoom = 0.1;
+    self.__zoom = 0.125;
     self.__translation = {x: 0.0, y: 0.0};
     self.__atomScale = 1.5;
     self.__rotation = glm.mat4.create();
@@ -52,9 +52,7 @@ module.exports = function View() {
     };
 
     self.getRotation = function() {
-        var out = glm.mat4.create();
-        glm.mat4.copy(out, self.__rotation);
-        return out;
+        return glm.mat4.clone(self.__rotation);
     };
 
     self.scaleAtoms = function(amount) {

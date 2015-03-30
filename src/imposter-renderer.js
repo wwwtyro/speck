@@ -1,6 +1,6 @@
 "use strict";
 
-var glm = require('gl-matrix');
+var glm = require('./gl-matrix');
 var core = require('webgl.js');
 var fs = require('fs');
 var cube = require("./cube");
@@ -40,6 +40,8 @@ module.exports = function (canvas, resolution) {
         var extFragDepth,
             extInstanced,
             extDepthTexture;
+
+        var sampleCount = 0;
 
         self.initialize = function() {
 
@@ -234,7 +236,35 @@ module.exports = function (canvas, resolution) {
             range = atoms.getRadius() * 4.0;
         }
 
+        self.render = function(view) {
+            if (rScene == null) {
+                return;
+            }
+            renderScene(view);
+        }
+
+        self.reset = function() {
+            sampleCount = 0;
+            gl.activeTexture(gl.TEXTURE4);
+            gl.bindTexture(gl.TEXTURE_2D, null);
+            gl.deleteTexture(tAccumulator);
+            gl.activeTexture(gl.TEXTURE4);
+            tAccumulator = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tAccumulator);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        }
+
         function renderScene(view) {
+            if (sampleCount == 256) {
+                return;
+            }
+
+            sampleCount++;
+
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             var rect = view.getRect();
@@ -254,19 +284,14 @@ module.exports = function (canvas, resolution) {
             progScene.setUniform("uRes", "2fv", [resolution, resolution]);
             progScene.setUniform("uDepth", "1f", range);
             rScene.render();
-        }
 
-        self.render = function(view) {
-            if (rScene == null) {
-                return;
-            }
-            renderScene(view);
-            renderRandRot(view);
-        }
-
-        function renderRandRot(view) {
             var v = view.clone();
-            v.rotate(Math.random() * 1000, Math.random() * 1000);
+            var rot = glm.mat4.create();
+            for (var i = 0; i < 3; i++) {
+                var axis = glm.vec3.random(glm.vec3.create(), 1.0);
+                glm.mat4.rotate(rot, rot, Math.random() * 10, axis);
+            }
+            glm.mat4.multiply(v.__rotation, rot, v.__rotation);
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbRandRot);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             var rect = v.getRect();
@@ -287,7 +312,6 @@ module.exports = function (canvas, resolution) {
             progScene.setUniform("uDepth", "1f", range);
             rScene.render();
 
-            var invRot = glm.mat4.invert(glm.mat4.create(), view.__rotation);
             var rect = view.getRect();
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbAccumulator);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -298,10 +322,17 @@ module.exports = function (canvas, resolution) {
             progAccumulator.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
             progAccumulator.setUniform("uRes", "1f", resolution);
             progAccumulator.setUniform("uDepth", "1f", range);
-            progAccumulator.setUniform("uInvRot", "Matrix4fv", false, invRot);
+            progAccumulator.setUniform("uRot", "Matrix4fv", false, rot);
             rAccumulator.render();
             gl.bindTexture(gl.TEXTURE_2D, tAccumulator);
             gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
+
+            // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            // progDisplayQuad.setUniform("uTexture", "1i", 1);
+            // progDisplayQuad.setUniform("uRes", "1f", resolution);
+            // rDispQuad.render();
+            // return;
 
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);

@@ -19,7 +19,7 @@ uniform sampler2D uAccumulatorOut;
 uniform float uRes;
 
 void main() {
-    vec4 dScene = texture2D(uSceneColor, gl_FragCoord.xy/uRes);
+    vec4 color = texture2D(uSceneColor, gl_FragCoord.xy/uRes);
     vec4 dAccum = texture2D(uAccumulatorOut, gl_FragCoord.xy/uRes);
-    gl_FragColor = vec4(dScene.rgb * (1.0 - dAccum.r * 1.0), dScene.a);
+    gl_FragColor = vec4(2.0 * color.rgb * (1.0 - 0.75 * dAccum.r), color.a);
 }

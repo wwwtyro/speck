@@ -30,14 +30,9 @@ void main() {
 #extension GL_EXT_frag_depth: enable
 precision highp float;
 
-uniform mat4 uView;
-uniform mat4 uProjection;
-uniform mat4 uModel;
-
 uniform vec2 uBottomLeft;
 uniform vec2 uTopRight;
 uniform vec2 uRes;
-uniform float uAtomScale;
 uniform float uDepth;
 
 varying vec3 vPosition;
@@ -67,6 +62,6 @@ void main() {
     vec3 normal = normalize(coord - vPosition);
     float fade = dot(normal, vec3(0, 0, 1)) * 0.5 + 0.5;
     // gl_FragColor = vec4(fade * vColor, 1);
-    gl_FragColor = vec4(vColor, 1);
+    gl_FragColor = vec4(vColor * 0.75, 1);
     gl_FragDepthEXT = -coord.z/uDepth;
 }

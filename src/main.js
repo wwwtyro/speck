@@ -37,7 +37,7 @@ function loadStructure(data) {
     atoms.center();
 
     imposter.setAtoms(atoms);
-    speck.setAtoms(atoms);
+    // speck.setAtoms(atoms);
 
     needRender = true;
 
@@ -49,15 +49,17 @@ window.onload = function() {
     var container = document.getElementById("render-container");
 
     var imposterCanvas = document.getElementById("imposter-canvas");
-    var speckCanvas = document.getElementById("pt-canvas");
+    // var speckCanvas = document.getElementById("pt-canvas");
 
     var resolution = 768;
     imposter = new Imposter(imposterCanvas, resolution);
-    speck = new Speck(speckCanvas, resolution);
+    // speck = new Speck(speckCanvas, resolution);
 
 
     var view = new View();
     view.setResolution(resolution);
+
+    // view.rotate(0, 1.0);
 
     var structs = {};
     structs.protein0 = fs.readFileSync(__dirname + "/samples/4E0O.xyz", 'utf8');
@@ -134,19 +136,12 @@ window.onload = function() {
         e.preventDefault();
     });
 
-    var count = 0;
     function loop() {
-        count++;
-        if (true) {//needRender) {
-            imposter.render(view);
-            console.log("render");
+        if (needRender) {
             needRender = false;
-        } else {
-            // imposter.updateAO(view);
+            imposter.reset();
         }
-        if (count > 256) {
-            return;
-        }
+        imposter.render(view);
         requestAnimationFrame(loop);
     }
 
