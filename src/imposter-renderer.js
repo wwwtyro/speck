@@ -5,13 +5,15 @@ var core = require('webgl.js');
 var fs = require('fs');
 var cube = require("./cube");
 var elements = require("./elements");
+var View = require("./view");
 
 module.exports = function (canvas, resolution) {
 
         var self = this;
 
         var range,
-            samples;
+            samples,
+            atoms;
 
         var gl, 
             canvas;
@@ -179,13 +181,14 @@ module.exports = function (canvas, resolution) {
             var count = position.length / 9;
             rAO = new core.Renderable(gl, progAO, attribs, count);
 
-            range = 1.0;
             samples = 0;
 
         }
 
 
-        self.setAtoms = function(atoms) {
+        self.setAtoms = function(newAtoms) {
+
+            atoms = newAtoms;
 
             var attribs = {
                 aImposter: {
@@ -219,7 +222,7 @@ module.exports = function (canvas, resolution) {
                 position.push.apply(position, [a.x, a.y, a.z]);
                 radius.push(elements[a.symbol].radius);
                 var c = elements[a.symbol].color;
-                color.push.apply(color, [c[0] * (1 - a.ao), c[1] * (1 - a.ao), c[2] * (1 - a.ao)]);
+                color.push.apply(color, [c[0], c[1], c[2]]);
             }
 
             var imposter = cube.position;
@@ -233,10 +236,12 @@ module.exports = function (canvas, resolution) {
 
             rScene = new core.InstancedRenderable(gl, progScene, attribs, count, extInstanced);
 
-            range = atoms.getRadius() * 4.0;
         }
 
         self.render = function(view) {
+            if (atoms === undefined) {
+                return;
+            }
             if (rScene == null) {
                 return;
             }
@@ -265,27 +270,33 @@ module.exports = function (canvas, resolution) {
 
             sampleCount++;
 
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            var rect = view.getRect();
-            var projection = glm.mat4.create();
-            glm.mat4.ortho(projection, rect.left, rect.right, rect.bottom, rect.top, 0, range);
-            var viewMat = glm.mat4.create();
-            glm.mat4.lookAt(viewMat, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
-            var model = glm.mat4.create();
-            glm.mat4.translate(model, model, [0, 0, -range/2]);
-            glm.mat4.multiply(model, model, view.getRotation());
-            progScene.setUniform("uProjection", "Matrix4fv", false, projection);
-            progScene.setUniform("uView", "Matrix4fv", false, viewMat);
-            progScene.setUniform("uModel", "Matrix4fv", false, model);
-            progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
-            progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
-            progScene.setUniform("uAtomScale", "1f", view.getAtomScale());
-            progScene.setUniform("uRes", "2fv", [resolution, resolution]);
-            progScene.setUniform("uDepth", "1f", range);
-            rScene.render();
+            range = atoms.getRadius(view.getAtomScale()) * 2.0;
+
+            if (sampleCount == 1) {
+                gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene);
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                var rect = view.getRect();
+                var projection = glm.mat4.create();
+                glm.mat4.ortho(projection, rect.left, rect.right, rect.bottom, rect.top, 0, range);
+                var viewMat = glm.mat4.create();
+                glm.mat4.lookAt(viewMat, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
+                var model = glm.mat4.create();
+                glm.mat4.translate(model, model, [0, 0, -range/2]);
+                glm.mat4.multiply(model, model, view.getRotation());
+                progScene.setUniform("uProjection", "Matrix4fv", false, projection);
+                progScene.setUniform("uView", "Matrix4fv", false, viewMat);
+                progScene.setUniform("uModel", "Matrix4fv", false, model);
+                progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
+                progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
+                progScene.setUniform("uAtomScale", "1f", view.getAtomScale());
+                progScene.setUniform("uRes", "2fv", [resolution, resolution]);
+                progScene.setUniform("uDepth", "1f", range);
+                rScene.render();
+            }
 
             var v = view.clone();
+            // v.__zoom = 1/range;
+            // v.__translation = {x: 0, y: 0};
             var rot = glm.mat4.create();
             for (var i = 0; i < 3; i++) {
                 var axis = glm.vec3.random(glm.vec3.create(), 1.0);
@@ -329,7 +340,7 @@ module.exports = function (canvas, resolution) {
 
             // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            // progDisplayQuad.setUniform("uTexture", "1i", 1);
+            // progDisplayQuad.setUniform("uTexture", "1i", 3);
             // progDisplayQuad.setUniform("uRes", "1f", resolution);
             // rDispQuad.render();
             // return;

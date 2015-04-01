@@ -57,6 +57,8 @@ module.exports = function View() {
 
     self.scaleAtoms = function(amount) {
         self.__atomScale *= amount;
+        self.__atomScale = Math.min(2.5, self.__atomScale);
+        self.__atomScale = Math.max(0.2, self.__atomScale);
     };
 
     self.getAtomScale = function() {

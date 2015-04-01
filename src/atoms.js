@@ -8,19 +8,7 @@ module.exports = function() {
 
     self.initialize = function() {
         self.atoms = [];
-        self.clearBounds();
     };
-
-    self.clearBounds = function() {
-        self.bounds = {
-            x: Infinity,
-            y: Infinity,
-            z: Infinity,
-            X: -Infinity,
-            Y: -Infinity,
-            Z: -Infinity
-        };
-    }
 
     self.addAtom = function(symbol, x, y, z) {
         self.atoms.push({
@@ -28,42 +16,60 @@ module.exports = function() {
             x: x,
             y: y,
             z: z,
-            ao: 0
         });
-        var r = elements[symbol].radius;
-        self.bounds.x = Math.min(x-r, self.bounds.x);
-        self.bounds.X = Math.max(x+r, self.bounds.X);
-        self.bounds.y = Math.min(y-r, self.bounds.y);
-        self.bounds.Y = Math.max(y+r, self.bounds.Y);
-        self.bounds.z = Math.min(z-r, self.bounds.z);
-        self.bounds.Z = Math.max(z+r, self.bounds.Z);
     };
 
-    self.center = function() {
-        var shift = {
-            x: -self.bounds.x - (self.bounds.X - self.bounds.x)/2,
-            y: -self.bounds.y - (self.bounds.Y - self.bounds.y)/2,
-            z: -self.bounds.z - (self.bounds.Z - self.bounds.z)/2
+    self.getCentroid = function() {
+        var xsum = 0;
+        var ysum = 0;
+        var zsum = 0;
+        for (var i = 0; i < self.atoms.length; i++) {
+            xsum += self.atoms[i].x;
+            ysum += self.atoms[i].y;
+            zsum += self.atoms[i].z;
+        }
+        return {
+            x: xsum/self.atoms.length,
+            y: ysum/self.atoms.length,
+            z: zsum/self.atoms.length
         };
+    }
+
+    self.center = function() {
+        var shift = self.getCentroid();
         for (var i = 0; i < self.atoms.length; i++) {
             var a = self.atoms[i];
-            a.x += shift.x;
-            a.y += shift.y;
-            a.z += shift.z;
+            a.x -= shift.x;
+            a.y -= shift.y;
+            a.z -= shift.z;
         }
     }
 
-    self.getRadius = function() {
-        var dx = self.bounds.X - self.bounds.x;
-        var dy = self.bounds.Y - self.bounds.y;
-        var dz = self.bounds.Z - self.bounds.z;
-        return Math.sqrt(dx*dx + dy*dy + dz*dz)/2.0;
+    self.getFarAtom = function() {
+        if (self.farAtom !== undefined) {
+            return self.farAtom;
+        }
+        self.farAtom = self.atoms[0];
+        var maxd = 0.0;
+        for (var i = 0; i < self.atoms.length; i++) {
+            var a = self.atoms[i];
+            var r = elements[a.symbol].radius;
+            var rd = Math.sqrt(r*r + r*r + r*r) * 2.5;
+            var d = Math.sqrt(a.x*a.x + a.y*a.y + a.z*a.z) + rd;
+            if (d > maxd) {
+                maxd = d;
+                self.farAtom = a;
+            }
+        }
+        return self.farAtom;
     }
 
-    self.clear = function() {
-        self.atoms = [];
-        self.clearBounds();
-    };
+    self.getRadius = function() {
+        var a = self.getFarAtom();
+        var r = elements[a.symbol].radius;
+        var rd = Math.sqrt(r*r + r*r + r*r) * 2.5;
+        return Math.sqrt(a.x*a.x + a.y*a.y + a.z*a.z) + rd;
+    }
 
     self.initialize();
 }

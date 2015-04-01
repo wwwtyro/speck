@@ -22,6 +22,7 @@ uniform vec2 uBottomLeft;
 uniform vec2 uTopRight;
 uniform float uDepth;
 uniform float uRes;
+uniform float uSampleCount;
 
 void main() {
 
@@ -37,11 +38,13 @@ void main() {
 
     vec4 dRandRot = texture2D(uRandRotDepth, p);
 
-    vec4 acc = texture2D(uAccumulator, gl_FragCoord.xy/uRes);
-
-    if (depth - 0.001 >= dRandRot.r) {
-        acc.r = min(1.0, acc.r + 1.0/255.0);
+    float ao = 0.0;
+    if (depth * 0.99 >= dRandRot.r) {
+        ao = 1.0/256.0;
     }
-    gl_FragColor = vec4(acc.r, 0, 0, 1);
+    vec4 acc = texture2D(uAccumulator, gl_FragCoord.xy/uRes);
+    acc.r = min(1.0, acc.r + ao);
+        
+    gl_FragColor = vec4(acc.rgb, 1);
 
 }

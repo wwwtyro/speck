@@ -1,7 +1,6 @@
 "use strict";
 
 var glm = require('gl-matrix');
-var Speck = require('./speck');
 var Imposter = require('./imposter-renderer');
 var fs = require('fs');
 var xyz = require('./xyz');
@@ -11,21 +10,12 @@ var Atoms = require("./atoms");
 
 var atoms = new Atoms();
 var imposter = null;
-var speck = null;
 var needRender = true;
 
 function loadStructure(data) {
 
-    atoms.clear();
+    atoms = new Atoms();
 
-    for (var i = 0; i < data.length; i++) {
-        var a = data[i];
-        var x = a.position[0];
-        var y = a.position[1];
-        var z = a.position[2];
-    }
-
-    
     for (var i = 0; i < data.length; i++) {
         var a = data[i];
         var x = a.position[0];
@@ -37,7 +27,6 @@ function loadStructure(data) {
     atoms.center();
 
     imposter.setAtoms(atoms);
-    // speck.setAtoms(atoms);
 
     needRender = true;
 
@@ -49,17 +38,13 @@ window.onload = function() {
     var container = document.getElementById("render-container");
 
     var imposterCanvas = document.getElementById("imposter-canvas");
-    // var speckCanvas = document.getElementById("pt-canvas");
 
     var resolution = 768;
     imposter = new Imposter(imposterCanvas, resolution);
-    // speck = new Speck(speckCanvas, resolution);
 
 
     var view = new View();
     view.setResolution(resolution);
-
-    // view.rotate(0, 1.0);
 
     var structs = {};
     structs.protein0 = fs.readFileSync(__dirname + "/samples/4E0O.xyz", 'utf8');
@@ -141,7 +126,9 @@ window.onload = function() {
             needRender = false;
             imposter.reset();
         }
-        imposter.render(view);
+        for (var i = 0; i < 8; i++) {
+            imposter.render(view);
+        }
         requestAnimationFrame(loop);
     }
 
