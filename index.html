@@ -14,16 +14,29 @@
                         <!-- <canvas id="pt-canvas"></canvas> -->
                     </div>
                 </td>
-                <td valign="top">
-                    <select id="structure">
-                        <option value="protein0">Protein 4E0O</option>
-                        <option value="protein1">Protein 4QCI</option>
-                        <option value="testosterone">Testosterone</option>
-                        <option value="au">Gold Nanoparticle</option>
-            			<option value="benzene">Benzene</option>
-            			<option value="caffeine" selected="selected">Caffeine</option>
-            			<option value="methane">Methane</option>
-                    </select>
+                <td valign="top" align="left">
+                    <table>
+                        <tr>
+                            <td align="left">
+                                <select id="structure">
+                                    <option value="protein0">Protein 4E0O</option>
+                                    <option value="protein1">Protein 4QCI</option>
+                                    <option value="testosterone">Testosterone</option>
+                                    <option value="au">Gold Nanoparticle</option>
+                        			<option value="benzene">Benzene</option>
+                        			<option value="caffeine" selected="selected">Caffeine</option>
+                        			<option value="methane">Methane</option>
+                                </select>
+                                <br>
+                                <br>
+                                Paste xyz file data:
+                                <br>
+                                <textarea id="xyz-data" rows="4" columns="10"></textarea>
+                                <br>
+                                <button id="xyz-button">Load</button>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
                 <td valign="top">
                     <table>

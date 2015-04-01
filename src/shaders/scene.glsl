@@ -34,6 +34,7 @@ uniform vec2 uBottomLeft;
 uniform vec2 uTopRight;
 uniform vec2 uRes;
 uniform float uDepth;
+uniform int uDirectLighting;
 
 varying vec3 vPosition;
 varying float vRadius;
@@ -59,9 +60,12 @@ void main() {
         discard;
     }
     vec3 coord = r0 + rd * t;
-    // vec3 normal = normalize(coord - vPosition);
-    // float fade = dot(normal, vec3(0, 0, 1)) * 0.5 + 0.5;
-    // gl_FragColor = vec4(fade * vColor, 1);
-    gl_FragColor = vec4(vColor, 1);
+    if (uDirectLighting != 0) {
+        vec3 normal = normalize(coord - vPosition);
+        float fade = dot(normal, vec3(0, 0, 1)) * 0.5 + 0.5;
+        gl_FragColor = vec4(fade * vColor, 1);
+    } else {
+        gl_FragColor = vec4(vColor, 1);
+    }
     gl_FragDepthEXT = -coord.z/uDepth;
 }

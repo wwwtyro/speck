@@ -25,12 +25,15 @@ module.exports = function (canvas, resolution) {
 
         var tSceneColor,
             tSceneDepth,
+            tDirectColor,
+            tDirectDepth,
             tRandRotDepth,
             tRandRotColor,
             tAccumulator,
             tAccumulatorOut;
 
         var fbScene,
+            fbDirect,
             fbRandRot,
             fbAccumulator;
 
@@ -131,6 +134,31 @@ module.exports = function (canvas, resolution) {
             fbAccumulator = gl.createFramebuffer();
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbAccumulator);
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tAccumulatorOut, 0);
+
+            // fbDirect
+            gl.activeTexture(gl.TEXTURE6);
+            tDirectColor = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tDirectColor);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+            gl.activeTexture(gl.TEXTURE1);
+            tDirectDepth = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tDirectDepth);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, resolution, resolution, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_SHORT, null);            
+
+            fbDirect = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbDirect);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tDirectColor, 0);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, tDirectDepth, 0);
+
 
 
             // Initialize shaders.
@@ -273,6 +301,30 @@ module.exports = function (canvas, resolution) {
             range = atoms.getRadius(view.getAtomScale()) * 2.0;
 
             if (sampleCount == 1) {
+
+                // Render the direct lighting.
+                gl.bindFramebuffer(gl.FRAMEBUFFER, fbDirect);
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                var rect = view.getRect();
+                var projection = glm.mat4.create();
+                glm.mat4.ortho(projection, rect.left, rect.right, rect.bottom, rect.top, 0, range);
+                var viewMat = glm.mat4.create();
+                glm.mat4.lookAt(viewMat, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
+                var model = glm.mat4.create();
+                glm.mat4.translate(model, model, [0, 0, -range/2]);
+                glm.mat4.multiply(model, model, view.getRotation());
+                progScene.setUniform("uProjection", "Matrix4fv", false, projection);
+                progScene.setUniform("uView", "Matrix4fv", false, viewMat);
+                progScene.setUniform("uModel", "Matrix4fv", false, model);
+                progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
+                progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
+                progScene.setUniform("uAtomScale", "1f", view.getAtomScale());
+                progScene.setUniform("uRes", "2fv", [resolution, resolution]);
+                progScene.setUniform("uDepth", "1f", range);
+                progScene.setUniform("uDirectLighting", "1i", 1);
+                rScene.render();
+
+                // Render the depth/color buffers.
                 gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                 var rect = view.getRect();
@@ -291,12 +343,14 @@ module.exports = function (canvas, resolution) {
                 progScene.setUniform("uAtomScale", "1f", view.getAtomScale());
                 progScene.setUniform("uRes", "2fv", [resolution, resolution]);
                 progScene.setUniform("uDepth", "1f", range);
+                progScene.setUniform("uDirectLighting", "1i", 0);
                 rScene.render();
+
             }
 
             var v = view.clone();
-            // v.__zoom = 1/range;
-            // v.__translation = {x: 0, y: 0};
+            v.__zoom = 1/range;
+            v.__translation = {x: 0, y: 0};
             var rot = glm.mat4.create();
             for (var i = 0; i < 3; i++) {
                 var axis = glm.vec3.random(glm.vec3.create(), 1.0);
@@ -323,14 +377,17 @@ module.exports = function (canvas, resolution) {
             progScene.setUniform("uDepth", "1f", range);
             rScene.render();
 
-            var rect = view.getRect();
+            var sceneRect = view.getRect();
+            var rotRect = v.getRect();
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbAccumulator);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             progAccumulator.setUniform("uSceneDepth", "1i", 1);
             progAccumulator.setUniform("uRandRotDepth", "1i", 3);
             progAccumulator.setUniform("uAccumulator", "1i", 4);
-            progAccumulator.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
-            progAccumulator.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
+            progAccumulator.setUniform("uSceneBottomLeft", "2fv", [sceneRect.left, sceneRect.bottom]);
+            progAccumulator.setUniform("uSceneTopRight", "2fv", [sceneRect.right, sceneRect.top]);
+            progAccumulator.setUniform("uRotBottomLeft", "2fv", [rotRect.left, rotRect.bottom]);
+            progAccumulator.setUniform("uRotTopRight", "2fv", [rotRect.right, rotRect.top]);
             progAccumulator.setUniform("uRes", "1f", resolution);
             progAccumulator.setUniform("uDepth", "1f", range);
             progAccumulator.setUniform("uRot", "Matrix4fv", false, rot);
@@ -348,8 +405,10 @@ module.exports = function (canvas, resolution) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             progAO.setUniform("uSceneColor", "1i", 0);
+            progAO.setUniform("uDirectColor", "1i", 6);
             progAO.setUniform("uAccumulatorOut", "1i", 5);
             progAO.setUniform("uRes", "1f", resolution);
+            progAO.setUniform("uSampleCount", "1f", sampleCount);
             rAO.render();
 
         }

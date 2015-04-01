@@ -121,6 +121,12 @@ window.onload = function() {
         e.preventDefault();
     });
 
+    var xyzData = document.getElementById("xyz-data");
+    var xyzLoadButton = document.getElementById("xyz-button");
+    xyzLoadButton.addEventListener("click", function() {
+        loadStructure(xyz(xyzData.value)[0]);
+    })
+
     function loop() {
         if (needRender) {
             needRender = false;

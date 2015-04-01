@@ -33,3 +33,9 @@ body {
     margin-left: 32px;
     margin-right: 32px;
 }
+
+select {
+    margin: 0px !important;
+    width: 100%;
+}
+

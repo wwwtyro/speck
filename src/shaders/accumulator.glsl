@@ -18,8 +18,10 @@ uniform sampler2D uSceneDepth;
 uniform sampler2D uRandRotDepth;
 uniform sampler2D uAccumulator;
 uniform mat4 uRot;
-uniform vec2 uBottomLeft;
-uniform vec2 uTopRight;
+uniform vec2 uSceneBottomLeft;
+uniform vec2 uSceneTopRight;
+uniform vec2 uRotBottomLeft;
+uniform vec2 uRotTopRight;
 uniform float uDepth;
 uniform float uRes;
 uniform float uSampleCount;
@@ -28,13 +30,13 @@ void main() {
 
     vec4 dScene = texture2D(uSceneDepth, gl_FragCoord.xy/uRes);
 
-    vec3 r = vec3(uBottomLeft + (gl_FragCoord.xy/uRes) * (uTopRight - uBottomLeft), 0.0);
+    vec3 r = vec3(uSceneBottomLeft + (gl_FragCoord.xy/uRes) * (uSceneTopRight - uSceneBottomLeft), 0.0);
 
     r.z = -(dScene.r - 0.5) * uDepth;
     r = vec3(uRot * vec4(r, 1));
     float depth = -r.z/uDepth + 0.5;
 
-    vec2 p = (r.xy - uBottomLeft)/(uTopRight - uBottomLeft);
+    vec2 p = (r.xy - uRotBottomLeft)/(uRotTopRight - uRotBottomLeft);
 
     vec4 dRandRot = texture2D(uRandRotDepth, p);
 

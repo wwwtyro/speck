@@ -14,13 +14,17 @@ void main() {
 #version 100
 precision highp float;
 
+uniform sampler2D uDirectColor;
 uniform sampler2D uSceneColor;
 uniform sampler2D uAccumulatorOut;
 uniform float uRes;
-uniform float uSamples;
+uniform float uSampleCount;
 
 void main() {
-    vec4 color = texture2D(uSceneColor, gl_FragCoord.xy/uRes);
-    vec4 dAccum = texture2D(uAccumulatorOut, gl_FragCoord.xy/uRes);
-    gl_FragColor = vec4(2.0 * color.rgb * (1.0 - dAccum.r), color.a);
+    vec2 p = gl_FragCoord.xy/uRes;
+    vec4 sceneColor = texture2D(uSceneColor, p);
+    vec4 directColor = texture2D(uDirectColor, p);
+    vec4 dAccum = texture2D(uAccumulatorOut, p);
+    vec4 aoColor = vec4(2.0 * sceneColor.rgb * (1.0 - dAccum.r*255.0/uSampleCount), sceneColor.a);
+    gl_FragColor = mix(directColor, aoColor, uSampleCount/255.0);
 }
