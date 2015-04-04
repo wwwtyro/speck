@@ -6,72 +6,82 @@
     </head>
 
     <body>
-        <table>
-            <tr>
-                <td>
-                    <div id="render-container">
-                        <canvas id="imposter-canvas"></canvas>
-                        <!-- <canvas id="pt-canvas"></canvas> -->
-                    </div>
-                </td>
-                <td valign="top" align="left">
-                    <table>
-                        <tr>
-                            <td align="left">
-                                <select id="structure">
-                                    <option value="protein0">Protein 4E0O</option>
-                                    <option value="protein1">Protein 4QCI</option>
-                                    <option value="testosterone">Testosterone</option>
-                                    <option value="au">Gold Nanoparticle</option>
-                        			<option value="benzene">Benzene</option>
-                        			<option value="caffeine" selected="selected">Caffeine</option>
-                        			<option value="methane">Methane</option>
-                                </select>
-                                <br>
-                                <br>
-                                Paste xyz file data:
-                                <textarea id="xyz-data" rows="4" columns="10"></textarea>
-                                <br>
-                                <button id="xyz-button">Load</button>
-                                <br>
-                                <br>
-                                Samples per frame (lower this if your framerate is low):
-                                <input type="number" id="SPF" min="1" max="512" value="4">
-                                <br>
-                                <br>
-                                Ambient Occlusion:
-                                <input type="range" id="AO" min="0" max="100" value="50" style="width:100%">
-                                <br>
-                                <br>
-                                Resolution:
-                                <input type="range" id="RES" min="256" max="2048" value="768" step="256" style="width:100%">
+        <div id="render-container">
+            <canvas id="imposter-canvas"></canvas>
+        </div>
+        <div id="menu-container">
 
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-                <td valign="top">
-                    <table>
-                        <tr>
-                            <td>Rotate</td>
-                            <td>hold left mouse button and drag</td>
-                        </tr>
-                        <tr>
-                            <td>Translate</td>
-                            <td>shift + hold left mouse button and drag</td>
-                        </tr>
-                        <tr>
-                            <td>Zoom</td>
-                            <td>mouse wheel</td>
-                        </tr>
-                        <tr>
-                            <td>Atom radius&nbsp;&nbsp;&nbsp;</td>
-                            <td>shift + mouse wheel</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
+            <select id="structure">
+
+                <option value="protein0">Protein 4E0O</option>
+                <option value="protein1">Protein 4QCI</option>
+                <option value="testosterone">Testosterone</option>
+                <option value="au">Gold Nanoparticle</option>
+    			<option value="benzene">Benzene</option>
+    			<option value="caffeine" selected="selected">Caffeine</option>
+    			<option value="methane">Methane</option>
+
+            </select>
+
+            <br>
+            <br>
+
+            Paste xyz file data:<br>
+
+            <textarea id="xyz-data" rows="4" columns="10"></textarea><br>
+
+            <button id="xyz-button">Load</button><br><br>
+
+            Samples per frame (lower this if your framerate is low):<br>
+
+            <input type="number" id="SPF" min="1" max="512" value="4"><br><br>
+
+            Ambient Occlusion:<br>
+
+            <input type="range" id="AO" min="0" max="100" value="50"><br><br>
+
+            Resolution:<br>
+
+            <input type="range" id="RES" min="256" max="2048" value="768" step="256"><br><br>
+
+            <table>
+
+                <tr>
+
+                    <td>Rotate</td>
+
+                    <td>hold left mouse button and drag</td>
+
+                </tr>
+
+                <tr>
+
+                    <td>Translate</td>
+
+                    <td>shift + hold left mouse button and drag</td>
+
+                </tr>
+
+                <tr>
+
+                    <td>Zoom</td>
+
+                    <td>mouse wheel</td>
+
+                </tr>
+
+                <tr>
+
+                    <td>Atom radius&nbsp;&nbsp;&nbsp;</td>
+
+                    <td>shift + mouse wheel</td>
+
+                </tr>
+
+            </table>
+
+        <div>
+
     </body>
 
 </html>

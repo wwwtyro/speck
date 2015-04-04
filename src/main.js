@@ -13,6 +13,8 @@ var imposter = null;
 var needReset = false;
 var resolution = 768;
 
+var renderContainer;
+
 function loadStructure(data) {
 
     atoms = new Atoms();
@@ -36,7 +38,7 @@ function loadStructure(data) {
 
 window.onload = function() {
 
-    var container = document.getElementById("render-container");
+    renderContainer = document.getElementById("render-container");
 
     var imposterCanvas = document.getElementById("imposter-canvas");
 
@@ -66,7 +68,7 @@ window.onload = function() {
     var lastY = 0.0;
     var buttonDown = false;
 
-    container.addEventListener("mousedown", function(e) {
+    renderContainer.addEventListener("mousedown", function(e) {
         document.body.style.cursor = "none";
         if (e.button == 0) {
             buttonDown = true;
@@ -99,11 +101,11 @@ window.onload = function() {
         if (e.shiftKey) {
             view.translate(dx, dy);
         } else {
-            view.rotate(dx * 0.005, dy * 0.005);
+            view.rotate(dx, dy);
         }
         needReset = true;
     });
-    container.addEventListener("mousewheel", function(e) {
+    renderContainer.addEventListener("mousewheel", function(e) {
         if (e.wheelDelta > 0) {
             if (e.shiftKey) {
                 view.scaleAtoms(1/0.95);
@@ -126,6 +128,21 @@ window.onload = function() {
         imposter.setResolution(resolution);
         needReset = true;
     }
+
+    function reflow() {
+        var ww = window.innerWidth;
+        var wh = window.innerHeight;
+        var rcw = Math.round(wh * 1);
+        var rcm = Math.round((wh - rcw) / 2);
+        renderContainer.style.height = rcw + "px";
+        renderContainer.style.width = rcw + "px";
+        renderContainer.style.left = rcm + "px";
+        renderContainer.style.top = rcm + "px";
+    }
+
+    reflow();
+
+    window.addEventListener("resize", reflow);
 
     var xyzData = document.getElementById("xyz-data");
     var xyzLoadButton = document.getElementById("xyz-button");

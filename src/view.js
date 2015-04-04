@@ -46,8 +46,8 @@ module.exports = function View() {
 
     self.rotate = function(dx, dy) {
         var m = glm.mat4.create();
-        glm.mat4.rotateY(m, m, dx);
-        glm.mat4.rotateX(m, m, dy);
+        glm.mat4.rotateY(m, m, dx * 0.005);
+        glm.mat4.rotateX(m, m, dy * 0.005);
         glm.mat4.multiply(self.__rotation, m, self.__rotation);
     };
 

@@ -1,41 +1,33 @@
 body {
     margin: 0px;
-    padding: 32px;
-    -moz-user-select: -moz-none;
-    -khtml-user-select: none;
     -webkit-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
 }
 
 #render-container {
     background: radial-gradient(#fff, #aaa);
-    /*background: gray;*/
-    border: 1px solid black;
-    width: 768px;
-    height: 768px;
+    border-right: 1px solid black;
     overflow: hidden;
+    position: fixed;
+}
+
+#menu-container {
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    height: 100%;
+    padding: 32px;
+    /*width: 256px;*/
+    background: rgba(255,255,255,0.5);
 }
 
 #imposter-canvas {
-    width: 768px;
-    height: 768px;
-}
-
-#pt-canvas {
-    position: relative;
-    top: -768px;
-    width: 768px;
-    height: 768px;
+    width: 100%;
+    height: 100%;
 }
 
 #structure {
-    margin-left: 32px;
-    margin-right: 32px;
 }
 
 select {
-    margin: 0px !important;
-    width: 100%;
 }
 
