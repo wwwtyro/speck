@@ -28,13 +28,13 @@ void main() {
 
 #version 100
 #extension GL_EXT_frag_depth: enable
+#extension GL_EXT_draw_buffers: require
 precision highp float;
 
 uniform vec2 uBottomLeft;
 uniform vec2 uTopRight;
 uniform vec2 uRes;
 uniform float uDepth;
-uniform int uDirectLighting;
 
 varying vec3 vPosition;
 varying float vRadius;
@@ -60,12 +60,8 @@ void main() {
         discard;
     }
     vec3 coord = r0 + rd * t;
-    if (uDirectLighting != 0) {
-        vec3 normal = normalize(coord - vPosition);
-        float fade = dot(normal, vec3(0, 0, 1)) * 0.5 + 0.5;
-        gl_FragColor = vec4(fade * vColor, 1);
-    } else {
-        gl_FragColor = vec4(vColor, 1);
-    }
+    vec3 normal = normalize(coord - vPosition);
+    gl_FragData[0] = vec4(vColor, 1);
+    gl_FragData[1] = vec4(normal * 0.5 + 0.5, 1.0);
     gl_FragDepthEXT = -coord.z/uDepth;
 }

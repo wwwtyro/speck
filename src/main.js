@@ -10,7 +10,8 @@ var Atoms = require("./atoms");
 
 var atoms = new Atoms();
 var imposter = null;
-var needRender = true;
+var needReset = false;
+var resolution = 768;
 
 function loadStructure(data) {
 
@@ -28,7 +29,7 @@ function loadStructure(data) {
 
     imposter.setAtoms(atoms);
 
-    needRender = true;
+    needReset = true;
 
 }
 
@@ -39,7 +40,6 @@ window.onload = function() {
 
     var imposterCanvas = document.getElementById("imposter-canvas");
 
-    var resolution = 768;
     imposter = new Imposter(imposterCanvas, resolution);
 
 
@@ -101,7 +101,7 @@ window.onload = function() {
         } else {
             view.rotate(dx * 0.005, dy * 0.005);
         }
-        needRender = true;
+        needReset = true;
     });
     container.addEventListener("mousewheel", function(e) {
         if (e.wheelDelta > 0) {
@@ -117,9 +117,15 @@ window.onload = function() {
                 view.zoom(0.9);
             }
         }
-        needRender = true;
+        needReset = true;
         e.preventDefault();
     });
+
+    function setResolution(res) {
+        resolution = res;
+        imposter.setResolution(resolution);
+        needReset = true;
+    }
 
     var xyzData = document.getElementById("xyz-data");
     var xyzLoadButton = document.getElementById("xyz-button");
@@ -128,12 +134,18 @@ window.onload = function() {
     })
 
     function loop() {
-        if (needRender) {
-            needRender = false;
-            imposter.reset();
+        var SPF = parseInt(document.getElementById("SPF").value);
+        var AO = parseFloat(document.getElementById("AO").value);
+        var RES = parseInt(document.getElementById("RES").value);
+        if (RES !== resolution) {
+            setResolution(RES);
         }
-        for (var i = 0; i < 8; i++) {
-            imposter.render(view);
+        if (needReset) {
+            imposter.reset();
+            needReset = false;
+        }
+        for (var i = 0; i < SPF; i++) {
+            imposter.render(view, AO/100);
         }
         requestAnimationFrame(loop);
     }

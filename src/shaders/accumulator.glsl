@@ -15,16 +15,17 @@ void main() {
 precision highp float;
 
 uniform sampler2D uSceneDepth;
+uniform sampler2D uSceneNormal;
 uniform sampler2D uRandRotDepth;
 uniform sampler2D uAccumulator;
 uniform mat4 uRot;
+uniform mat4 uInvRot;
 uniform vec2 uSceneBottomLeft;
 uniform vec2 uSceneTopRight;
 uniform vec2 uRotBottomLeft;
 uniform vec2 uRotTopRight;
 uniform float uDepth;
 uniform float uRes;
-uniform float uSampleCount;
 
 void main() {
 
@@ -40,13 +41,19 @@ void main() {
 
     vec4 dRandRot = texture2D(uRandRotDepth, p);
 
-    float ao = 0.0;
-    if (depth * 0.99 >= dRandRot.r) {
-        ao = 1.0/256.0;
-    }
+    float ao = step(dRandRot.r, depth * 0.995);
+
+    vec3 normal = texture2D(uSceneNormal, gl_FragCoord.xy/uRes).rgb * 2.0 - 1.0;
+    vec3 dir = vec3(uInvRot * vec4(0, 0, 1, 0));
+    float mag = dot(dir, normal);
+    float sampled = step(0.0, mag);
+
+    ao *= sampled;
+
     vec4 acc = texture2D(uAccumulator, gl_FragCoord.xy/uRes);
-    acc.r = min(1.0, acc.r + ao);
+
+    acc.r += ao/255.0;
         
-    gl_FragColor = vec4(acc.rgb, 1);
+    gl_FragColor = acc;
 
 }
