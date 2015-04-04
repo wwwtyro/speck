@@ -320,98 +320,100 @@ module.exports = function (canvas, resolution) {
             if (rScene == null) {
                 return;
             }
-            renderScene(view, ao, spf);
-        }
-
-        function renderScene(view, ao, spf) {
 
             range = atoms.getRadius(view.getAtomScale()) * 2.0;
 
             if (!initialRender) {
-
-                // Render the depth/color buffers.
-                gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene);
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                var rect = view.getRect();
-                var projection = glm.mat4.create();
-                glm.mat4.ortho(projection, rect.left, rect.right, rect.bottom, rect.top, 0, range);
-                var viewMat = glm.mat4.create();
-                glm.mat4.lookAt(viewMat, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
-                var model = glm.mat4.create();
-                glm.mat4.translate(model, model, [0, 0, -range/2]);
-                glm.mat4.multiply(model, model, view.getRotation());
-                progScene.setUniform("uProjection", "Matrix4fv", false, projection);
-                progScene.setUniform("uView", "Matrix4fv", false, viewMat);
-                progScene.setUniform("uModel", "Matrix4fv", false, model);
-                progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
-                progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
-                progScene.setUniform("uAtomScale", "1f", view.getAtomScale());
-                progScene.setUniform("uRes", "1f", resolution);
-                progScene.setUniform("uDepth", "1f", range);
-                rScene.render();
-
-                initialRender = true;            
-
-            } else for (var _ = 0; _ < spf; _++) {
-
-                if (sampleCount > 512) {
-                    break;
+                scene(view);
+                initialRender = true;
+            } else {
+                for (var i = 0; i < spf; i++) {
+                    if (sampleCount > 512) {
+                        break;
+                    }
+                    sample(view);
+                    sampleCount++;
                 }
-
-                var v = view.clone();
-                v.__zoom = 1/range;
-                v.__translation = {x: 0, y: 0};
-                var rot = glm.mat4.create();
-                for (var i = 0; i < 3; i++) {
-                    var axis = glm.vec3.random(glm.vec3.create(), 1.0);
-                    glm.mat4.rotate(rot, rot, Math.random() * 10, axis);
-                }
-                glm.mat4.multiply(v.__rotation, rot, v.__rotation);
-                gl.bindFramebuffer(gl.FRAMEBUFFER, fbRandRot);
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                var rect = v.getRect();
-                var projection = glm.mat4.create();
-                glm.mat4.ortho(projection, rect.left, rect.right, rect.bottom, rect.top, 0, range);
-                var viewMat = glm.mat4.create();
-                glm.mat4.lookAt(viewMat, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
-                var model = glm.mat4.create();
-                glm.mat4.translate(model, model, [0, 0, -range/2]);
-                glm.mat4.multiply(model, model, v.getRotation());
-                progScene.setUniform("uProjection", "Matrix4fv", false, projection);
-                progScene.setUniform("uView", "Matrix4fv", false, viewMat);
-                progScene.setUniform("uModel", "Matrix4fv", false, model);
-                progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
-                progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
-                progScene.setUniform("uAtomScale", "1f", v.getAtomScale());
-                progScene.setUniform("uRes", "1f", resolution);
-                progScene.setUniform("uDepth", "1f", range);
-                rScene.render();
-
-                var sceneRect = view.getRect();
-                var rotRect = v.getRect();
-                var invRot = glm.mat4.invert(glm.mat4.create(), rot);
-                gl.bindFramebuffer(gl.FRAMEBUFFER, fbAccumulator);
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                progAccumulator.setUniform("uSceneDepth", "1i", tiSceneDepth);
-                progAccumulator.setUniform("uSceneNormal", "1i", tiSceneNormal);
-                progAccumulator.setUniform("uRandRotDepth", "1i", tiRandRotDepth);
-                progAccumulator.setUniform("uAccumulator", "1i", tiAccumulator);
-                progAccumulator.setUniform("uSceneBottomLeft", "2fv", [sceneRect.left, sceneRect.bottom]);
-                progAccumulator.setUniform("uSceneTopRight", "2fv", [sceneRect.right, sceneRect.top]);
-                progAccumulator.setUniform("uRotBottomLeft", "2fv", [rotRect.left, rotRect.bottom]);
-                progAccumulator.setUniform("uRotTopRight", "2fv", [rotRect.right, rotRect.top]);
-                progAccumulator.setUniform("uRes", "1f", resolution);
-                progAccumulator.setUniform("uDepth", "1f", range);
-                progAccumulator.setUniform("uRot", "Matrix4fv", false, rot);
-                progAccumulator.setUniform("uInvRot", "Matrix4fv", false, invRot);
-                rAccumulator.render();
-                gl.bindTexture(gl.TEXTURE_2D, tAccumulator);
-                gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
-
-                sampleCount++;
-
             }
+            display(ao);
+        }
 
+        function scene(view) {
+            // Render the depth/color buffers.
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            var rect = view.getRect();
+            var projection = glm.mat4.create();
+            glm.mat4.ortho(projection, rect.left, rect.right, rect.bottom, rect.top, 0, range);
+            var viewMat = glm.mat4.create();
+            glm.mat4.lookAt(viewMat, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
+            var model = glm.mat4.create();
+            glm.mat4.translate(model, model, [0, 0, -range/2]);
+            glm.mat4.multiply(model, model, view.getRotation());
+            progScene.setUniform("uProjection", "Matrix4fv", false, projection);
+            progScene.setUniform("uView", "Matrix4fv", false, viewMat);
+            progScene.setUniform("uModel", "Matrix4fv", false, model);
+            progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
+            progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
+            progScene.setUniform("uAtomScale", "1f", view.getAtomScale());
+            progScene.setUniform("uRes", "1f", resolution);
+            progScene.setUniform("uDepth", "1f", range);
+            rScene.render();
+        }
+
+        function sample(view) {
+            var v = view.clone();
+            v.__zoom = 1/range;
+            v.__translation = {x: 0, y: 0};
+            var rot = glm.mat4.create();
+            for (var i = 0; i < 3; i++) {
+                var axis = glm.vec3.random(glm.vec3.create(), 1.0);
+                glm.mat4.rotate(rot, rot, Math.random() * 10, axis);
+            }
+            glm.mat4.multiply(v.__rotation, rot, v.__rotation);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbRandRot);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            var rect = v.getRect();
+            var projection = glm.mat4.create();
+            glm.mat4.ortho(projection, rect.left, rect.right, rect.bottom, rect.top, 0, range);
+            var viewMat = glm.mat4.create();
+            glm.mat4.lookAt(viewMat, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
+            var model = glm.mat4.create();
+            glm.mat4.translate(model, model, [0, 0, -range/2]);
+            glm.mat4.multiply(model, model, v.getRotation());
+            progScene.setUniform("uProjection", "Matrix4fv", false, projection);
+            progScene.setUniform("uView", "Matrix4fv", false, viewMat);
+            progScene.setUniform("uModel", "Matrix4fv", false, model);
+            progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
+            progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
+            progScene.setUniform("uAtomScale", "1f", v.getAtomScale());
+            progScene.setUniform("uRes", "1f", resolution);
+            progScene.setUniform("uDepth", "1f", range);
+            rScene.render();
+
+            var sceneRect = view.getRect();
+            var rotRect = v.getRect();
+            var invRot = glm.mat4.invert(glm.mat4.create(), rot);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbAccumulator);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            progAccumulator.setUniform("uSceneDepth", "1i", tiSceneDepth);
+            progAccumulator.setUniform("uSceneNormal", "1i", tiSceneNormal);
+            progAccumulator.setUniform("uRandRotDepth", "1i", tiRandRotDepth);
+            progAccumulator.setUniform("uAccumulator", "1i", tiAccumulator);
+            progAccumulator.setUniform("uSceneBottomLeft", "2fv", [sceneRect.left, sceneRect.bottom]);
+            progAccumulator.setUniform("uSceneTopRight", "2fv", [sceneRect.right, sceneRect.top]);
+            progAccumulator.setUniform("uRotBottomLeft", "2fv", [rotRect.left, rotRect.bottom]);
+            progAccumulator.setUniform("uRotTopRight", "2fv", [rotRect.right, rotRect.top]);
+            progAccumulator.setUniform("uRes", "1f", resolution);
+            progAccumulator.setUniform("uDepth", "1f", range);
+            progAccumulator.setUniform("uRot", "Matrix4fv", false, rot);
+            progAccumulator.setUniform("uInvRot", "Matrix4fv", false, invRot);
+            rAccumulator.render();
+            gl.bindTexture(gl.TEXTURE_2D, tAccumulator);
+            gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
+        }
+
+        function display(ao) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             progAO.setUniform("uSceneColor", "1i", tiSceneColor);
@@ -426,7 +428,6 @@ module.exports = function (canvas, resolution) {
             // progDisplayQuad.setUniform("uRes", "1f", resolution);
             // rDispQuad.render();
             // return;
-
         }
 
         self.initialize();
