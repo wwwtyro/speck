@@ -8697,7 +8697,8 @@ module.exports = function (canvas, resolution) {
             extDepthTexture,
             extDrawBuffers;
 
-        var sampleCount = 0;
+        var sampleCount = 0,
+            initialRender = false;
 
         self.initialize = function() {
 
@@ -8730,7 +8731,7 @@ module.exports = function (canvas, resolution) {
             self.createTextures();
 
             // Initialize shaders.
-            progScene = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aImposter;\nattribute vec3 aPosition;\nattribute float aRadius;\nattribute vec3 aColor;\n\nuniform mat4 uView;\nuniform mat4 uProjection;\nuniform mat4 uModel;\nuniform float uAtomScale;\n\nvarying vec3 vColor;\nvarying vec3 vPosition;\nvarying float vRadius;\n\nvoid main() {\n    gl_Position = uProjection * uView * uModel * vec4(uAtomScale * aRadius * aImposter + aPosition, 1.0);\n    vColor = aColor;\n    vRadius = aRadius * uAtomScale;\n    vPosition = vec3(uModel * vec4(aPosition, 1));\n}\n\n\n// __split__\n\n\n#version 100\n#extension GL_EXT_frag_depth: enable\n#extension GL_EXT_draw_buffers: require\nprecision highp float;\n\nuniform vec2 uBottomLeft;\nuniform vec2 uTopRight;\nuniform vec2 uRes;\nuniform float uDepth;\n\nvarying vec3 vPosition;\nvarying float vRadius;\nvarying vec3 vColor;\n\n\nfloat raySphereIntersect(vec3 r0, vec3 rd) {\n    float a = dot(rd, rd);\n    vec3 s0_r0 = r0 - vPosition;\n    float b = 2.0 * dot(rd, s0_r0);\n    float c = dot(s0_r0, s0_r0) - (vRadius * vRadius);\n    if (b*b - 4.0*a*c <= 0.0) {\n        return -1.0;\n    }\n    return (-b - sqrt((b*b) - 4.0*a*c))/(2.0*a);\n}\n\nvoid main() {\n    vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/uRes) * (uTopRight - uBottomLeft), 0.0);\n    vec3 rd = vec3(0, 0, -1);\n    float t = raySphereIntersect(r0, rd);\n    if (t < 0.0) {\n        discard;\n    }\n    vec3 coord = r0 + rd * t;\n    vec3 normal = normalize(coord - vPosition);\n    gl_FragData[0] = vec4(vColor, 1);\n    gl_FragData[1] = vec4(normal * 0.5 + 0.5, 1.0);\n    gl_FragDepthEXT = -coord.z/uDepth;\n}\n");
+            progScene = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aImposter;\nattribute vec3 aPosition;\nattribute float aRadius;\nattribute vec3 aColor;\n\nuniform mat4 uView;\nuniform mat4 uProjection;\nuniform mat4 uModel;\nuniform float uAtomScale;\n\nvarying vec3 vColor;\nvarying vec3 vPosition;\nvarying float vRadius;\n\nvoid main() {\n    gl_Position = uProjection * uView * uModel * vec4(uAtomScale * aRadius * aImposter + aPosition, 1.0);\n    vColor = aColor;\n    vRadius = aRadius * uAtomScale;\n    vPosition = vec3(uModel * vec4(aPosition, 1));\n}\n\n\n// __split__\n\n\n#version 100\n#extension GL_EXT_frag_depth: enable\n#extension GL_EXT_draw_buffers: require\nprecision highp float;\n\nuniform vec2 uBottomLeft;\nuniform vec2 uTopRight;\nuniform float uRes;\nuniform float uDepth;\n\nvarying vec3 vPosition;\nvarying float vRadius;\nvarying vec3 vColor;\n\nvec2 res = vec2(uRes, uRes);\n\nfloat raySphereIntersect(vec3 r0, vec3 rd) {\n    float a = dot(rd, rd);\n    vec3 s0_r0 = r0 - vPosition;\n    float b = 2.0 * dot(rd, s0_r0);\n    float c = dot(s0_r0, s0_r0) - (vRadius * vRadius);\n    if (b*b - 4.0*a*c <= 0.0) {\n        return -1.0;\n    }\n    return (-b - sqrt((b*b) - 4.0*a*c))/(2.0*a);\n}\n\nvoid main() {\n    vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/res) * (uTopRight - uBottomLeft), 0.0);\n    vec3 rd = vec3(0, 0, -1);\n    float t = raySphereIntersect(r0, rd);\n    if (t < 0.0) {\n        discard;\n    }\n    vec3 coord = r0 + rd * t;\n    vec3 normal = normalize(coord - vPosition);\n    gl_FragData[0] = vec4(vColor, 1);\n    gl_FragData[1] = vec4(normal * 0.5 + 0.5, 1.0);\n    gl_FragDepthEXT = -coord.z/uDepth;\n}\n");
             progDisplayQuad = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uTexture;\nuniform float uRes;\n\nvoid main() {\n    vec4 c = texture2D(uTexture, gl_FragCoord.xy/uRes);\n    gl_FragColor = vec4(c.rgb, 1);\n}\n");
             progAccumulator = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneDepth;\nuniform sampler2D uSceneNormal;\nuniform sampler2D uRandRotDepth;\nuniform sampler2D uAccumulator;\nuniform mat4 uRot;\nuniform mat4 uInvRot;\nuniform vec2 uSceneBottomLeft;\nuniform vec2 uSceneTopRight;\nuniform vec2 uRotBottomLeft;\nuniform vec2 uRotTopRight;\nuniform float uDepth;\nuniform float uRes;\n\nvoid main() {\n\n    vec4 dScene = texture2D(uSceneDepth, gl_FragCoord.xy/uRes);\n\n    vec3 r = vec3(uSceneBottomLeft + (gl_FragCoord.xy/uRes) * (uSceneTopRight - uSceneBottomLeft), 0.0);\n\n    r.z = -(dScene.r - 0.5) * uDepth;\n    r = vec3(uRot * vec4(r, 1));\n    float depth = -r.z/uDepth + 0.5;\n\n    vec2 p = (r.xy - uRotBottomLeft)/(uRotTopRight - uRotBottomLeft);\n\n    vec4 dRandRot = texture2D(uRandRotDepth, p);\n\n    float ao = step(dRandRot.r, depth * 0.995);\n\n    vec3 normal = texture2D(uSceneNormal, gl_FragCoord.xy/uRes).rgb * 2.0 - 1.0;\n    vec3 dir = vec3(uInvRot * vec4(0, 0, 1, 0));\n    float mag = dot(dir, normal);\n    float sampled = step(0.0, mag);\n\n    ao *= sampled;\n\n    vec4 acc = texture2D(uAccumulator, gl_FragCoord.xy/uRes);\n\n    acc.r += ao/255.0;\n        \n    gl_FragColor = acc;\n\n}\n");
             progAO = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneColor;\nuniform sampler2D uAccumulatorOut;\nuniform float uRes;\nuniform float uSampleCount;\nuniform float uDarkness;\n\nvoid main() {\n    vec2 p = gl_FragCoord.xy/uRes;\n    vec4 sceneColor = texture2D(uSceneColor, p);\n    vec4 dAccum = texture2D(uAccumulatorOut, p);\n    gl_FragColor = vec4(sceneColor.rgb * pow(1.0 - (dAccum.r * 2.0 * uDarkness), 1.0), sceneColor.a);\n}\n");
@@ -8945,29 +8946,31 @@ module.exports = function (canvas, resolution) {
 
         self.reset = function() {
             sampleCount = 0;
+            initialRender = false;
             gl.activeTexture(gl.TEXTURE0 + tiAccumulator);
             gl.bindTexture(gl.TEXTURE_2D, tAccumulator);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            gl.activeTexture(gl.TEXTURE0 + tiAccumulatorOut);
+            gl.bindTexture(gl.TEXTURE_2D, tAccumulatorOut);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         }
 
-        self.render = function(view, ao) {
+        self.render = function(view, ao, spf) {
             if (atoms === undefined) {
                 return;
             }
             if (rScene == null) {
                 return;
             }
-            renderScene(view, ao);
+            renderScene(view, ao, spf);
         }
 
-        function renderScene(view, ao) {
-            if (sampleCount < 512) {
-                sampleCount++;
-            }
+        function renderScene(view, ao, spf) {
 
             range = atoms.getRadius(view.getAtomScale()) * 2.0;
 
-            if (sampleCount == 1) {
+            if (!initialRender) {
+
                 // Render the depth/color buffers.
                 gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -8985,12 +8988,17 @@ module.exports = function (canvas, resolution) {
                 progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
                 progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
                 progScene.setUniform("uAtomScale", "1f", view.getAtomScale());
-                progScene.setUniform("uRes", "2fv", [resolution, resolution]);
+                progScene.setUniform("uRes", "1f", resolution);
                 progScene.setUniform("uDepth", "1f", range);
                 rScene.render();
-            }
 
-            if (sampleCount < 512) {
+                initialRender = true;            
+
+            } else for (var _ = 0; _ < spf; _++) {
+
+                if (sampleCount > 512) {
+                    break;
+                }
 
                 var v = view.clone();
                 v.__zoom = 1/range;
@@ -9017,7 +9025,7 @@ module.exports = function (canvas, resolution) {
                 progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
                 progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
                 progScene.setUniform("uAtomScale", "1f", v.getAtomScale());
-                progScene.setUniform("uRes", "2fv", [resolution, resolution]);
+                progScene.setUniform("uRes", "1f", resolution);
                 progScene.setUniform("uDepth", "1f", range);
                 rScene.render();
 
@@ -9041,6 +9049,8 @@ module.exports = function (canvas, resolution) {
                 rAccumulator.render();
                 gl.bindTexture(gl.TEXTURE_2D, tAccumulator);
                 gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
+
+                sampleCount++;
 
             }
 
@@ -9216,9 +9226,7 @@ window.onload = function() {
             imposter.reset();
             needReset = false;
         }
-        for (var i = 0; i < SPF; i++) {
-            imposter.render(view, AO/100);
-        }
+        imposter.render(view, AO/100, SPF);
         requestAnimationFrame(loop);
     }
 

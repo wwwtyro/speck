@@ -33,13 +33,14 @@ precision highp float;
 
 uniform vec2 uBottomLeft;
 uniform vec2 uTopRight;
-uniform vec2 uRes;
+uniform float uRes;
 uniform float uDepth;
 
 varying vec3 vPosition;
 varying float vRadius;
 varying vec3 vColor;
 
+vec2 res = vec2(uRes, uRes);
 
 float raySphereIntersect(vec3 r0, vec3 rd) {
     float a = dot(rd, rd);
@@ -53,7 +54,7 @@ float raySphereIntersect(vec3 r0, vec3 rd) {
 }
 
 void main() {
-    vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/uRes) * (uTopRight - uBottomLeft), 0.0);
+    vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/res) * (uTopRight - uBottomLeft), 0.0);
     vec3 rd = vec3(0, 0, -1);
     float t = raySphereIntersect(r0, rd);
     if (t < 0.0) {

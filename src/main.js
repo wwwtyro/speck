@@ -144,9 +144,7 @@ window.onload = function() {
             imposter.reset();
             needReset = false;
         }
-        for (var i = 0; i < SPF; i++) {
-            imposter.render(view, AO/100);
-        }
+        imposter.render(view, AO/100, SPF);
         requestAnimationFrame(loop);
     }
 

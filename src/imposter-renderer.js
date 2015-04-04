@@ -55,7 +55,8 @@ module.exports = function (canvas, resolution) {
             extDepthTexture,
             extDrawBuffers;
 
-        var sampleCount = 0;
+        var sampleCount = 0,
+            initialRender = false;
 
         self.initialize = function() {
 
@@ -303,29 +304,31 @@ module.exports = function (canvas, resolution) {
 
         self.reset = function() {
             sampleCount = 0;
+            initialRender = false;
             gl.activeTexture(gl.TEXTURE0 + tiAccumulator);
             gl.bindTexture(gl.TEXTURE_2D, tAccumulator);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            gl.activeTexture(gl.TEXTURE0 + tiAccumulatorOut);
+            gl.bindTexture(gl.TEXTURE_2D, tAccumulatorOut);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         }
 
-        self.render = function(view, ao) {
+        self.render = function(view, ao, spf) {
             if (atoms === undefined) {
                 return;
             }
             if (rScene == null) {
                 return;
             }
-            renderScene(view, ao);
+            renderScene(view, ao, spf);
         }
 
-        function renderScene(view, ao) {
-            if (sampleCount < 512) {
-                sampleCount++;
-            }
+        function renderScene(view, ao, spf) {
 
             range = atoms.getRadius(view.getAtomScale()) * 2.0;
 
-            if (sampleCount == 1) {
+            if (!initialRender) {
+
                 // Render the depth/color buffers.
                 gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -343,12 +346,17 @@ module.exports = function (canvas, resolution) {
                 progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
                 progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
                 progScene.setUniform("uAtomScale", "1f", view.getAtomScale());
-                progScene.setUniform("uRes", "2fv", [resolution, resolution]);
+                progScene.setUniform("uRes", "1f", resolution);
                 progScene.setUniform("uDepth", "1f", range);
                 rScene.render();
-            }
 
-            if (sampleCount < 512) {
+                initialRender = true;            
+
+            } else for (var _ = 0; _ < spf; _++) {
+
+                if (sampleCount > 512) {
+                    break;
+                }
 
                 var v = view.clone();
                 v.__zoom = 1/range;
@@ -375,7 +383,7 @@ module.exports = function (canvas, resolution) {
                 progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
                 progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
                 progScene.setUniform("uAtomScale", "1f", v.getAtomScale());
-                progScene.setUniform("uRes", "2fv", [resolution, resolution]);
+                progScene.setUniform("uRes", "1f", resolution);
                 progScene.setUniform("uDepth", "1f", range);
                 rScene.render();
 
@@ -399,6 +407,8 @@ module.exports = function (canvas, resolution) {
                 rAccumulator.render();
                 gl.bindTexture(gl.TEXTURE_2D, tAccumulator);
                 gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
+
+                sampleCount++;
 
             }
 
