@@ -9213,14 +9213,17 @@ window.onload = function() {
     }
 
     function reflow() {
+        var menu = document.getElementById("menu-container");
         var ww = window.innerWidth;
         var wh = window.innerHeight;
-        var rcw = Math.round(wh * 1);
+        var rcw = Math.round(wh * 0.95);
         var rcm = Math.round((wh - rcw) / 2);
         renderContainer.style.height = rcw + "px";
         renderContainer.style.width = rcw + "px";
         renderContainer.style.left = rcm + "px";
         renderContainer.style.top = rcm + "px";
+        menu.style.left = rcw + rcm * 2 + "px";
+        menu.style.top = rcm + "px";
     }
 
     reflow();
