@@ -9140,7 +9140,7 @@ window.onload = function() {
     structs.benzene = "12\nbenzene example\nC        0.00000        1.40272        0.00000\nH        0.00000        2.49029        0.00000\nC       -1.21479        0.70136        0.00000\nH       -2.15666        1.24515        0.00000\nC       -1.21479       -0.70136        0.00000\nH       -2.15666       -1.24515        0.00000\nC        0.00000       -1.40272        0.00000\nH        0.00000       -2.49029        0.00000\nC        1.21479       -0.70136        0.00000\nH        2.15666       -1.24515        0.00000\nC        1.21479        0.70136        0.00000\nH        2.15666        1.24515        0.00000\n  ";
     structs.methane = "5\nmethane molecule (in ångströms)\nC        0.000000        0.000000        0.000000\nH        0.000000        0.000000        1.089000\nH        1.026719        0.000000       -0.363000\nH       -0.513360       -0.889165       -0.363000\nH       -0.513360        0.889165       -0.363000\n";
 
-    loadStructure(xyz(structs.caffeine)[0]);
+    loadStructure(xyz(structs.testosterone)[0]);
 
     var selector = document.getElementById("structure");
     selector.addEventListener("change", function() {
@@ -9222,8 +9222,8 @@ window.onload = function() {
         renderContainer.style.width = rcw + "px";
         renderContainer.style.left = rcm + "px";
         renderContainer.style.top = rcm + "px";
-        menu.style.left = rcw + rcm * 2 + "px";
-        menu.style.top = rcm + "px";
+        menu.style.left = 32 + rcw + rcm * 2 + "px";
+        menu.style.top = 32 + rcm + "px";
     }
 
     reflow();

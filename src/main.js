@@ -57,7 +57,7 @@ window.onload = function() {
     structs.benzene = fs.readFileSync(__dirname + "/samples/benzene.xyz", 'utf8');
     structs.methane = fs.readFileSync(__dirname + "/samples/methane.xyz", 'utf8');
 
-    loadStructure(xyz(structs.caffeine)[0]);
+    loadStructure(xyz(structs.testosterone)[0]);
 
     var selector = document.getElementById("structure");
     selector.addEventListener("change", function() {
@@ -139,8 +139,8 @@ window.onload = function() {
         renderContainer.style.width = rcw + "px";
         renderContainer.style.left = rcm + "px";
         renderContainer.style.top = rcm + "px";
-        menu.style.left = rcw + rcm * 2 + "px";
-        menu.style.top = rcm + "px";
+        menu.style.left = 32 + rcw + rcm * 2 + "px";
+        menu.style.top = 32 + rcm + "px";
     }
 
     reflow();

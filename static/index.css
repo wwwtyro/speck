@@ -17,10 +17,7 @@ body {
 
 #menu-container {
     position: fixed;
-/*    top: 0px;
-    right: 0px;
-*/    height: 100%;
-    padding: 32px;
+    /*border: 1px solid red;*/
     /*width: 256px;*/
     /*background: rgba(255,255,255,0.5);*/
 }
