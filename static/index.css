@@ -28,6 +28,7 @@ body {
 
 #controls-menu {
     margin-bottom: 32px;
+    /*border-bottom: 4px solid #bbb;*/
 }
 
 #xyz-data {
@@ -42,7 +43,7 @@ textarea {
 button {
     font-family: 'Open Sans', sans-serif;
     font-size: 16px;
-    border-radius: 32px;
+    border-radius: 4px;
     background: #bbb;
     border: none;
     margin-right: 8;
