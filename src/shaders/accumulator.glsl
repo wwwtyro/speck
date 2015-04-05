@@ -26,6 +26,7 @@ uniform vec2 uRotBottomLeft;
 uniform vec2 uRotTopRight;
 uniform float uDepth;
 uniform float uRes;
+uniform int uSampleCount;
 
 void main() {
 
@@ -52,7 +53,15 @@ void main() {
 
     vec4 acc = texture2D(uAccumulator, gl_FragCoord.xy/uRes);
 
-    acc.r += ao/255.0;
+    if (uSampleCount < 256) {
+        acc.r += ao/255.0;
+    } else if (uSampleCount < 512) {
+        acc.g += ao/255.0;
+    } else if (uSampleCount < 768) {
+        acc.b += ao/255.0;
+    } else {
+        acc.a += ao/255.0;
+    }
         
     gl_FragColor = acc;
 

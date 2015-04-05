@@ -313,7 +313,7 @@ module.exports = function (canvas, resolution) {
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         }
 
-        self.render = function(view, ao, spf) {
+        self.render = function(view, ao, spf, brightness) {
             if (atoms === undefined) {
                 return;
             }
@@ -328,14 +328,14 @@ module.exports = function (canvas, resolution) {
                 initialRender = true;
             } else {
                 for (var i = 0; i < spf; i++) {
-                    if (sampleCount > 512) {
+                    if (sampleCount > 1024) {
                         break;
                     }
                     sample(view);
                     sampleCount++;
                 }
             }
-            display(ao);
+            display(ao, brightness);
         }
 
         function scene(view) {
@@ -408,18 +408,20 @@ module.exports = function (canvas, resolution) {
             progAccumulator.setUniform("uDepth", "1f", range);
             progAccumulator.setUniform("uRot", "Matrix4fv", false, rot);
             progAccumulator.setUniform("uInvRot", "Matrix4fv", false, invRot);
+            progAccumulator.setUniform("uSampleCount", "1i", sampleCount);
             rAccumulator.render();
             gl.bindTexture(gl.TEXTURE_2D, tAccumulator);
             gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
         }
 
-        function display(ao) {
+        function display(ao, brightness) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             progAO.setUniform("uSceneColor", "1i", tiSceneColor);
             progAO.setUniform("uAccumulatorOut", "1i", tiAccumulatorOut);
             progAO.setUniform("uRes", "1f", resolution);
-            progAO.setUniform("uDarkness", "1f", ao);
+            progAO.setUniform("uAO", "1f", ao);
+            progAO.setUniform("uBrightness", "1f", brightness);
             rAO.render();
 
             // gl.bindFramebuffer(gl.FRAMEBUFFER, null);

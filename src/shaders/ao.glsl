@@ -18,11 +18,14 @@ uniform sampler2D uSceneColor;
 uniform sampler2D uAccumulatorOut;
 uniform float uRes;
 uniform float uSampleCount;
-uniform float uDarkness;
+uniform float uAO;
+uniform float uBrightness;
 
 void main() {
     vec2 p = gl_FragCoord.xy/uRes;
     vec4 sceneColor = texture2D(uSceneColor, p);
     vec4 dAccum = texture2D(uAccumulatorOut, p);
-    gl_FragColor = vec4(sceneColor.rgb * pow(1.0 - (dAccum.r * 2.0 * uDarkness), 1.0), sceneColor.a);
+    float shade = max(0.0, 1.0 - (dAccum.r + dAccum.g + dAccum.b + dAccum.a) * 0.25 * uAO);
+    shade = pow(shade, 2.0);
+    gl_FragColor = vec4(uBrightness * sceneColor.rgb * shade, sceneColor.a);
 }

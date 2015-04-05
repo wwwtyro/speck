@@ -8733,8 +8733,8 @@ module.exports = function (canvas, resolution) {
             // Initialize shaders.
             progScene = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aImposter;\nattribute vec3 aPosition;\nattribute float aRadius;\nattribute vec3 aColor;\n\nuniform mat4 uView;\nuniform mat4 uProjection;\nuniform mat4 uModel;\nuniform float uAtomScale;\n\nvarying vec3 vColor;\nvarying vec3 vPosition;\nvarying float vRadius;\n\nvoid main() {\n    gl_Position = uProjection * uView * uModel * vec4(uAtomScale * aRadius * aImposter + aPosition, 1.0);\n    vColor = aColor;\n    vRadius = aRadius * uAtomScale;\n    vPosition = vec3(uModel * vec4(aPosition, 1));\n}\n\n\n// __split__\n\n\n#version 100\n#extension GL_EXT_frag_depth: enable\n#extension GL_EXT_draw_buffers: require\nprecision highp float;\n\nuniform vec2 uBottomLeft;\nuniform vec2 uTopRight;\nuniform float uRes;\nuniform float uDepth;\n\nvarying vec3 vPosition;\nvarying float vRadius;\nvarying vec3 vColor;\n\nvec2 res = vec2(uRes, uRes);\n\nfloat raySphereIntersect(vec3 r0, vec3 rd) {\n    float a = dot(rd, rd);\n    vec3 s0_r0 = r0 - vPosition;\n    float b = 2.0 * dot(rd, s0_r0);\n    float c = dot(s0_r0, s0_r0) - (vRadius * vRadius);\n    if (b*b - 4.0*a*c <= 0.0) {\n        return -1.0;\n    }\n    return (-b - sqrt((b*b) - 4.0*a*c))/(2.0*a);\n}\n\nvoid main() {\n    vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/res) * (uTopRight - uBottomLeft), 0.0);\n    vec3 rd = vec3(0, 0, -1);\n    float t = raySphereIntersect(r0, rd);\n    if (t < 0.0) {\n        discard;\n    }\n    vec3 coord = r0 + rd * t;\n    vec3 normal = normalize(coord - vPosition);\n    gl_FragData[0] = vec4(vColor, 1);\n    gl_FragData[1] = vec4(normal * 0.5 + 0.5, 1.0);\n    gl_FragDepthEXT = -coord.z/uDepth;\n}\n");
             progDisplayQuad = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uTexture;\nuniform float uRes;\n\nvoid main() {\n    vec4 c = texture2D(uTexture, gl_FragCoord.xy/uRes);\n    gl_FragColor = vec4(c.rgb, 1);\n}\n");
-            progAccumulator = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneDepth;\nuniform sampler2D uSceneNormal;\nuniform sampler2D uRandRotDepth;\nuniform sampler2D uAccumulator;\nuniform mat4 uRot;\nuniform mat4 uInvRot;\nuniform vec2 uSceneBottomLeft;\nuniform vec2 uSceneTopRight;\nuniform vec2 uRotBottomLeft;\nuniform vec2 uRotTopRight;\nuniform float uDepth;\nuniform float uRes;\n\nvoid main() {\n\n    vec4 dScene = texture2D(uSceneDepth, gl_FragCoord.xy/uRes);\n\n    vec3 r = vec3(uSceneBottomLeft + (gl_FragCoord.xy/uRes) * (uSceneTopRight - uSceneBottomLeft), 0.0);\n\n    r.z = -(dScene.r - 0.5) * uDepth;\n    r = vec3(uRot * vec4(r, 1));\n    float depth = -r.z/uDepth + 0.5;\n\n    vec2 p = (r.xy - uRotBottomLeft)/(uRotTopRight - uRotBottomLeft);\n\n    vec4 dRandRot = texture2D(uRandRotDepth, p);\n\n    float ao = step(dRandRot.r, depth * 0.995);\n\n    vec3 normal = texture2D(uSceneNormal, gl_FragCoord.xy/uRes).rgb * 2.0 - 1.0;\n    vec3 dir = vec3(uInvRot * vec4(0, 0, 1, 0));\n    float mag = dot(dir, normal);\n    float sampled = step(0.0, mag);\n\n    ao *= sampled;\n\n    vec4 acc = texture2D(uAccumulator, gl_FragCoord.xy/uRes);\n\n    acc.r += ao/255.0;\n        \n    gl_FragColor = acc;\n\n}\n");
-            progAO = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneColor;\nuniform sampler2D uAccumulatorOut;\nuniform float uRes;\nuniform float uSampleCount;\nuniform float uDarkness;\n\nvoid main() {\n    vec2 p = gl_FragCoord.xy/uRes;\n    vec4 sceneColor = texture2D(uSceneColor, p);\n    vec4 dAccum = texture2D(uAccumulatorOut, p);\n    gl_FragColor = vec4(sceneColor.rgb * pow(1.0 - (dAccum.r * 2.0 * uDarkness), 1.0), sceneColor.a);\n}\n");
+            progAccumulator = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneDepth;\nuniform sampler2D uSceneNormal;\nuniform sampler2D uRandRotDepth;\nuniform sampler2D uAccumulator;\nuniform mat4 uRot;\nuniform mat4 uInvRot;\nuniform vec2 uSceneBottomLeft;\nuniform vec2 uSceneTopRight;\nuniform vec2 uRotBottomLeft;\nuniform vec2 uRotTopRight;\nuniform float uDepth;\nuniform float uRes;\nuniform int uSampleCount;\n\nvoid main() {\n\n    vec4 dScene = texture2D(uSceneDepth, gl_FragCoord.xy/uRes);\n\n    vec3 r = vec3(uSceneBottomLeft + (gl_FragCoord.xy/uRes) * (uSceneTopRight - uSceneBottomLeft), 0.0);\n\n    r.z = -(dScene.r - 0.5) * uDepth;\n    r = vec3(uRot * vec4(r, 1));\n    float depth = -r.z/uDepth + 0.5;\n\n    vec2 p = (r.xy - uRotBottomLeft)/(uRotTopRight - uRotBottomLeft);\n\n    vec4 dRandRot = texture2D(uRandRotDepth, p);\n\n    float ao = step(dRandRot.r, depth * 0.995);\n\n    vec3 normal = texture2D(uSceneNormal, gl_FragCoord.xy/uRes).rgb * 2.0 - 1.0;\n    vec3 dir = vec3(uInvRot * vec4(0, 0, 1, 0));\n    float mag = dot(dir, normal);\n    float sampled = step(0.0, mag);\n\n    ao *= sampled;\n\n    vec4 acc = texture2D(uAccumulator, gl_FragCoord.xy/uRes);\n\n    if (uSampleCount < 256) {\n        acc.r += ao/255.0;\n    } else if (uSampleCount < 512) {\n        acc.g += ao/255.0;\n    } else if (uSampleCount < 768) {\n        acc.b += ao/255.0;\n    } else {\n        acc.a += ao/255.0;\n    }\n        \n    gl_FragColor = acc;\n\n}\n");
+            progAO = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneColor;\nuniform sampler2D uAccumulatorOut;\nuniform float uRes;\nuniform float uSampleCount;\nuniform float uAO;\nuniform float uBrightness;\n\nvoid main() {\n    vec2 p = gl_FragCoord.xy/uRes;\n    vec4 sceneColor = texture2D(uSceneColor, p);\n    vec4 dAccum = texture2D(uAccumulatorOut, p);\n    float shade = max(0.0, 1.0 - (dAccum.r + dAccum.g + dAccum.b + dAccum.a) * 0.25 * uAO);\n    shade = pow(shade, 2.0);\n    gl_FragColor = vec4(uBrightness * sceneColor.rgb * shade, sceneColor.a);\n}\n");
 
             var position = [
                 -1, -1, 0,
@@ -8955,7 +8955,7 @@ module.exports = function (canvas, resolution) {
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         }
 
-        self.render = function(view, ao, spf) {
+        self.render = function(view, ao, spf, brightness) {
             if (atoms === undefined) {
                 return;
             }
@@ -8970,14 +8970,14 @@ module.exports = function (canvas, resolution) {
                 initialRender = true;
             } else {
                 for (var i = 0; i < spf; i++) {
-                    if (sampleCount > 512) {
+                    if (sampleCount > 1024) {
                         break;
                     }
                     sample(view);
                     sampleCount++;
                 }
             }
-            display(ao);
+            display(ao, brightness);
         }
 
         function scene(view) {
@@ -9050,18 +9050,20 @@ module.exports = function (canvas, resolution) {
             progAccumulator.setUniform("uDepth", "1f", range);
             progAccumulator.setUniform("uRot", "Matrix4fv", false, rot);
             progAccumulator.setUniform("uInvRot", "Matrix4fv", false, invRot);
+            progAccumulator.setUniform("uSampleCount", "1i", sampleCount);
             rAccumulator.render();
             gl.bindTexture(gl.TEXTURE_2D, tAccumulator);
             gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
         }
 
-        function display(ao) {
+        function display(ao, brightness) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             progAO.setUniform("uSceneColor", "1i", tiSceneColor);
             progAO.setUniform("uAccumulatorOut", "1i", tiAccumulatorOut);
             progAO.setUniform("uRes", "1f", resolution);
-            progAO.setUniform("uDarkness", "1f", ao);
+            progAO.setUniform("uAO", "1f", ao);
+            progAO.setUniform("uBrightness", "1f", brightness);
             rAO.render();
 
             // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -9142,7 +9144,7 @@ window.onload = function() {
 
     loadStructure(xyz(structs.testosterone)[0]);
 
-    var selector = document.getElementById("structure");
+    var selector = document.getElementById("controls-sample");
     selector.addEventListener("change", function() {
         loadStructure(xyz(structs[selector.value])[0]);
     });
@@ -9212,8 +9214,43 @@ window.onload = function() {
         needReset = true;
     }
 
+    var buttonUpColor = "#bbb";
+    var buttonDownColor = "#3bf";
+
+    function hideAllControls() {
+        document.getElementById("controls-structure").style.display = "none";
+        document.getElementById("controls-render").style.display = "none";
+        document.getElementById("controls-help").style.display = "none";
+        document.getElementById("controls-about").style.display = "none";
+        document.getElementById("menu-button-structure").style.background = buttonUpColor;
+        document.getElementById("menu-button-render").style.background = buttonUpColor;
+        document.getElementById("menu-button-help").style.background = buttonUpColor;
+        document.getElementById("menu-button-about").style.background = buttonUpColor;
+    }
+
+    function showControl(id) {
+        hideAllControls();
+        document.getElementById("controls-" + id).style.display = "block";
+        document.getElementById("menu-button-" + id).style.background = buttonDownColor;
+    }
+
+    document.getElementById("menu-button-structure").addEventListener("click", function() {
+        showControl("structure");
+    });
+    document.getElementById("menu-button-render").addEventListener("click", function() {
+        showControl("render");
+    });
+    document.getElementById("menu-button-help").addEventListener("click", function() {
+        showControl("help");
+    });
+    document.getElementById("menu-button-about").addEventListener("click", function() {
+        showControl("about");
+    });
+
+    showControl("render");
+
     function reflow() {
-        var menu = document.getElementById("menu-container");
+        var menu = document.getElementById("controls-container");
         var ww = window.innerWidth;
         var wh = window.innerHeight;
         var rcw = Math.round(wh * 0.95);
@@ -9222,8 +9259,8 @@ window.onload = function() {
         renderContainer.style.width = rcw + "px";
         renderContainer.style.left = rcm + "px";
         renderContainer.style.top = rcm + "px";
-        menu.style.left = 32 + rcw + rcm * 2 + "px";
-        menu.style.top = 32 + rcm + "px";
+        menu.style.left = 48 + rcw + rcm * 2 + "px";
+        menu.style.top = 48 + rcm + "px";
     }
 
     reflow();
@@ -9240,6 +9277,9 @@ window.onload = function() {
         var SPF = parseInt(document.getElementById("SPF").value);
         var AO = parseFloat(document.getElementById("AO").value);
         var RES = parseInt(document.getElementById("RES").value);
+        var brightness = parseInt(document.getElementById("brightness").value);
+        document.getElementById("brightness-pct").innerHTML = brightness + "%";
+        document.getElementById("ao-pct").innerHTML = AO + "%";
         if (RES !== resolution) {
             setResolution(RES);
         }
@@ -9247,7 +9287,7 @@ window.onload = function() {
             imposter.reset();
             needReset = false;
         }
-        imposter.render(view, AO/100, SPF);
+        imposter.render(view, AO/100, SPF, brightness/100);
         requestAnimationFrame(loop);
     }
 

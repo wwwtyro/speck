@@ -59,7 +59,7 @@ window.onload = function() {
 
     loadStructure(xyz(structs.testosterone)[0]);
 
-    var selector = document.getElementById("structure");
+    var selector = document.getElementById("controls-sample");
     selector.addEventListener("change", function() {
         loadStructure(xyz(structs[selector.value])[0]);
     });
@@ -129,8 +129,43 @@ window.onload = function() {
         needReset = true;
     }
 
+    var buttonUpColor = "#bbb";
+    var buttonDownColor = "#3bf";
+
+    function hideAllControls() {
+        document.getElementById("controls-structure").style.display = "none";
+        document.getElementById("controls-render").style.display = "none";
+        document.getElementById("controls-help").style.display = "none";
+        document.getElementById("controls-about").style.display = "none";
+        document.getElementById("menu-button-structure").style.background = buttonUpColor;
+        document.getElementById("menu-button-render").style.background = buttonUpColor;
+        document.getElementById("menu-button-help").style.background = buttonUpColor;
+        document.getElementById("menu-button-about").style.background = buttonUpColor;
+    }
+
+    function showControl(id) {
+        hideAllControls();
+        document.getElementById("controls-" + id).style.display = "block";
+        document.getElementById("menu-button-" + id).style.background = buttonDownColor;
+    }
+
+    document.getElementById("menu-button-structure").addEventListener("click", function() {
+        showControl("structure");
+    });
+    document.getElementById("menu-button-render").addEventListener("click", function() {
+        showControl("render");
+    });
+    document.getElementById("menu-button-help").addEventListener("click", function() {
+        showControl("help");
+    });
+    document.getElementById("menu-button-about").addEventListener("click", function() {
+        showControl("about");
+    });
+
+    showControl("render");
+
     function reflow() {
-        var menu = document.getElementById("menu-container");
+        var menu = document.getElementById("controls-container");
         var ww = window.innerWidth;
         var wh = window.innerHeight;
         var rcw = Math.round(wh * 0.95);
@@ -139,8 +174,8 @@ window.onload = function() {
         renderContainer.style.width = rcw + "px";
         renderContainer.style.left = rcm + "px";
         renderContainer.style.top = rcm + "px";
-        menu.style.left = 32 + rcw + rcm * 2 + "px";
-        menu.style.top = 32 + rcm + "px";
+        menu.style.left = 48 + rcw + rcm * 2 + "px";
+        menu.style.top = 48 + rcm + "px";
     }
 
     reflow();
@@ -157,6 +192,9 @@ window.onload = function() {
         var SPF = parseInt(document.getElementById("SPF").value);
         var AO = parseFloat(document.getElementById("AO").value);
         var RES = parseInt(document.getElementById("RES").value);
+        var brightness = parseInt(document.getElementById("brightness").value);
+        document.getElementById("brightness-pct").innerHTML = brightness + "%";
+        document.getElementById("ao-pct").innerHTML = AO + "%";
         if (RES !== resolution) {
             setResolution(RES);
         }
@@ -164,7 +202,7 @@ window.onload = function() {
             imposter.reset();
             needReset = false;
         }
-        imposter.render(view, AO/100, SPF);
+        imposter.render(view, AO/100, SPF, brightness/100);
         requestAnimationFrame(loop);
     }
 

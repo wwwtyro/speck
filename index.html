@@ -1,6 +1,8 @@
 <html>
 
     <head>
+        <title>Speck</title>
+        <link rel="icon" href="/static/favicon.png" type="image/x-icon">
         <script src="static/bundle.js"></script>
         <link rel="stylesheet" type="text/css" href="static/index.css">
     </head>
@@ -9,77 +11,131 @@
         <div id="render-container">
             <canvas id="imposter-canvas"></canvas>
         </div>
-        <div id="menu-container">
+        <div id="controls-container">
 
-            <select id="structure">
+            <div id="controls-menu">
+                <button id="menu-button-structure">Structure</button>
+                <button id="menu-button-render">Render</button>
+                <button id="menu-button-help">Help</button>
+                <button id="menu-button-about">About</button>
+            </div>
 
-                <option value="protein0">Protein 4E0O</option>
-                <option value="protein1">Protein 4QCI</option>
-                <option value="testosterone" selected="selected">Testosterone</option>
-                <option value="au">Gold Nanoparticle</option>
-    			<option value="benzene">Benzene</option>
-    			<option value="caffeine">Caffeine</option>
-    			<option value="methane">Methane</option>
+            <div id="controls-structure">
 
-            </select>
+                <h2>Samples</h2>
 
-            <br><br>
+                <select id="controls-sample">
 
-            Paste xyz file data:<br>
+                    <option value="protein0">Protein 4E0O</option>
+                    <option value="protein1">Protein 4QCI</option>
+                    <option value="testosterone" selected="selected">Testosterone</option>
+                    <option value="au">Gold Nanoparticle</option>
+        			<option value="benzene">Benzene</option>
+        			<option value="caffeine">Caffeine</option>
+        			<option value="methane">Methane</option>
 
-            <textarea id="xyz-data" rows="4" columns="10"></textarea><br><br>
+                </select>
 
-            <button id="xyz-button">Load</button><br><br>
+                <h2>Custom</h2>
 
-            Samples per frame (lower this if your framerate is low):<br>
+                Paste xyz file data:<br>
 
-            <input type="number" id="SPF" min="1" max="512" value="32"><br><br>
+                <textarea id="xyz-data" rows="4" columns="10"></textarea><br><br>
 
-            Ambient Occlusion:<br>
+                <button id="xyz-button">Load</button><br><br>
 
-            <input type="range" id="AO" min="0" max="100" value="50"><br><br>
+            </div>
 
-            Resolution:<br>
+            <div id="controls-render">
 
-            <input type="range" id="RES" min="256" max="2048" value="768" step="256"><br><br>
+                <table>
+                    <tr valign="top">
+                        <td title="Lower this if interaction stutters.">Samples per frame</td>
+                        <td><input type="number" id="SPF" min="1" max="512" value="32"></td>
+                    </tr>
+                    <tr valign="top">
+                        <td>Brightness</td>
+                        <td><input type="range" id="brightness" min="0" max="200" value="100" step="2"></td>
+                        <td id="brightness-pct"></td>
+                    </tr>
+                    <tr valign="top">
+                        <td>Ambient Occlusion</td>
+                        <td><input type="range" id="AO" min="0" max="200" value="100" step="2"></td>
+                        <td id="ao-pct"></td>
+                    </tr>
+                    <tr valign="top">
+                        <td>Resolution</td>
+                        <td>
+                            <select id="RES">
+                                <option value="256">256x256</option>
+                                <option value="512">512x512</option>
+                                <option value="768" selected="selected">768x768</option>
+                                <option value="1024">1024x1024</option>
+                                <option value="1536">1536x1536</option>
+                                <option value="2048">2048x2048</option>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
 
-            <table>
+            </div>
 
-                <tr>
+            <div id="controls-help">
 
-                    <td>Rotate</td>
+                <h2>Controls</h2>
 
-                    <td>hold left mouse button and drag</td>
+                <table>
 
-                </tr>
+                    <tr valign="top">
 
-                <tr>
+                        <td>Rotate</td>
 
-                    <td>Translate</td>
+                        <td>hold left mouse button and drag</td>
 
-                    <td>shift + hold left mouse button and drag</td>
+                    </tr>
 
-                </tr>
+                    <tr valign="top">
 
-                <tr>
+                        <td>Translate</td>
 
-                    <td>Zoom</td>
+                        <td>shift + hold left mouse button and drag</td>
 
-                    <td>mouse wheel</td>
+                    </tr>
 
-                </tr>
+                    <tr valign="top">
 
-                <tr>
+                        <td>Zoom</td>
 
-                    <td>Atom radius&nbsp;&nbsp;&nbsp;</td>
+                        <td>mouse wheel</td>
 
-                    <td>shift + mouse wheel</td>
+                    </tr>
 
-                </tr>
+                    <tr valign="top">
 
-            </table>
+                        <td>Atom radius&nbsp;&nbsp;&nbsp;</td>
 
-        <div>
+                        <td>shift + mouse wheel</td>
+
+                    </tr>
+
+                </table>
+
+            </div>
+
+            <div id="controls-about">
+
+                <h2>Speck</h2>
+                Author: Rye Terrell
+                <h2>Copyright, license, etc.</h2>
+                <p>
+                    Speck and the images it produces are completely public domain
+                    and free to use. Do with it/them what you will. Attribution 
+                    is appreciated but not required.
+                </p>
+
+            </div>
+
+        </div>
 
     </body>
 
