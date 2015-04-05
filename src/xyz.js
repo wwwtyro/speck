@@ -8,8 +8,10 @@ module.exports = function(data) {
         for(var j = 0; j < natoms; j++) {
             var line = lines[i*(natoms+2)+j+2].split(/\s+/);
             var atom = {};
-            atom.symbol = line[0];
-            atom.position = [parseFloat(line[1]), parseFloat(line[2]), parseFloat(line[3])];
+            var k = 0;
+            while (line[k] == "") k++;
+            atom.symbol = line[k++];
+            atom.position = [parseFloat(line[k++]), parseFloat(line[k++]), parseFloat(line[k++])];
             atoms.push(atom);
         }
         trajectory.push(atoms);
