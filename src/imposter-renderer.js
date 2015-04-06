@@ -72,7 +72,6 @@ module.exports = function (canvas, resolution) {
             window.gl = gl;
 
             extFragDepth = gl.getExtension("EXT_frag_depth");
-            extInstanced = gl.getExtension("ANGLE_instanced_arrays");
             extDepthTexture = gl.getExtension("WEBGL_depth_texture");
             extDrawBuffers = gl.getExtension("WEBGL_draw_buffers");
 
@@ -277,28 +276,38 @@ module.exports = function (canvas, resolution) {
                 },
             };
 
+            var imposter = [];
             var position = [];
             var radius = [];
             var color = [];
 
-            for (var i = 0; i < atoms.atoms.length; i++) {
-                var a = atoms.atoms[i];
-                position.push.apply(position, [a.x, a.y, a.z]);
-                radius.push(elements[a.symbol].radius);
-                var c = elements[a.symbol].color;
-                color.push.apply(color, [c[0], c[1], c[2]]);
+            function make36(arr) {
+                var out = [];
+                for (var i = 0; i < 36; i++) {
+                    out.push.apply(out, arr);
+                }
+                return out;
             }
 
-            var imposter = cube.position;
-            
+            for (var i = 0; i < atoms.atoms.length; i++) {
+                imposter.push.apply(imposter, cube.position);
+                var a = atoms.atoms[i];
+                position.push.apply(position, make36([a.x, a.y, a.z]));
+                radius.push.apply(radius, make36([elements[a.symbol].radius]));
+                var c = elements[a.symbol].color;
+                color.push.apply(color, make36([c[0], c[1], c[2]]));
+            }
+
             attribs.aImposter.buffer.set(new Float32Array(imposter));
             attribs.aPosition.buffer.set(new Float32Array(position));
             attribs.aRadius.buffer.set(new Float32Array(radius));
             attribs.aColor.buffer.set(new Float32Array(color));
 
-            var count = position.length / 3;
+            console.log(atoms.atoms.length, imposter.length, imposter);
 
-            rScene = new core.InstancedRenderable(gl, progScene, attribs, count, extInstanced);
+            var count = imposter.length / 9;
+
+            rScene = new core.Renderable(gl, progScene, attribs, count);
 
         }
 
