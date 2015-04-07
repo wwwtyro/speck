@@ -193,6 +193,7 @@ window.onload = function() {
         var AO = parseFloat(document.getElementById("AO").value);
         var RES = parseInt(document.getElementById("RES").value);
         var brightness = parseInt(document.getElementById("brightness").value);
+        var outline = document.getElementById("outline").checked;
         document.getElementById("brightness-pct").innerHTML = brightness + "%";
         document.getElementById("ao-pct").innerHTML = AO + "%";
         if (RES !== resolution) {
@@ -202,7 +203,7 @@ window.onload = function() {
             imposter.reset();
             needReset = false;
         }
-        imposter.render(view, AO/100, SPF, brightness/100);
+        imposter.render(view, AO/100, SPF, brightness/100, outline);
         requestAnimationFrame(loop);
     }
 

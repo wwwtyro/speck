@@ -303,8 +303,6 @@ module.exports = function (canvas, resolution) {
             attribs.aRadius.buffer.set(new Float32Array(radius));
             attribs.aColor.buffer.set(new Float32Array(color));
 
-            console.log(atoms.atoms.length, imposter.length, imposter);
-
             var count = imposter.length / 9;
 
             rScene = new core.Renderable(gl, progScene, attribs, count);
@@ -322,7 +320,7 @@ module.exports = function (canvas, resolution) {
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         }
 
-        self.render = function(view, ao, spf, brightness) {
+        self.render = function(view, ao, spf, brightness, outline) {
             if (atoms === undefined) {
                 return;
             }
@@ -344,7 +342,7 @@ module.exports = function (canvas, resolution) {
                     sampleCount++;
                 }
             }
-            display(ao, brightness);
+            display(ao, brightness, outline);
         }
 
         function scene(view) {
@@ -423,14 +421,16 @@ module.exports = function (canvas, resolution) {
             gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
         }
 
-        function display(ao, brightness) {
+        function display(ao, brightness, outline) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             progAO.setUniform("uSceneColor", "1i", tiSceneColor);
+            progAO.setUniform("uSceneDepth", "1i", tiSceneDepth);
             progAO.setUniform("uAccumulatorOut", "1i", tiAccumulatorOut);
             progAO.setUniform("uRes", "1f", resolution);
             progAO.setUniform("uAO", "1f", ao);
             progAO.setUniform("uBrightness", "1f", brightness);
+            progAO.setUniform("uOutline", "1i", outline ? 1 : 0);
             rAO.render();
 
             // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
