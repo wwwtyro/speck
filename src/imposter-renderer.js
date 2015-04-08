@@ -19,6 +19,7 @@ module.exports = function (canvas, resolution) {
             canvas;
 
         var rScene = null,
+            rBonds = null,
             rDispQuad = null,
             rAccumulator = null,
             rAO = null;
@@ -46,14 +47,14 @@ module.exports = function (canvas, resolution) {
             fbAccumulator;
 
         var progScene,
+            progBonds,
             progAccumulator,
             progAO,
             progDisplayQuad;
 
         var extFragDepth,
-            extInstanced,
-            extDepthTexture,
-            extDrawBuffers;
+            extDrawBuffers,
+            extDepthTexture;
 
         var sampleCount = 0,
             initialRender = false;
@@ -89,6 +90,7 @@ module.exports = function (canvas, resolution) {
 
             // Initialize shaders.
             progScene = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/scene.glsl", 'utf8'));
+            progBonds = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/bonds.glsl", 'utf8'));
             progDisplayQuad = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/textured-quad.glsl", 'utf8'));
             progAccumulator = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/accumulator.glsl", 'utf8'));
             progAO = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/ao.glsl", 'utf8'));
@@ -253,34 +255,6 @@ module.exports = function (canvas, resolution) {
 
             atoms = newAtoms;
 
-            var attribs = {
-                aImposter: {
-                    buffer: new core.Buffer(gl),
-                    size: 3,
-                    divisor: 0
-                },
-                aPosition: {
-                    buffer: new core.Buffer(gl),
-                    size: 3,
-                    divisor: 1
-                },
-                aRadius: {
-                    buffer: new core.Buffer(gl),
-                    size: 1,
-                    divisor: 1
-                },
-                aColor: {
-                    buffer: new core.Buffer(gl),
-                    size: 3,
-                    divisor: 1
-                },
-            };
-
-            var imposter = [];
-            var position = [];
-            var radius = [];
-            var color = [];
-
             function make36(arr) {
                 var out = [];
                 for (var i = 0; i < 36; i++) {
@@ -288,6 +262,32 @@ module.exports = function (canvas, resolution) {
                 }
                 return out;
             }
+
+            // Atoms
+
+            var attribs = {
+                aImposter: {
+                    buffer: new core.Buffer(gl),
+                    size: 3
+                },
+                aPosition: {
+                    buffer: new core.Buffer(gl),
+                    size: 3
+                },
+                aRadius: {
+                    buffer: new core.Buffer(gl),
+                    size: 1
+                },
+                aColor: {
+                    buffer: new core.Buffer(gl),
+                    size: 3
+                },
+            };
+
+            var imposter = [];
+            var position = [];
+            var radius = [];
+            var color = [];
 
             for (var i = 0; i < atoms.atoms.length; i++) {
                 imposter.push.apply(imposter, cube.position);
@@ -306,6 +306,74 @@ module.exports = function (canvas, resolution) {
             var count = imposter.length / 9;
 
             rScene = new core.Renderable(gl, progScene, attribs, count);
+
+            // Bonds
+
+            var bonds = [];
+
+            for (var i = 0; i < atoms.atoms.length - 1; i++) {
+                for (var j = i + 1; j < atoms.atoms.length; j++) {
+                    var a = atoms.atoms[i];
+                    var b = atoms.atoms[j];
+                    var l = glm.vec3.fromValues(a.x, a.y, a.z);
+                    var m = glm.vec3.fromValues(b.x, b.y, b.z);
+                    var cutoff = elements[a.symbol].radius + elements[b.symbol].radius;
+                    if (glm.vec3.distance(l,m) > cutoff * 1.2) {
+                        continue;
+                    }
+                    bonds.push({
+                        a: a,
+                        b: b
+                    });
+                }
+            }
+
+            rBonds = null;
+
+            if (bonds.length > 0) {
+
+                var attribs = {
+                    aImposter: {
+                        buffer: new core.Buffer(gl),
+                        size: 3
+                    },
+                    aNormal: {
+                        buffer: new core.Buffer(gl),
+                        size: 3
+                    },
+                    aPosA: {
+                        buffer: new core.Buffer(gl),
+                        size: 3
+                    },
+                    aPosB: {
+                        buffer: new core.Buffer(gl),
+                        size: 3
+                    }
+                };
+
+                var imposter = [];
+                var normal = [];
+                var posa = [];
+                var posb = [];
+
+                for (var i = 0; i < bonds.length; i++) {
+                    var b = bonds[i];
+                    imposter.push.apply(imposter, cube.position);
+                    normal.push.apply(normal, cube.normal);
+                    posa.push.apply(posa, make36([b.a.x, b.a.y, b.a.z]));
+                    posb.push.apply(posb, make36([b.b.x, b.b.y, b.b.z]));
+                }
+
+                attribs.aImposter.buffer.set(new Float32Array(imposter));
+                attribs.aNormal.buffer.set(new Float32Array(normal));
+                attribs.aPosA.buffer.set(new Float32Array(posa));
+                attribs.aPosB.buffer.set(new Float32Array(posb));
+
+                var count = imposter.length / 9;
+
+                rBonds = new core.Renderable(gl, progBonds, attribs, count);
+
+            }
 
         }
 
@@ -366,6 +434,16 @@ module.exports = function (canvas, resolution) {
             progScene.setUniform("uRes", "1f", resolution);
             progScene.setUniform("uDepth", "1f", range);
             rScene.render();
+
+            if (rBonds != null) {
+                progBonds.setUniform("uProjection", "Matrix4fv", false, projection);
+                progBonds.setUniform("uView", "Matrix4fv", false, viewMat);
+                progBonds.setUniform("uModel", "Matrix4fv", false, model);
+                progBonds.setUniform("uRotation", "Matrix4fv", false, view.getRotation());
+                progBonds.setUniform("uAtomScale", "1f", view.getAtomScale());
+                progBonds.setUniform("uDepth", "1f", range);
+                rBonds.render();
+            }
         }
 
         function sample(view) {
@@ -397,6 +475,16 @@ module.exports = function (canvas, resolution) {
             progScene.setUniform("uRes", "1f", resolution);
             progScene.setUniform("uDepth", "1f", range);
             rScene.render();
+
+            if (rBonds != null) {
+                progBonds.setUniform("uProjection", "Matrix4fv", false, projection);
+                progBonds.setUniform("uView", "Matrix4fv", false, viewMat);
+                progBonds.setUniform("uModel", "Matrix4fv", false, model);
+                progBonds.setUniform("uRotation", "Matrix4fv", false, v.getRotation());
+                progBonds.setUniform("uAtomScale", "1f", view.getAtomScale());
+                progBonds.setUniform("uDepth", "1f", range);
+                rBonds.render();
+            }
 
             var sceneRect = view.getRect();
             var rotRect = v.getRect();
@@ -435,7 +523,7 @@ module.exports = function (canvas, resolution) {
 
             // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            // progDisplayQuad.setUniform("uTexture", "1i", tiAccumulatorOut);
+            // progDisplayQuad.setUniform("uTexture", "1i", tiSceneNormal);
             // progDisplayQuad.setUniform("uRes", "1f", resolution);
             // rDispQuad.render();
             // return;

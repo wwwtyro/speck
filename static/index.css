@@ -6,6 +6,7 @@ body {
     margin: 0px;
     -webkit-user-select: none;
     background: url('noise.png');
+    background-color: rgba(255,255,255,0.5);
 }
 
 #render-container {

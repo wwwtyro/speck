@@ -196,6 +196,7 @@ window.onload = function() {
         var outline = document.getElementById("outline").checked;
         document.getElementById("brightness-pct").innerHTML = brightness + "%";
         document.getElementById("ao-pct").innerHTML = AO + "%";
+        document.getElementById("spf-display").innerHTML = SPF;
         if (RES !== resolution) {
             setResolution(RES);
         }

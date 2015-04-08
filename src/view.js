@@ -9,7 +9,7 @@ module.exports = function View() {
     self.__aspect = 1.0;
     self.__zoom = 0.125;
     self.__translation = {x: 0.0, y: 0.0};
-    self.__atomScale = 1.5;
+    self.__atomScale = 0.75;
     self.__rotation = glm.mat4.create();
     self.__resolution = 768;
 

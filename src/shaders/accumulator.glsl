@@ -42,7 +42,7 @@ void main() {
 
     vec4 dRandRot = texture2D(uRandRotDepth, p);
 
-    float ao = step(dRandRot.r, depth * 0.995);
+    float ao = step(dRandRot.r, depth * 0.99);
 
     vec3 normal = texture2D(uSceneNormal, gl_FragCoord.xy/uRes).rgb * 2.0 - 1.0;
     vec3 dir = vec3(uInvRot * vec4(0, 0, 1, 0));

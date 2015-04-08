@@ -51,16 +51,18 @@
                 <table>
                     <tr valign="top">
                         <td title="Lower this if interaction stutters.">Samples per frame</td>
-                        <td><input type="number" id="SPF" min="1" max="512" value="32"></td>
+                        <td><input type="range" id="SPF" min="0" max="32" value="32" step="1"></td>
+                        <td id="spf-display"></td>
+                        <!-- <td><input type="number" id="SPF" min="1" max="512" value="32"></td> -->
                     </tr>
                     <tr valign="top">
                         <td>Brightness</td>
-                        <td><input type="range" id="brightness" min="0" max="200" value="100" step="2"></td>
+                        <td><input type="range" id="brightness" min="0" max="200" value="100" step="10"></td>
                         <td id="brightness-pct"></td>
                     </tr>
                     <tr valign="top">
                         <td>Ambient Occlusion</td>
-                        <td><input type="range" id="AO" min="0" max="200" value="100" step="2"></td>
+                        <td><input type="range" id="AO" min="0" max="200" value="100" step="10"></td>
                         <td id="ao-pct"></td>
                     </tr>
                     <tr valign="top">
