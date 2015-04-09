@@ -337,10 +337,6 @@ module.exports = function (canvas, resolution) {
                         buffer: new core.Buffer(gl),
                         size: 3
                     },
-                    aNormal: {
-                        buffer: new core.Buffer(gl),
-                        size: 3
-                    },
                     aPosA: {
                         buffer: new core.Buffer(gl),
                         size: 3
@@ -352,20 +348,17 @@ module.exports = function (canvas, resolution) {
                 };
 
                 var imposter = [];
-                var normal = [];
                 var posa = [];
                 var posb = [];
 
                 for (var i = 0; i < bonds.length; i++) {
                     var b = bonds[i];
                     imposter.push.apply(imposter, cube.position);
-                    normal.push.apply(normal, cube.normal);
                     posa.push.apply(posa, make36([b.a.x, b.a.y, b.a.z]));
                     posb.push.apply(posb, make36([b.b.x, b.b.y, b.b.z]));
                 }
 
                 attribs.aImposter.buffer.set(new Float32Array(imposter));
-                attribs.aNormal.buffer.set(new Float32Array(normal));
                 attribs.aPosA.buffer.set(new Float32Array(posa));
                 attribs.aPosB.buffer.set(new Float32Array(posb));
 
@@ -442,6 +435,9 @@ module.exports = function (canvas, resolution) {
                 progBonds.setUniform("uRotation", "Matrix4fv", false, view.getRotation());
                 progBonds.setUniform("uAtomScale", "1f", view.getAtomScale());
                 progBonds.setUniform("uDepth", "1f", range);
+                progBonds.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
+                progBonds.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
+                progBonds.setUniform("uRes", "1f", resolution);
                 rBonds.render();
             }
         }
@@ -483,6 +479,9 @@ module.exports = function (canvas, resolution) {
                 progBonds.setUniform("uRotation", "Matrix4fv", false, v.getRotation());
                 progBonds.setUniform("uAtomScale", "1f", view.getAtomScale());
                 progBonds.setUniform("uDepth", "1f", range);
+                progBonds.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
+                progBonds.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
+                progBonds.setUniform("uRes", "1f", resolution);
                 rBonds.render();
             }
 

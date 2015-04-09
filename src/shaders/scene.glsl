@@ -47,10 +47,11 @@ float raySphereIntersect(vec3 r0, vec3 rd) {
     vec3 s0_r0 = r0 - vPosition;
     float b = 2.0 * dot(rd, s0_r0);
     float c = dot(s0_r0, s0_r0) - (vRadius * vRadius);
-    if (b*b - 4.0*a*c <= 0.0) {
+    float disc = b*b - 4.0*a*c;
+    if (disc <= 0.0) {
         return -1.0;
     }
-    return (-b - sqrt((b*b) - 4.0*a*c))/(2.0*a);
+    return (-b - sqrt(disc))/(2.0*a);
 }
 
 void main() {
