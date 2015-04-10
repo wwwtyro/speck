@@ -10,7 +10,7 @@ uniform mat4 uView;
 uniform mat4 uProjection;
 uniform mat4 uModel;
 uniform mat4 uRotation;
-uniform float uAtomScale;
+uniform float uBondRadius;
 
 varying vec3 vColor;
 varying vec3 vNormal;
@@ -35,7 +35,7 @@ mat3 alignVector(vec3 a, vec3 b) {
 }
 
 void main() {
-    vRadius = uAtomScale * 0.1875;
+    vRadius = uBondRadius * 0.1875;
     vec3 pos = vec3(aImposter);
     // Scale the box in x and z to be bond-radius.
     pos = pos * vec3(vRadius*1.0, 1, vRadius*1.0);

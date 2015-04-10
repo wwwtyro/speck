@@ -186,6 +186,10 @@ window.onload = function() {
     var xyzLoadButton = document.getElementById("xyz-button");
     xyzLoadButton.addEventListener("click", function() {
         loadStructure(xyz(xyzData.value)[0]);
+    });
+
+    document.getElementById("bond-radius").addEventListener("input", function() {
+        needReset = true;
     })
 
     function loop() {
@@ -194,9 +198,11 @@ window.onload = function() {
         var RES = parseInt(document.getElementById("RES").value);
         var brightness = parseInt(document.getElementById("brightness").value);
         var outline = document.getElementById("outline").checked;
+        var bondRadius = parseInt(document.getElementById("bond-radius").value);
         document.getElementById("brightness-pct").innerHTML = brightness + "%";
         document.getElementById("ao-pct").innerHTML = AO + "%";
         document.getElementById("spf-display").innerHTML = SPF;
+        document.getElementById("bond-radius-pct").innerHTML = bondRadius + "%";
         if (RES !== resolution) {
             setResolution(RES);
         }
@@ -204,7 +210,7 @@ window.onload = function() {
             imposter.reset();
             needReset = false;
         }
-        imposter.render(view, AO/100, SPF, brightness/100, outline);
+        imposter.render(view, AO/100, SPF, brightness/100, outline, bondRadius/100);
         requestAnimationFrame(loop);
     }
 

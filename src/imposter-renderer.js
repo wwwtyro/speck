@@ -381,7 +381,7 @@ module.exports = function (canvas, resolution) {
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         }
 
-        self.render = function(view, ao, spf, brightness, outline) {
+        self.render = function(view, ao, spf, brightness, outline, bondRadius) {
             if (atoms === undefined) {
                 return;
             }
@@ -392,21 +392,21 @@ module.exports = function (canvas, resolution) {
             range = atoms.getRadius(view.getAtomScale()) * 2.0;
 
             if (!initialRender) {
-                scene(view);
+                scene(view, bondRadius);
                 initialRender = true;
             } else {
                 for (var i = 0; i < spf; i++) {
                     if (sampleCount > 1024) {
                         break;
                     }
-                    sample(view);
+                    sample(view, bondRadius);
                     sampleCount++;
                 }
             }
             display(ao, brightness, outline);
         }
 
-        function scene(view) {
+        function scene(view, bondRadius) {
             // Render the depth/color buffers.
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -433,16 +433,16 @@ module.exports = function (canvas, resolution) {
                 progBonds.setUniform("uView", "Matrix4fv", false, viewMat);
                 progBonds.setUniform("uModel", "Matrix4fv", false, model);
                 progBonds.setUniform("uRotation", "Matrix4fv", false, view.getRotation());
-                progBonds.setUniform("uAtomScale", "1f", view.getAtomScale());
                 progBonds.setUniform("uDepth", "1f", range);
                 progBonds.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
                 progBonds.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
                 progBonds.setUniform("uRes", "1f", resolution);
+                progBonds.setUniform("uBondRadius", "1f", bondRadius);
                 rBonds.render();
             }
         }
 
-        function sample(view) {
+        function sample(view, bondRadius) {
             var v = view.clone();
             v.__zoom = 1/range;
             v.__translation = {x: 0, y: 0};
@@ -477,11 +477,11 @@ module.exports = function (canvas, resolution) {
                 progBonds.setUniform("uView", "Matrix4fv", false, viewMat);
                 progBonds.setUniform("uModel", "Matrix4fv", false, model);
                 progBonds.setUniform("uRotation", "Matrix4fv", false, v.getRotation());
-                progBonds.setUniform("uAtomScale", "1f", view.getAtomScale());
                 progBonds.setUniform("uDepth", "1f", range);
                 progBonds.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
                 progBonds.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
                 progBonds.setUniform("uRes", "1f", resolution);
+                progBonds.setUniform("uBondRadius", "1f", bondRadius);
                 rBonds.render();
             }
 
