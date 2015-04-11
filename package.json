@@ -5,6 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "brfs": "~1.2.0",
+    "keyboardjs": "^0.4.2",
     "webgl.js": "~0.0.0"
   },
   "devDependencies": {},

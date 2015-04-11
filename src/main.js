@@ -7,6 +7,17 @@ var xyz = require('./xyz');
 var elements = require('./elements');
 var View = require("./view");
 var Atoms = require("./atoms");
+var kb = require("keyboardjs");
+
+kb.active = function(key) {
+    var keys = kb.activeKeys();
+    for (var i = 0; i < keys.length; i++) {
+        if (key === keys[i]) {
+            return true;
+        }
+    }
+    return false;
+}
 
 var atoms = new Atoms();
 var imposter = null;
@@ -106,20 +117,27 @@ window.onload = function() {
         needReset = true;
     });
     renderContainer.addEventListener("mousewheel", function(e) {
+        var wd = 0;
         if (e.wheelDelta > 0) {
-            if (e.shiftKey) {
-                view.scaleAtoms(1/0.95);
-            } else {
-                view.zoom(1/0.9);
-            }
-        } else {
-            if (e.shiftKey) {
-                view.scaleAtoms(0.95);
-            } else {
-                view.zoom(0.9);
-            }
+            wd = 1;
         }
-        needReset = true;
+        else {
+            wd = -1;
+        }
+        if (kb.active('a')) {
+            view.scaleAtoms(wd === 1 ? 1/0.95 : 0.95);
+            needReset = true;
+        } else if (kb.active('b')) {
+            view.scaleBonds(wd === 1 ? 1/0.95 : 0.95);
+            needReset = true;
+        } else if (kb.active('o')) {
+            view.scaleAO(wd * 0.05);
+        } else if (kb.active('l')) {
+            view.scaleBrightness(wd * 0.05);
+        } else {
+            view.zoom(wd === 1 ? 1/0.9 : 0.9);
+            needReset = true;
+        }
         e.preventDefault();
     });
 
@@ -188,21 +206,11 @@ window.onload = function() {
         loadStructure(xyz(xyzData.value)[0]);
     });
 
-    document.getElementById("bond-radius").addEventListener("input", function() {
-        needReset = true;
-    })
-
     function loop() {
         var SPF = parseInt(document.getElementById("SPF").value);
-        var AO = parseFloat(document.getElementById("AO").value);
         var RES = parseInt(document.getElementById("RES").value);
-        var brightness = parseInt(document.getElementById("brightness").value);
-        var outline = document.getElementById("outline").checked;
-        var bondRadius = parseInt(document.getElementById("bond-radius").value);
-        document.getElementById("brightness-pct").innerHTML = brightness + "%";
-        document.getElementById("ao-pct").innerHTML = AO + "%";
+        view.setOutline(document.getElementById("outline").checked);
         document.getElementById("spf-display").innerHTML = SPF;
-        document.getElementById("bond-radius-pct").innerHTML = bondRadius + "%";
         if (RES !== resolution) {
             setResolution(RES);
         }
@@ -210,7 +218,7 @@ window.onload = function() {
             imposter.reset();
             needReset = false;
         }
-        imposter.render(view, AO/100, SPF, brightness/100, outline, bondRadius/100);
+        imposter.render(view, SPF);
         requestAnimationFrame(loop);
     }
 

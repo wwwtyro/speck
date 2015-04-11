@@ -381,7 +381,7 @@ module.exports = function (canvas, resolution) {
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         }
 
-        self.render = function(view, ao, spf, brightness, outline, bondRadius) {
+        self.render = function(view, spf, outline) {
             if (atoms === undefined) {
                 return;
             }
@@ -392,21 +392,21 @@ module.exports = function (canvas, resolution) {
             range = atoms.getRadius(view.getAtomScale()) * 2.0;
 
             if (!initialRender) {
-                scene(view, bondRadius);
+                scene(view);
                 initialRender = true;
             } else {
                 for (var i = 0; i < spf; i++) {
                     if (sampleCount > 1024) {
                         break;
                     }
-                    sample(view, bondRadius);
+                    sample(view);
                     sampleCount++;
                 }
             }
-            display(ao, brightness, outline);
+            display(view);
         }
 
-        function scene(view, bondRadius) {
+        function scene(view) {
             // Render the depth/color buffers.
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -437,12 +437,12 @@ module.exports = function (canvas, resolution) {
                 progBonds.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
                 progBonds.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
                 progBonds.setUniform("uRes", "1f", resolution);
-                progBonds.setUniform("uBondRadius", "1f", bondRadius);
+                progBonds.setUniform("uBondRadius", "1f", view.getBondScale());
                 rBonds.render();
             }
         }
 
-        function sample(view, bondRadius) {
+        function sample(view) {
             var v = view.clone();
             v.__zoom = 1/range;
             v.__translation = {x: 0, y: 0};
@@ -481,7 +481,7 @@ module.exports = function (canvas, resolution) {
                 progBonds.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
                 progBonds.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
                 progBonds.setUniform("uRes", "1f", resolution);
-                progBonds.setUniform("uBondRadius", "1f", bondRadius);
+                progBonds.setUniform("uBondRadius", "1f", view.getBondScale());
                 rBonds.render();
             }
 
@@ -508,16 +508,16 @@ module.exports = function (canvas, resolution) {
             gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
         }
 
-        function display(ao, brightness, outline) {
+        function display(view) {
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             progAO.setUniform("uSceneColor", "1i", tiSceneColor);
             progAO.setUniform("uSceneDepth", "1i", tiSceneDepth);
             progAO.setUniform("uAccumulatorOut", "1i", tiAccumulatorOut);
             progAO.setUniform("uRes", "1f", resolution);
-            progAO.setUniform("uAO", "1f", ao);
-            progAO.setUniform("uBrightness", "1f", brightness);
-            progAO.setUniform("uOutline", "1i", outline ? 1 : 0);
+            progAO.setUniform("uAO", "1f", view.getAO());
+            progAO.setUniform("uBrightness", "1f", view.getBrightness());
+            progAO.setUniform("uOutline", "1i", view.getOutline() ? 1 : 0);
             rAO.render();
 
             // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
