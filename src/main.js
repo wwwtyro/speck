@@ -20,9 +20,9 @@ kb.active = function(key) {
 }
 
 var atoms = new Atoms();
+var view = new View();
 var imposter = null;
 var needReset = false;
-var resolution = 768;
 
 var renderContainer;
 
@@ -53,11 +53,9 @@ window.onload = function() {
 
     var imposterCanvas = document.getElementById("imposter-canvas");
 
-    imposter = new Imposter(imposterCanvas, resolution);
+    view.setResolution(768);
 
-
-    var view = new View();
-    view.setResolution(resolution);
+    imposter = new Imposter(imposterCanvas, view.getResolution());
 
     var structs = {};
     structs.protein0 = fs.readFileSync(__dirname + "/samples/4E0O.xyz", 'utf8');
@@ -142,8 +140,8 @@ window.onload = function() {
     });
 
     function setResolution(res) {
-        resolution = res;
-        imposter.setResolution(resolution);
+        view.setResolution(res);
+        imposter.setResolution(view.getResolution());
         needReset = true;
     }
 
@@ -207,18 +205,18 @@ window.onload = function() {
     });
 
     function loop() {
-        var SPF = parseInt(document.getElementById("SPF").value);
-        var RES = parseInt(document.getElementById("RES").value);
+        var resolution = parseInt(document.getElementById("RES").value);
+        view.setSPF(parseInt(document.getElementById("SPF").value));
         view.setOutline(document.getElementById("outline").checked);
-        document.getElementById("spf-display").innerHTML = SPF;
-        if (RES !== resolution) {
-            setResolution(RES);
+        document.getElementById("spf-display").innerHTML = view.getSPF();
+        if (resolution !== view.getResolution()) {
+            setResolution(resolution);
         }
         if (needReset) {
             imposter.reset();
             needReset = false;
         }
-        imposter.render(view, SPF);
+        imposter.render(view);
         requestAnimationFrame(loop);
     }
 

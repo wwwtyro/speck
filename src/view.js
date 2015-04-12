@@ -15,6 +15,7 @@ module.exports = function View() {
     self.__ao = 1.0;
     self.__brightness = 1.0;
     self.__outline = false;
+    self.__samplesPerFrame = 32;
     self.__resolution = 768;
 
     self.initialize = function() {
@@ -30,6 +31,8 @@ module.exports = function View() {
         v.__rotation = glm.mat4.clone(self.__rotation);
         v.__ao = self.__ao;
         v.__brightness = self.__brightness;
+        v.__outline = self.__outline;
+        v.__samplesPerFrame = self.__samplesPerFrame;
         v.__resolution = self.__resolution;
         return v;
     }
@@ -37,6 +40,10 @@ module.exports = function View() {
     self.setResolution = function(res) {
         self.__resolution  = res;
     };
+
+    self.getResolution = function() {
+        return self.__resolution;
+    }
 
     self.zoom = function(amount) {
         self.__zoom *= amount;
@@ -88,6 +95,14 @@ module.exports = function View() {
 
     self.setOutline = function(val) {
         self.__outline = val;
+    }
+
+    self.setSPF = function(val) {
+        self.__samplesPerFrame = val;
+    }
+
+    self.getSPF = function() {
+        return self.__samplesPerFrame;
     }
 
     self.getOutline = function() {

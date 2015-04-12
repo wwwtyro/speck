@@ -381,7 +381,7 @@ module.exports = function (canvas, resolution) {
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
         }
 
-        self.render = function(view, spf, outline) {
+        self.render = function(view) {
             if (atoms === undefined) {
                 return;
             }
@@ -395,7 +395,7 @@ module.exports = function (canvas, resolution) {
                 scene(view);
                 initialRender = true;
             } else {
-                for (var i = 0; i < spf; i++) {
+                for (var i = 0; i < view.getSPF(); i++) {
                     if (sampleCount > 1024) {
                         break;
                     }
