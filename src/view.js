@@ -1,144 +1,188 @@
 "use strict";
 
-var glm = require("gl-matrix");
 
-module.exports = function View() {
+var glm = require("gl-matrix");
+var elements = require("./elements")
+
+
+var MIN_ATOM_RADIUS = Infinity;
+for (var i = 0; i <= 118; i++) {
+    MIN_ATOM_RADIUS = Math.min(MIN_ATOM_RADIUS, elements[i].radius);
+}
+
+
+function clamp(min, max, value) {
+    return Math.min(max, Math.max(min, value));
+}
+
+
+module.exports = function View(serialized) {
 
     var self = this;
 
-    self.__aspect = 1.0;
-    self.__zoom = 0.125;
-    self.__translation = {x: 0.0, y: 0.0};
-    self.__atomScale = 0.75;
-    self.__bondScale = 1.0;
-    self.__rotation = glm.mat4.create();
-    self.__ao = 1.0;
-    self.__brightness = 1.0;
-    self.__outline = false;
-    self.__samplesPerFrame = 32;
-    self.__resolution = 768;
+    var aspect = 1.0;
+    var zoom = 0.125;
+    var translation = {x: 0.0, y: 0.0};
+    var atomScale = 0.6;
+    var bondScale = 0.5;
+    var rotation = glm.mat4.create();
+    var ao = 0.5;
+    var brightness = 0.5;
+    var outline = false;
+    var spf = 32;
+    var resolution = 768;
 
     self.initialize = function() {
+        if (serialized !== undefined) {
+            self.deserialize(serialized);
+        }
+    };
+
+    self.serialize = function() {
+        return {
+            aspect: aspect,
+            zoom: zoom,
+            translation: {x: translation.x, y: translation.y},
+            atomScale: atomScale,
+            bondScale: bondScale,
+            rotation: glm.mat4.clone(rotation),
+            ao: ao,
+            brightness: brightness,
+            outline: outline,
+            spf: spf,
+            resolution: resolution
+        }
+    };
+
+    self.deserialize = function(data) {
+        aspect = data.aspect;
+        zoom = data.zoom;
+        translation = {x: data.translation.x, y: data.translation.y};
+        atomScale = data.atomScale;
+        bondScale = data.bondScale;
+        rotation = glm.mat4.clone(data.rotation);
+        ao = data.ao;
+        brightness = data.brightness;
+        outline = data.outline;
+        spf = data.spf;
+        resolution = data.resolution;
     };
 
     self.clone = function() {
-        var v = new View();
-        v.__aspect = self.__aspect;
-        v.__zoom = self.__zoom;
-        v.__translation = {x: self.__translation.x, y: self.__translation.y};
-        v.__atomScale = self.__atomScale;
-        v.__bondScale = self.__bondScale;
-        v.__rotation = glm.mat4.clone(self.__rotation);
-        v.__ao = self.__ao;
-        v.__brightness = self.__brightness;
-        v.__outline = self.__outline;
-        v.__samplesPerFrame = self.__samplesPerFrame;
-        v.__resolution = self.__resolution;
-        return v;
-    }
+        return new View(self.serialize());
+    };
 
     self.setResolution = function(res) {
-        self.__resolution  = res;
+        resolution  = res;
     };
 
     self.getResolution = function() {
-        return self.__resolution;
-    }
+        return resolution;
+    };
 
-    self.zoom = function(amount) {
-        self.__zoom *= amount;
-    }
+    self.setZoom = function(val) {
+        zoom = clamp(0.001, 2.0, val);
+    };
 
     self.getZoom = function() {
-        return self.__zoom;
-    }
+        return zoom;
+    };
 
     self.translate = function(dx, dy) {
-        self.__translation.x -= dx/(self.__resolution * self.__zoom);
-        self.__translation.y += dy/(self.__resolution * self.__zoom);
+        translation.x -= dx/(resolution * zoom);
+        translation.y += dy/(resolution * zoom);
+    };
+
+    self.getTranslation = function() {
+        return {x: translation.x, y: translation.y};
+    };
+
+    self.setTranslation = function(x, y) {
+        translation.x = x;
+        translation.y = y;
     };
 
     self.rotate = function(dx, dy) {
         var m = glm.mat4.create();
         glm.mat4.rotateY(m, m, dx * 0.005);
         glm.mat4.rotateX(m, m, dy * 0.005);
-        glm.mat4.multiply(self.__rotation, m, self.__rotation);
+        glm.mat4.multiply(rotation, m, rotation);
+    };
+
+    self.setRotation = function(rot) {
+        rotation = glm.mat4.clone(rot);
     };
 
     self.getRotation = function() {
-        return glm.mat4.clone(self.__rotation);
+        return glm.mat4.clone(rotation);
     };
 
-    self.scaleAtoms = function(amount) {
-        self.__atomScale *= amount;
-        self.__atomScale = Math.min(2.5, self.__atomScale);
-        self.__atomScale = Math.max(0.2, self.__atomScale);
+    self.setAtomScale = function(val) {
+        atomScale = clamp(0, 1, val);
     };
-
-    self.scaleBonds = function(amount) {
-        self.__bondScale *= amount;
-        self.__bondScale = Math.min(2.5, self.__bondScale);
-        self.__bondScale = Math.max(0.2, self.__bondScale);
-    }
-
-    self.scaleAO = function(amount) {
-        self.__ao += amount;
-        self.__ao = Math.min(2.0, self.__ao);
-        self.__ao = Math.max(0.0, self.__ao);
-    }
-
-    self.scaleBrightness = function(amount) {
-        self.__brightness += amount;
-        self.__brightness = Math.min(2, self.__brightness);
-        self.__brightness = Math.max(0, self.__brightness);
-    }
-
-    self.setOutline = function(val) {
-        self.__outline = val;
-    }
-
-    self.setSPF = function(val) {
-        self.__samplesPerFrame = val;
-    }
-
-    self.getSPF = function() {
-        return self.__samplesPerFrame;
-    }
-
-    self.getOutline = function() {
-        return self.__outline;
-    }
 
     self.getAtomScale = function() {
-        return self.__atomScale;
+        return atomScale;
+    };
+
+    self.setBondScale = function(val) {
+        bondScale = clamp(0, 1, val);
     };
 
     self.getBondScale = function() {
-        return self.__bondScale;
+        return bondScale;
     };
 
-    self.getAO = function() {
-        return self.__ao;
+    self.setAmbientOcclusion = function(val) {
+        ao = clamp(0, 1, val);
+    };
+
+    self.getAmbientOcclusion = function() {
+        return ao;
+    };
+
+    self.setBrightness = function(val) {
+        brightness = clamp(0, 1, val);
     };
 
     self.getBrightness = function() {
-        return self.__brightness;
-    }
+        return brightness;
+    };
+
+    self.setOutline = function(val) {
+        outline = val;
+    };
+
+    self.getOutline = function() {
+        return outline;
+    };
+
+    self.setSamplesPerFrame = function(val) {
+        spf = val;
+    };
+
+    self.getSamplesPerFrame = function() {
+        return spf;
+    };
 
     self.getRect = function() {
-        var width = 1.0/self.__zoom;
-        var height = width/self.__aspect;
-        var bottom = -height/2 + self.__translation.y;
-        var top = height/2 + self.__translation.y;
-        var left = -width/2 + self.__translation.x;
-        var right = width/2 + self.__translation.x;
+        var width = 1.0/zoom;
+        var height = width/aspect;
+        var bottom = -height/2 + translation.y;
+        var top = height/2 + translation.y;
+        var left = -width/2 + translation.x;
+        var right = width/2 + translation.x;
         return {
             bottom: bottom,
             top: top,
             left: left,
             right: right
         }
-    }
+    };
+
+    self.getBondRadius = function() {
+        return bondScale * MIN_ATOM_RADIUS * atomScale;
+    };
 
     self.initialize();
 }

@@ -395,7 +395,7 @@ module.exports = function (canvas, resolution) {
                 scene(view);
                 initialRender = true;
             } else {
-                for (var i = 0; i < view.getSPF(); i++) {
+                for (var i = 0; i < view.getSamplesPerFrame(); i++) {
                     if (sampleCount > 1024) {
                         break;
                     }
@@ -423,7 +423,7 @@ module.exports = function (canvas, resolution) {
             progScene.setUniform("uModel", "Matrix4fv", false, model);
             progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
             progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
-            progScene.setUniform("uAtomScale", "1f", view.getAtomScale());
+            progScene.setUniform("uAtomScale", "1f", 2.5 * view.getAtomScale());
             progScene.setUniform("uRes", "1f", resolution);
             progScene.setUniform("uDepth", "1f", range);
             rScene.render();
@@ -437,21 +437,21 @@ module.exports = function (canvas, resolution) {
                 progBonds.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
                 progBonds.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
                 progBonds.setUniform("uRes", "1f", resolution);
-                progBonds.setUniform("uBondRadius", "1f", view.getBondScale());
+                progBonds.setUniform("uBondRadius", "1f", 2.5 * view.getBondRadius());
                 rBonds.render();
             }
         }
 
         function sample(view) {
             var v = view.clone();
-            v.__zoom = 1/range;
-            v.__translation = {x: 0, y: 0};
+            v.setZoom(1/range);
+            v.setTranslation(0, 0);
             var rot = glm.mat4.create();
             for (var i = 0; i < 3; i++) {
                 var axis = glm.vec3.random(glm.vec3.create(), 1.0);
                 glm.mat4.rotate(rot, rot, Math.random() * 10, axis);
             }
-            glm.mat4.multiply(v.__rotation, rot, v.__rotation);
+            v.setRotation(glm.mat4.multiply(glm.mat4.create(), rot, v.getRotation()));
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbRandRot);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             var rect = v.getRect();
@@ -467,7 +467,7 @@ module.exports = function (canvas, resolution) {
             progScene.setUniform("uModel", "Matrix4fv", false, model);
             progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
             progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
-            progScene.setUniform("uAtomScale", "1f", v.getAtomScale());
+            progScene.setUniform("uAtomScale", "1f", 2.5 * v.getAtomScale());
             progScene.setUniform("uRes", "1f", resolution);
             progScene.setUniform("uDepth", "1f", range);
             rScene.render();
@@ -481,7 +481,7 @@ module.exports = function (canvas, resolution) {
                 progBonds.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
                 progBonds.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
                 progBonds.setUniform("uRes", "1f", resolution);
-                progBonds.setUniform("uBondRadius", "1f", view.getBondScale());
+                progBonds.setUniform("uBondRadius", "1f", 2.5 * view.getBondRadius());
                 rBonds.render();
             }
 
@@ -515,8 +515,8 @@ module.exports = function (canvas, resolution) {
             progAO.setUniform("uSceneDepth", "1i", tiSceneDepth);
             progAO.setUniform("uAccumulatorOut", "1i", tiAccumulatorOut);
             progAO.setUniform("uRes", "1f", resolution);
-            progAO.setUniform("uAO", "1f", view.getAO());
-            progAO.setUniform("uBrightness", "1f", view.getBrightness());
+            progAO.setUniform("uAO", "1f", 2.0 * view.getAmbientOcclusion());
+            progAO.setUniform("uBrightness", "1f", 2.0 * view.getBrightness());
             progAO.setUniform("uOutline", "1i", view.getOutline() ? 1 : 0);
             rAO.render();
 

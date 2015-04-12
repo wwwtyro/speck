@@ -49,20 +49,52 @@
             <div id="controls-render">
 
                 <table>
-                    <tr valign="top">
-                        <td title="Lower this if interaction stutters.">Samples per frame</td>
-                        <td><input type="range" id="SPF" min="0" max="32" value="32" step="1"></td>
-                        <td id="spf-display"></td>
-                        <!-- <td><input type="number" id="SPF" min="1" max="512" value="32"></td> -->
+                    <tr>
+                        <td align="right">Atom radius</td>
+                        <td><input id="atom radius" type="range" min="1" max="100" value="50"></td>
+                        <td id="atom radius text"></td>
+                        <td class="control-help">a + scrollwheel</td>
                     </tr>
-                    <tr valign="top">
-                        <td>Outline</td>
+                    <tr>
+                        <td align="right">Bond radius</td>
+                        <td><input id="bond radius" type="range" min="0" max="100" value="50"></td>
+                        <td id="bond radius text"></td>
+                        <td class="control-help">b + scrollwheel</td>
+                    </tr>
+                    <tr>
+                        <td align="right">Ambient occlusion</td>
+                        <td><input id="ambient occlusion" type="range" min="0" max="100" value="50"></td>
+                        <td id="ambient occlusion text"></td>
+                        <td class="control-help">o + scrollwheel</td>
+                    </tr>
+                    <tr>
+                        <td align="right">Samples per frame</td>
+                        <td>
+                            <select id="samples per frame">
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="4">4</option>
+                                <option value="8">8</option>
+                                <option value="16">16</option>
+                                <option value="32" selected="selected">32</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="right">Brightness</td>
+                        <td><input id="brightness" type="range" min="0" max="100" value="50"></td>
+                        <td id="brightness text"></td>
+                        <td class="control-help">l + scrollwheel</td>
+                    </tr>
+                    <tr>
+                        <td align="right">Outline</td>
                         <td><input type="checkbox" id="outline"></td>
                     </tr>
-                    <tr valign="top">
-                        <td>Resolution</td>
+                    <tr>
+                        <td align="right">Resolution</td>
                         <td>
-                            <select id="RES">
+                            <select id="resolution">
                                 <option value="256">256x256</option>
                                 <option value="512">512x512</option>
                                 <option value="768" selected="selected">768x768</option>
@@ -82,68 +114,6 @@
                     You'll want to use Google Chrome for now. Speck hasn't been significantly
                     tested against other browsers, yet.
                 </p>
-
-                <h2>Controls</h2>
-
-                <table>
-
-                    <tr valign="top">
-
-                        <td>Rotate</td>
-
-                        <td>hold left mouse button and drag</td>
-
-                    </tr>
-
-                    <tr valign="top">
-
-                        <td>Translate</td>
-
-                        <td>shift + hold left mouse button and drag</td>
-
-                    </tr>
-
-                    <tr valign="top">
-
-                        <td>Zoom</td>
-
-                        <td>mouse wheel</td>
-
-                    </tr>
-
-                    <tr valign="top">
-
-                        <td>Atom radius</td>
-
-                        <td>a + mouse wheel</td>
-
-                    </tr>
-
-                    <tr valign="top">
-
-                        <td>Bond radius</td>
-
-                        <td>b + mouse wheel</td>
-
-                    </tr>
-
-                    <tr valign="top">
-
-                        <td>Ambient occlusion</td>
-
-                        <td>o + mouse wheel</td>
-
-                    </tr>
-
-                    <tr valign="top">
-
-                        <td>Brightness</td>
-
-                        <td>l + mouse wheel</td>
-
-                    </tr>
-
-                </table>
 
             </div>
 

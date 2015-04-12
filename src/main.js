@@ -27,9 +27,7 @@ var needReset = false;
 var renderContainer;
 
 function loadStructure(data) {
-
     atoms = new Atoms();
-
     for (var i = 0; i < data.length; i++) {
         var a = data[i];
         var x = a.position[0];
@@ -37,13 +35,9 @@ function loadStructure(data) {
         var z = a.position[2];
         atoms.addAtom(a.symbol, x,y,z);
     }
-
     atoms.center();
-
     imposter.setAtoms(atoms);
-
     needReset = true;
-
 }
 
 
@@ -85,17 +79,20 @@ window.onload = function() {
         lastX = e.clientX;
         lastY = e.clientY;
     });
+
     window.addEventListener("mouseup", function(e) {
         document.body.style.cursor = "";
         if (e.button == 0) {
             buttonDown = false;
         }
     });
+
     setInterval(function() {
         if (!buttonDown) {
             document.body.style.cursor = "";
         }
     }, 10);
+
     window.addEventListener("mousemove", function(e) {
         if (!buttonDown) {
             return;
@@ -114,6 +111,7 @@ window.onload = function() {
         }
         needReset = true;
     });
+
     renderContainer.addEventListener("mousewheel", function(e) {
         var wd = 0;
         if (e.wheelDelta > 0) {
@@ -123,27 +121,34 @@ window.onload = function() {
             wd = -1;
         }
         if (kb.active('a')) {
-            view.scaleAtoms(wd === 1 ? 1/0.95 : 0.95);
+            var scale = view.getAtomScale();
+            scale += wd/100;
+            view.setAtomScale(scale);
+            document.getElementById("atom radius").value = Math.round(scale * 100);
             needReset = true;
         } else if (kb.active('b')) {
-            view.scaleBonds(wd === 1 ? 1/0.95 : 0.95);
+            var scale = view.getBondScale();
+            scale += wd/100;
+            view.setBondScale(scale);
+            document.getElementById("bond radius").value = Math.round(scale * 100);
             needReset = true;
         } else if (kb.active('o')) {
-            view.scaleAO(wd * 0.05);
+            var ao = view.getAmbientOcclusion();
+            ao += wd/100;
+            view.setAmbientOcclusion(ao);
+            document.getElementById("ambient occlusion").value = Math.round(ao * 100);
         } else if (kb.active('l')) {
-            view.scaleBrightness(wd * 0.05);
+            var bright = view.getBrightness();
+            bright += wd/100;
+            view.setBrightness(bright);
+            document.getElementById("brightness").value = Math.round(bright * 100);
         } else {
-            view.zoom(wd === 1 ? 1/0.9 : 0.9);
+            var zoom = view.getZoom() * (wd === 1 ? 1/0.9 : 0.9);
+            view.setZoom(zoom);
             needReset = true;
         }
         e.preventDefault();
     });
-
-    function setResolution(res) {
-        view.setResolution(res);
-        imposter.setResolution(view.getResolution());
-        needReset = true;
-    }
 
     var buttonUpColor = "#bbb";
     var buttonDownColor = "#3bf";
@@ -198,20 +203,60 @@ window.onload = function() {
 
     window.addEventListener("resize", reflow);
 
-    var xyzData = document.getElementById("xyz-data");
-    var xyzLoadButton = document.getElementById("xyz-button");
-    xyzLoadButton.addEventListener("click", function() {
-        loadStructure(xyz(xyzData.value)[0]);
+    document.getElementById("xyz-button").addEventListener("click", function() {
+        loadStructure(xyz(document.getElementById("xyz-data").value)[0]);
     });
 
+    document.getElementById("atom radius").addEventListener("input", function(e) {
+        var scale = parseInt(document.getElementById("atom radius").value);
+        view.setAtomScale(scale/100);
+        needReset = true;
+    });
+
+    document.getElementById("bond radius").addEventListener("input", function(e) {
+        var scale = parseInt(document.getElementById("bond radius").value);
+        view.setBondScale(scale/100);
+        needReset = true;
+    });
+
+    document.getElementById("ambient occlusion").addEventListener("input", function(e) {
+        var scale = parseInt(document.getElementById("ambient occlusion").value);
+        view.setAmbientOcclusion(scale/100);
+    });
+
+    document.getElementById("brightness").addEventListener("input", function(e) {
+        var scale = parseInt(document.getElementById("brightness").value);
+        view.setBrightness(scale/100);
+    });
+
+    document.getElementById("samples per frame").addEventListener("change", function(e) {
+        var spf = parseInt(document.getElementById("samples per frame").value);
+        view.setSamplesPerFrame(spf);
+    });
+
+    document.getElementById("resolution").addEventListener("change", function(e) {
+        var resolution = parseInt(document.getElementById("resolution").value);
+        view.setResolution(resolution);
+        imposter.setResolution(resolution);
+        needReset = true;
+    });
+
+    document.getElementById("outline").addEventListener("click", function(e) {
+        var outline = document.getElementById("outline").checked;
+        view.setOutline(outline);
+    });
+
+    document.getElementById("atom radius").value = Math.round(view.getAtomScale() * 100);
+    document.getElementById("bond radius").value = Math.round(view.getBondScale() * 100);
+    document.getElementById("ambient occlusion").value = Math.round(view.getAmbientOcclusion() * 100);
+    document.getElementById("brightness").value = Math.round(view.getBrightness() * 100);
+    document.getElementById("outline").checked = view.getOutline();
+
     function loop() {
-        var resolution = parseInt(document.getElementById("RES").value);
-        view.setSPF(parseInt(document.getElementById("SPF").value));
-        view.setOutline(document.getElementById("outline").checked);
-        document.getElementById("spf-display").innerHTML = view.getSPF();
-        if (resolution !== view.getResolution()) {
-            setResolution(resolution);
-        }
+        document.getElementById("atom radius text").innerHTML = Math.round(view.getAtomScale() * 100) + "%";
+        document.getElementById("bond radius text").innerHTML = Math.round(view.getBondScale() * 100) + "%";
+        document.getElementById("ambient occlusion text").innerHTML = Math.round(view.getAmbientOcclusion() * 100) + "%";
+        document.getElementById("brightness text").innerHTML = Math.round(view.getBrightness() * 100) + "%";
         if (needReset) {
             imposter.reset();
             needReset = false;

@@ -35,10 +35,10 @@ mat3 alignVector(vec3 a, vec3 b) {
 }
 
 void main() {
-    vRadius = uBondRadius * 0.1875;
+    vRadius = uBondRadius;
     vec3 pos = vec3(aImposter);
     // Scale the box in x and z to be bond-radius.
-    pos = pos * vec3(vRadius*1.0, 1, vRadius*1.0);
+    pos = pos * vec3(vRadius, 1, vRadius);
     // Shift the origin-centered cube so that the bottom is at the origin.
     pos = pos + vec3(0, 1, 0);
     // Stretch the box in y so that it is the length of the bond.

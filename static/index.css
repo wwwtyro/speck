@@ -1,4 +1,5 @@
 @import url(http://fonts.googleapis.com/css?family=Open+Sans);
+@import url(http://fonts.googleapis.com/css?family=Ubuntu+Mono);
 
 body {
     font-family: 'Open Sans', sans-serif;
@@ -37,6 +38,13 @@ body {
     height: 128px;
 }
 
+.control-help {
+    font-style: italic;
+    color: #555;
+    text-align: right;
+    font-family: 'Ubuntu Mono';    
+}
+
 textarea {
     outline: none;
 }
@@ -71,9 +79,9 @@ table {
 }
 
 td {
-    padding-right: 32px;
-    padding-bottom: 16px;
-    padding-top: 16px;
+    padding-right: 8px;
+    padding-bottom: 4px;
+    padding-top: 4px;
 }
 
 h2 {
