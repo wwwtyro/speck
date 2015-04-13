@@ -8,6 +8,7 @@ module.exports = function() {
 
     self.initialize = function() {
         self.atoms = [];
+        self.bondThreshold = 1.2;
     };
 
     self.addAtom = function(symbol, x, y, z) {

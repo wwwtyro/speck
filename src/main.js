@@ -36,7 +36,7 @@ function loadStructure(data) {
         atoms.addAtom(a.symbol, x,y,z);
     }
     atoms.center();
-    imposter.setAtoms(atoms);
+    imposter.setAtoms(atoms, view);
     needReset = true;
 }
 
@@ -124,19 +124,19 @@ window.onload = function() {
             var scale = view.getAtomScale();
             scale += wd/100;
             view.setAtomScale(scale);
-            document.getElementById("atom radius").value = Math.round(scale * 100);
+            document.getElementById("atom-radius").value = Math.round(scale * 100);
             needReset = true;
         } else if (kb.active('b')) {
             var scale = view.getBondScale();
             scale += wd/100;
             view.setBondScale(scale);
-            document.getElementById("bond radius").value = Math.round(scale * 100);
+            document.getElementById("bond-radius").value = Math.round(scale * 100);
             needReset = true;
         } else if (kb.active('o')) {
             var ao = view.getAmbientOcclusion();
             ao += wd/100;
             view.setAmbientOcclusion(ao);
-            document.getElementById("ambient occlusion").value = Math.round(ao * 100);
+            document.getElementById("ambient-occlusion").value = Math.round(ao * 100);
         } else if (kb.active('l')) {
             var bright = view.getBrightness();
             bright += wd/100;
@@ -207,20 +207,20 @@ window.onload = function() {
         loadStructure(xyz(document.getElementById("xyz-data").value)[0]);
     });
 
-    document.getElementById("atom radius").addEventListener("input", function(e) {
-        var scale = parseInt(document.getElementById("atom radius").value);
+    document.getElementById("atom-radius").addEventListener("input", function(e) {
+        var scale = parseInt(document.getElementById("atom-radius").value);
         view.setAtomScale(scale/100);
         needReset = true;
     });
 
-    document.getElementById("bond radius").addEventListener("input", function(e) {
-        var scale = parseInt(document.getElementById("bond radius").value);
+    document.getElementById("bond-radius").addEventListener("input", function(e) {
+        var scale = parseInt(document.getElementById("bond-radius").value);
         view.setBondScale(scale/100);
         needReset = true;
     });
 
-    document.getElementById("ambient occlusion").addEventListener("input", function(e) {
-        var scale = parseInt(document.getElementById("ambient occlusion").value);
+    document.getElementById("ambient-occlusion").addEventListener("input", function(e) {
+        var scale = parseInt(document.getElementById("ambient-occlusion").value);
         view.setAmbientOcclusion(scale/100);
     });
 
@@ -229,8 +229,8 @@ window.onload = function() {
         view.setBrightness(scale/100);
     });
 
-    document.getElementById("samples per frame").addEventListener("change", function(e) {
-        var spf = parseInt(document.getElementById("samples per frame").value);
+    document.getElementById("samples-per-frame").addEventListener("change", function(e) {
+        var spf = parseInt(document.getElementById("samples-per-frame").value);
         view.setSamplesPerFrame(spf);
     });
 
@@ -242,21 +242,34 @@ window.onload = function() {
     });
 
     document.getElementById("outline").addEventListener("click", function(e) {
-        var outline = document.getElementById("outline").checked;
-        view.setOutline(outline);
+        view.setOutline(document.getElementById("outline").checked);
     });
 
-    document.getElementById("atom radius").value = Math.round(view.getAtomScale() * 100);
-    document.getElementById("bond radius").value = Math.round(view.getBondScale() * 100);
-    document.getElementById("ambient occlusion").value = Math.round(view.getAmbientOcclusion() * 100);
+    document.getElementById("bonds").addEventListener("click", function(e) {
+        view.setBonds(document.getElementById("bonds").checked)
+        imposter.setAtoms(atoms, view);
+        needReset = true;
+    });
+
+    document.getElementById("bond-threshold-button").addEventListener("click", function(e) {
+        view.setBondThreshold(parseFloat(document.getElementById("bond-threshold").value));
+        imposter.setAtoms(atoms, view);
+        needReset = true;
+    });
+
+    document.getElementById("atom-radius").value = Math.round(view.getAtomScale() * 100);
+    document.getElementById("bond-radius").value = Math.round(view.getBondScale() * 100);
+    document.getElementById("bond-threshold").value = view.getBondThreshold();
+    document.getElementById("ambient-occlusion").value = Math.round(view.getAmbientOcclusion() * 100);
     document.getElementById("brightness").value = Math.round(view.getBrightness() * 100);
     document.getElementById("outline").checked = view.getOutline();
+    document.getElementById("bonds").checked = view.getBonds();
 
     function loop() {
-        document.getElementById("atom radius text").innerHTML = Math.round(view.getAtomScale() * 100) + "%";
-        document.getElementById("bond radius text").innerHTML = Math.round(view.getBondScale() * 100) + "%";
-        document.getElementById("ambient occlusion text").innerHTML = Math.round(view.getAmbientOcclusion() * 100) + "%";
-        document.getElementById("brightness text").innerHTML = Math.round(view.getBrightness() * 100) + "%";
+        document.getElementById("atom-radius-text").innerHTML = Math.round(view.getAtomScale() * 100) + "%";
+        document.getElementById("bond-radius-text").innerHTML = Math.round(view.getBondScale() * 100) + "%";
+        document.getElementById("ambient-occlusion-text").innerHTML = Math.round(view.getAmbientOcclusion() * 100) + "%";
+        document.getElementById("brightness-text").innerHTML = Math.round(view.getBrightness() * 100) + "%";
         if (needReset) {
             imposter.reset();
             needReset = false;

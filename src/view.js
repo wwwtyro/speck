@@ -30,6 +30,8 @@ module.exports = function View(serialized) {
     var brightness = 0.5;
     var outline = false;
     var spf = 32;
+    var bonds = false;
+    var bondThreshold = 1.2;
     var resolution = 768;
 
     self.initialize = function() {
@@ -50,7 +52,9 @@ module.exports = function View(serialized) {
             brightness: brightness,
             outline: outline,
             spf: spf,
-            resolution: resolution
+            resolution: resolution,
+            bonds: bonds,
+            bondThreshold: bondThreshold
         }
     };
 
@@ -66,6 +70,8 @@ module.exports = function View(serialized) {
         outline = data.outline;
         spf = data.spf;
         resolution = data.resolution;
+        bonds = data.bonds;
+        bondThreshold = bondThreshold;
     };
 
     self.clone = function() {
@@ -164,6 +170,22 @@ module.exports = function View(serialized) {
     self.getSamplesPerFrame = function() {
         return spf;
     };
+
+    self.setBonds = function(val) {
+        bonds = val;
+    }
+
+    self.getBonds = function() {
+        return bonds;
+    };
+
+    self.setBondThreshold = function(val) {
+        bondThreshold = val;
+    };
+
+    self.getBondThreshold = function() {
+        return bondThreshold;
+    }
 
     self.getRect = function() {
         var width = 1.0/zoom;

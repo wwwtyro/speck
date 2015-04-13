@@ -251,7 +251,7 @@ module.exports = function (canvas, resolution) {
         }
 
 
-        self.setAtoms = function(newAtoms) {
+        self.setAtoms = function(newAtoms, view) {
 
             atoms = newAtoms;
 
@@ -309,62 +309,66 @@ module.exports = function (canvas, resolution) {
 
             // Bonds
 
-            var bonds = [];
+            if (view.getBonds()) {
 
-            for (var i = 0; i < atoms.atoms.length - 1; i++) {
-                for (var j = i + 1; j < atoms.atoms.length; j++) {
-                    var a = atoms.atoms[i];
-                    var b = atoms.atoms[j];
-                    var l = glm.vec3.fromValues(a.x, a.y, a.z);
-                    var m = glm.vec3.fromValues(b.x, b.y, b.z);
-                    var cutoff = elements[a.symbol].radius + elements[b.symbol].radius;
-                    if (glm.vec3.distance(l,m) > cutoff * 1.2) {
-                        continue;
+                var bonds = [];
+
+                for (var i = 0; i < atoms.atoms.length - 1; i++) {
+                    for (var j = i + 1; j < atoms.atoms.length; j++) {
+                        var a = atoms.atoms[i];
+                        var b = atoms.atoms[j];
+                        var l = glm.vec3.fromValues(a.x, a.y, a.z);
+                        var m = glm.vec3.fromValues(b.x, b.y, b.z);
+                        var cutoff = elements[a.symbol].radius + elements[b.symbol].radius;
+                        if (glm.vec3.distance(l,m) > cutoff * view.getBondThreshold()) {
+                            continue;
+                        }
+                        bonds.push({
+                            a: a,
+                            b: b
+                        });
                     }
-                    bonds.push({
-                        a: a,
-                        b: b
-                    });
-                }
-            }
-
-            rBonds = null;
-
-            if (bonds.length > 0) {
-
-                var attribs = {
-                    aImposter: {
-                        buffer: new core.Buffer(gl),
-                        size: 3
-                    },
-                    aPosA: {
-                        buffer: new core.Buffer(gl),
-                        size: 3
-                    },
-                    aPosB: {
-                        buffer: new core.Buffer(gl),
-                        size: 3
-                    }
-                };
-
-                var imposter = [];
-                var posa = [];
-                var posb = [];
-
-                for (var i = 0; i < bonds.length; i++) {
-                    var b = bonds[i];
-                    imposter.push.apply(imposter, cube.position);
-                    posa.push.apply(posa, make36([b.a.x, b.a.y, b.a.z]));
-                    posb.push.apply(posb, make36([b.b.x, b.b.y, b.b.z]));
                 }
 
-                attribs.aImposter.buffer.set(new Float32Array(imposter));
-                attribs.aPosA.buffer.set(new Float32Array(posa));
-                attribs.aPosB.buffer.set(new Float32Array(posb));
+                rBonds = null;
 
-                var count = imposter.length / 9;
+                if (bonds.length > 0) {
 
-                rBonds = new core.Renderable(gl, progBonds, attribs, count);
+                    var attribs = {
+                        aImposter: {
+                            buffer: new core.Buffer(gl),
+                            size: 3
+                        },
+                        aPosA: {
+                            buffer: new core.Buffer(gl),
+                            size: 3
+                        },
+                        aPosB: {
+                            buffer: new core.Buffer(gl),
+                            size: 3
+                        }
+                    };
+
+                    var imposter = [];
+                    var posa = [];
+                    var posb = [];
+
+                    for (var i = 0; i < bonds.length; i++) {
+                        var b = bonds[i];
+                        imposter.push.apply(imposter, cube.position);
+                        posa.push.apply(posa, make36([b.a.x, b.a.y, b.a.z]));
+                        posb.push.apply(posb, make36([b.b.x, b.b.y, b.b.z]));
+                    }
+
+                    attribs.aImposter.buffer.set(new Float32Array(imposter));
+                    attribs.aPosA.buffer.set(new Float32Array(posa));
+                    attribs.aPosB.buffer.set(new Float32Array(posb));
+
+                    var count = imposter.length / 9;
+
+                    rBonds = new core.Renderable(gl, progBonds, attribs, count);
+
+                }
 
             }
 
@@ -428,7 +432,7 @@ module.exports = function (canvas, resolution) {
             progScene.setUniform("uDepth", "1f", range);
             rScene.render();
 
-            if (rBonds != null) {
+            if (view.getBonds() && rBonds != null) {
                 progBonds.setUniform("uProjection", "Matrix4fv", false, projection);
                 progBonds.setUniform("uView", "Matrix4fv", false, viewMat);
                 progBonds.setUniform("uModel", "Matrix4fv", false, model);
@@ -472,7 +476,7 @@ module.exports = function (canvas, resolution) {
             progScene.setUniform("uDepth", "1f", range);
             rScene.render();
 
-            if (rBonds != null) {
+            if (view.getBonds() && rBonds != null) {
                 progBonds.setUniform("uProjection", "Matrix4fv", false, projection);
                 progBonds.setUniform("uView", "Matrix4fv", false, viewMat);
                 progBonds.setUniform("uModel", "Matrix4fv", false, model);
