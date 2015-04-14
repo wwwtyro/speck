@@ -28,7 +28,7 @@ module.exports = function View(serialized) {
     var rotation = glm.mat4.create();
     var ao = 0.5;
     var brightness = 0.5;
-    var outline = false;
+    var outlineStrength = 0.0;
     var spf = 32;
     var bonds = false;
     var bondThreshold = 1.2;
@@ -50,7 +50,6 @@ module.exports = function View(serialized) {
             rotation: glm.mat4.clone(rotation),
             ao: ao,
             brightness: brightness,
-            outline: outline,
             spf: spf,
             resolution: resolution,
             bonds: bonds,
@@ -67,7 +66,6 @@ module.exports = function View(serialized) {
         rotation = glm.mat4.clone(data.rotation);
         ao = data.ao;
         brightness = data.brightness;
-        outline = data.outline;
         spf = data.spf;
         resolution = data.resolution;
         bonds = data.bonds;
@@ -155,14 +153,6 @@ module.exports = function View(serialized) {
         return brightness;
     };
 
-    self.setOutline = function(val) {
-        outline = val;
-    };
-
-    self.getOutline = function() {
-        return outline;
-    };
-
     self.setSamplesPerFrame = function(val) {
         spf = val;
     };
@@ -185,6 +175,14 @@ module.exports = function View(serialized) {
 
     self.getBondThreshold = function() {
         return bondThreshold;
+    };
+
+    self.setOutlineStrength = function(val) {
+        outlineStrength = clamp(0, 1, val);
+    };
+
+    self.getOutlineStrength = function() {
+        return outlineStrength;
     }
 
     self.getRect = function() {

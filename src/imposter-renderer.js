@@ -521,7 +521,7 @@ module.exports = function (canvas, resolution) {
             progAO.setUniform("uRes", "1f", resolution);
             progAO.setUniform("uAO", "1f", 2.0 * view.getAmbientOcclusion());
             progAO.setUniform("uBrightness", "1f", 2.0 * view.getBrightness());
-            progAO.setUniform("uOutline", "1i", view.getOutline() ? 1 : 0);
+            progAO.setUniform("uOutlineStrength", "1f", view.getOutlineStrength());
             rAO.render();
 
             // gl.bindFramebuffer(gl.FRAMEBUFFER, null);

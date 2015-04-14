@@ -20,12 +20,12 @@ uniform sampler2D uAccumulatorOut;
 uniform float uRes;
 uniform float uAO;
 uniform float uBrightness;
-uniform int uOutline;
+uniform float uOutlineStrength;
 
 void main() {
     vec2 p = gl_FragCoord.xy/uRes;
     vec4 sceneColor = texture2D(uSceneColor, p);
-    if (uOutline == 1) {
+    if (uOutlineStrength > 0.0) {
         float depth = texture2D(uSceneDepth, p).r;
         float r = 1.0/uRes;
         float d0 = abs(texture2D(uSceneDepth, p + vec2(-r,  0)).r - depth);
@@ -35,7 +35,7 @@ void main() {
         float d = max(d0, d1);
         d = max(d, d2);
         d = max(d, d3);
-        sceneColor.rgb *= pow(1.0 - d, 32.0);
+        sceneColor.rgb *= pow(1.0 - d, uOutlineStrength * 32.0);
         sceneColor.a = max(step(0.003, d), sceneColor.a);
     }
     vec4 dAccum = texture2D(uAccumulatorOut, p);

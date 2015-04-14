@@ -142,6 +142,11 @@ window.onload = function() {
             bright += wd/100;
             view.setBrightness(bright);
             document.getElementById("brightness").value = Math.round(bright * 100);
+        } else if (kb.active('q')) {
+            var outline = view.getOutlineStrength();
+            outline += wd/100;
+            view.setOutlineStrength(outline);
+            document.getElementById("outline-strength").value = Math.round(outline * 100);
         } else {
             var zoom = view.getZoom() * (wd === 1 ? 1/0.9 : 0.9);
             view.setZoom(zoom);
@@ -229,6 +234,11 @@ window.onload = function() {
         view.setBrightness(scale/100);
     });
 
+    document.getElementById("outline-strength").addEventListener("input", function(e) {
+        var scale = parseInt(document.getElementById("outline-strength").value);
+        view.setOutlineStrength(scale/100);
+    });
+
     document.getElementById("samples-per-frame").addEventListener("change", function(e) {
         var spf = parseInt(document.getElementById("samples-per-frame").value);
         view.setSamplesPerFrame(spf);
@@ -239,10 +249,6 @@ window.onload = function() {
         view.setResolution(resolution);
         imposter.setResolution(resolution);
         needReset = true;
-    });
-
-    document.getElementById("outline").addEventListener("click", function(e) {
-        view.setOutline(document.getElementById("outline").checked);
     });
 
     document.getElementById("bonds").addEventListener("click", function(e) {
@@ -262,7 +268,7 @@ window.onload = function() {
     document.getElementById("bond-threshold").value = view.getBondThreshold();
     document.getElementById("ambient-occlusion").value = Math.round(view.getAmbientOcclusion() * 100);
     document.getElementById("brightness").value = Math.round(view.getBrightness() * 100);
-    document.getElementById("outline").checked = view.getOutline();
+    document.getElementById("outline-strength").value = Math.round(view.getOutlineStrength() * 100);
     document.getElementById("bonds").checked = view.getBonds();
 
     function loop() {
@@ -270,6 +276,7 @@ window.onload = function() {
         document.getElementById("bond-radius-text").innerHTML = Math.round(view.getBondScale() * 100) + "%";
         document.getElementById("ambient-occlusion-text").innerHTML = Math.round(view.getAmbientOcclusion() * 100) + "%";
         document.getElementById("brightness-text").innerHTML = Math.round(view.getBrightness() * 100) + "%";
+        document.getElementById("outline-strength-text").innerHTML = Math.round(view.getOutlineStrength() * 100) + "%";
         if (needReset) {
             imposter.reset();
             needReset = false;

@@ -9749,7 +9749,7 @@ module.exports = function (canvas, resolution) {
             progBonds = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aImposter;\nattribute vec3 aNormal;\nattribute vec3 aPosA;\nattribute vec3 aPosB;\n\nuniform mat4 uView;\nuniform mat4 uProjection;\nuniform mat4 uModel;\nuniform mat4 uRotation;\nuniform float uBondRadius;\n\nvarying vec3 vColor;\nvarying vec3 vNormal;\nvarying vec3 vPosA, vPosB;\nvarying float vRadius;\n\nmat3 alignVector(vec3 a, vec3 b) {\n    vec3 v = cross(a, b);\n    float s = length(v);\n    float c = dot(a, b);\n    mat3 I = mat3(\n        1, 0, 0,\n        0, 1, 0,\n        0, 0, 1\n    );\n    mat3 vx = mat3(\n        0, v.z, -v.y,\n        -v.z, 0, v.x,\n        v.y, -v.x, 0\n    );\n    return I + vx + vx * vx * ((1.0 - c) / (s * s));\n}\n\nvoid main() {\n    vRadius = uBondRadius;\n    vec3 pos = vec3(aImposter);\n    // Scale the box in x and z to be bond-radius.\n    pos = pos * vec3(vRadius, 1, vRadius);\n    // Shift the origin-centered cube so that the bottom is at the origin.\n    pos = pos + vec3(0, 1, 0);\n    // Stretch the box in y so that it is the length of the bond.\n    pos = pos * vec3(1, length(aPosA - aPosB) * 0.5, 1);\n    // Find the rotation that aligns vec3(0, 1, 0) with vec3(uPosB - uPosA) and apply it.\n    vec3 a = normalize(vec3(-0.000001, 1.000001, 0.000001));\n    vec3 b = normalize(aPosB - aPosA);\n    mat3 R = alignVector(a, b);\n    pos = R * pos;\n    // Shift the cube so that the bottom is centered at the middle of atom A.\n    pos = pos + aPosA;\n\n    vec4 position = uModel * vec4(pos, 1);\n    gl_Position = uProjection * uView * position;\n    vNormal = vec3(uRotation * vec4(R * aNormal, 1));\n    vPosA = aPosA;\n    vPosB = aPosB;\n}\n\n\n// __split__\n\n\n#version 100\n#extension GL_EXT_frag_depth: enable\n#extension GL_EXT_draw_buffers: require\nprecision highp float;\n\nuniform mat4 uRotation;\nuniform vec2 uBottomLeft;\nuniform vec2 uTopRight;\nuniform float uDepth;\nuniform float uRes;\n\nvarying vec3 vColor;\nvarying vec3 vNormal;\nvarying vec3 vPosA, vPosB;\nvarying float vRadius;\n\nmat3 alignVector(vec3 a, vec3 b) {\n    vec3 v = cross(a, b);\n    float s = length(v);\n    float c = dot(a, b);\n    mat3 I = mat3(\n        1, 0, 0,\n        0, 1, 0,\n        0, 0, 1\n    );\n    mat3 vx = mat3(\n        0, v.z, -v.y,\n        -v.z, 0, v.x,\n        v.y, -v.x, 0\n    );\n    return I + vx + vx * vx * ((1.0 - c) / (s * s));\n}\n\nvoid main() {\n\n    vec2 res = vec2(uRes, uRes);\n    vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/res) * (uTopRight - uBottomLeft), uDepth/2.0);\n    vec3 rd = vec3(0, 0, -1);\n\n    vec3 i = normalize(vPosB - vPosA);\n         i = vec3(uRotation * vec4(i, 0));\n    vec3 j = normalize(vec3(-0.000001, 1.000001, 0.000001));\n    mat3 R = alignVector(i, j);\n\n    vec3 r0p = r0 - vec3(uRotation * vec4(vPosA, 0));\n    r0p = R * r0p;\n    vec3 rdp = R * rd;\n\n    float a = dot(rdp.xz, rdp.xz);\n    float b = 2.0 * dot(rdp.xz, r0p.xz);\n    float c = dot(r0p.xz, r0p.xz) - vRadius*vRadius;\n    float disc = b*b - 4.0*a*c;\n    if (disc <= 0.0) {\n        discard;\n    }\n    float t = (-b - sqrt(disc))/(2.0*a);\n    if (t < 0.0) {\n        discard;\n    }\n\n    vec3 coord = r0p + rdp * t;\n    if (coord.y < 0.0 || coord.y > length(vPosA - vPosB)) {\n        discard;\n    }\n\n    R = alignVector(j, i);\n    vec3 normal = normalize(R * vec3(coord.x, 0, coord.z));\n\n    coord = r0 + rd * t;\n    gl_FragData[0] = vec4(1,1,1,1);\n    gl_FragData[1] = vec4(normal * 0.5 + 0.5, 1.0);\n    gl_FragDepthEXT = -(coord.z - uDepth/2.0)/uDepth;\n}\n");
             progDisplayQuad = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uTexture;\nuniform float uRes;\n\nvoid main() {\n    vec4 c = texture2D(uTexture, gl_FragCoord.xy/uRes);\n    gl_FragColor = vec4(c.rgb, 1);\n}\n");
             progAccumulator = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneDepth;\nuniform sampler2D uSceneNormal;\nuniform sampler2D uRandRotDepth;\nuniform sampler2D uAccumulator;\nuniform mat4 uRot;\nuniform mat4 uInvRot;\nuniform vec2 uSceneBottomLeft;\nuniform vec2 uSceneTopRight;\nuniform vec2 uRotBottomLeft;\nuniform vec2 uRotTopRight;\nuniform float uDepth;\nuniform float uRes;\nuniform int uSampleCount;\n\nvoid main() {\n\n    vec4 dScene = texture2D(uSceneDepth, gl_FragCoord.xy/uRes);\n\n    vec3 r = vec3(uSceneBottomLeft + (gl_FragCoord.xy/uRes) * (uSceneTopRight - uSceneBottomLeft), 0.0);\n\n    r.z = -(dScene.r - 0.5) * uDepth;\n    r = vec3(uRot * vec4(r, 1));\n    float depth = -r.z/uDepth + 0.5;\n\n    vec2 p = (r.xy - uRotBottomLeft)/(uRotTopRight - uRotBottomLeft);\n\n    vec4 dRandRot = texture2D(uRandRotDepth, p);\n\n    float ao = step(dRandRot.r, depth * 0.99);\n\n    vec3 normal = texture2D(uSceneNormal, gl_FragCoord.xy/uRes).rgb * 2.0 - 1.0;\n    vec3 dir = vec3(uInvRot * vec4(0, 0, 1, 0));\n    float mag = dot(dir, normal);\n    float sampled = step(0.0, mag);\n\n    ao *= sampled;\n\n    vec4 acc = texture2D(uAccumulator, gl_FragCoord.xy/uRes);\n\n    if (uSampleCount < 256) {\n        acc.r += ao/255.0;\n    } else if (uSampleCount < 512) {\n        acc.g += ao/255.0;\n    } else if (uSampleCount < 768) {\n        acc.b += ao/255.0;\n    } else {\n        acc.a += ao/255.0;\n    }\n        \n    gl_FragColor = acc;\n\n}\n");
-            progAO = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneColor;\nuniform sampler2D uSceneDepth;\nuniform sampler2D uAccumulatorOut;\nuniform float uRes;\nuniform float uAO;\nuniform float uBrightness;\nuniform int uOutline;\n\nvoid main() {\n    vec2 p = gl_FragCoord.xy/uRes;\n    vec4 sceneColor = texture2D(uSceneColor, p);\n    if (uOutline == 1) {\n        float depth = texture2D(uSceneDepth, p).r;\n        float r = 1.0/uRes;\n        float d0 = abs(texture2D(uSceneDepth, p + vec2(-r,  0)).r - depth);\n        float d1 = abs(texture2D(uSceneDepth, p + vec2( r,  0)).r - depth);\n        float d2 = abs(texture2D(uSceneDepth, p + vec2( 0, -r)).r - depth);\n        float d3 = abs(texture2D(uSceneDepth, p + vec2( 0,  r)).r - depth);\n        float d = max(d0, d1);\n        d = max(d, d2);\n        d = max(d, d3);\n        sceneColor.rgb *= pow(1.0 - d, 32.0);\n        sceneColor.a = max(step(0.003, d), sceneColor.a);\n    }\n    vec4 dAccum = texture2D(uAccumulatorOut, p);\n    float shade = max(0.0, 1.0 - (dAccum.r + dAccum.g + dAccum.b + dAccum.a) * 0.25 * uAO);\n    shade = pow(shade, 2.0);\n    gl_FragColor = vec4(uBrightness * sceneColor.rgb * shade, sceneColor.a);\n}\n");
+            progAO = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneColor;\nuniform sampler2D uSceneDepth;\nuniform sampler2D uAccumulatorOut;\nuniform float uRes;\nuniform float uAO;\nuniform float uBrightness;\nuniform float uOutlineStrength;\n\nvoid main() {\n    vec2 p = gl_FragCoord.xy/uRes;\n    vec4 sceneColor = texture2D(uSceneColor, p);\n    if (uOutlineStrength > 0.0) {\n        float depth = texture2D(uSceneDepth, p).r;\n        float r = 1.0/uRes;\n        float d0 = abs(texture2D(uSceneDepth, p + vec2(-r,  0)).r - depth);\n        float d1 = abs(texture2D(uSceneDepth, p + vec2( r,  0)).r - depth);\n        float d2 = abs(texture2D(uSceneDepth, p + vec2( 0, -r)).r - depth);\n        float d3 = abs(texture2D(uSceneDepth, p + vec2( 0,  r)).r - depth);\n        float d = max(d0, d1);\n        d = max(d, d2);\n        d = max(d, d3);\n        sceneColor.rgb *= pow(1.0 - d, uOutlineStrength * 32.0);\n        sceneColor.a = max(step(0.003, d), sceneColor.a);\n    }\n    vec4 dAccum = texture2D(uAccumulatorOut, p);\n    float shade = max(0.0, 1.0 - (dAccum.r + dAccum.g + dAccum.b + dAccum.a) * 0.25 * uAO);\n    shade = pow(shade, 2.0);\n    gl_FragColor = vec4(uBrightness * sceneColor.rgb * shade, sceneColor.a);\n}\n");
 
             var position = [
                 -1, -1, 0,
@@ -10177,7 +10177,7 @@ module.exports = function (canvas, resolution) {
             progAO.setUniform("uRes", "1f", resolution);
             progAO.setUniform("uAO", "1f", 2.0 * view.getAmbientOcclusion());
             progAO.setUniform("uBrightness", "1f", 2.0 * view.getBrightness());
-            progAO.setUniform("uOutline", "1i", view.getOutline() ? 1 : 0);
+            progAO.setUniform("uOutlineStrength", "1f", view.getOutlineStrength());
             rAO.render();
 
             // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -10341,6 +10341,11 @@ window.onload = function() {
             bright += wd/100;
             view.setBrightness(bright);
             document.getElementById("brightness").value = Math.round(bright * 100);
+        } else if (kb.active('q')) {
+            var outline = view.getOutlineStrength();
+            outline += wd/100;
+            view.setOutlineStrength(outline);
+            document.getElementById("outline-strength").value = Math.round(outline * 100);
         } else {
             var zoom = view.getZoom() * (wd === 1 ? 1/0.9 : 0.9);
             view.setZoom(zoom);
@@ -10428,6 +10433,11 @@ window.onload = function() {
         view.setBrightness(scale/100);
     });
 
+    document.getElementById("outline-strength").addEventListener("input", function(e) {
+        var scale = parseInt(document.getElementById("outline-strength").value);
+        view.setOutlineStrength(scale/100);
+    });
+
     document.getElementById("samples-per-frame").addEventListener("change", function(e) {
         var spf = parseInt(document.getElementById("samples-per-frame").value);
         view.setSamplesPerFrame(spf);
@@ -10438,10 +10448,6 @@ window.onload = function() {
         view.setResolution(resolution);
         imposter.setResolution(resolution);
         needReset = true;
-    });
-
-    document.getElementById("outline").addEventListener("click", function(e) {
-        view.setOutline(document.getElementById("outline").checked);
     });
 
     document.getElementById("bonds").addEventListener("click", function(e) {
@@ -10461,7 +10467,7 @@ window.onload = function() {
     document.getElementById("bond-threshold").value = view.getBondThreshold();
     document.getElementById("ambient-occlusion").value = Math.round(view.getAmbientOcclusion() * 100);
     document.getElementById("brightness").value = Math.round(view.getBrightness() * 100);
-    document.getElementById("outline").checked = view.getOutline();
+    document.getElementById("outline-strength").value = Math.round(view.getOutlineStrength() * 100);
     document.getElementById("bonds").checked = view.getBonds();
 
     function loop() {
@@ -10469,6 +10475,7 @@ window.onload = function() {
         document.getElementById("bond-radius-text").innerHTML = Math.round(view.getBondScale() * 100) + "%";
         document.getElementById("ambient-occlusion-text").innerHTML = Math.round(view.getAmbientOcclusion() * 100) + "%";
         document.getElementById("brightness-text").innerHTML = Math.round(view.getBrightness() * 100) + "%";
+        document.getElementById("outline-strength-text").innerHTML = Math.round(view.getOutlineStrength() * 100) + "%";
         if (needReset) {
             imposter.reset();
             needReset = false;
@@ -10512,7 +10519,7 @@ module.exports = function View(serialized) {
     var rotation = glm.mat4.create();
     var ao = 0.5;
     var brightness = 0.5;
-    var outline = false;
+    var outlineStrength = 0.0;
     var spf = 32;
     var bonds = false;
     var bondThreshold = 1.2;
@@ -10534,7 +10541,6 @@ module.exports = function View(serialized) {
             rotation: glm.mat4.clone(rotation),
             ao: ao,
             brightness: brightness,
-            outline: outline,
             spf: spf,
             resolution: resolution,
             bonds: bonds,
@@ -10551,7 +10557,6 @@ module.exports = function View(serialized) {
         rotation = glm.mat4.clone(data.rotation);
         ao = data.ao;
         brightness = data.brightness;
-        outline = data.outline;
         spf = data.spf;
         resolution = data.resolution;
         bonds = data.bonds;
@@ -10639,14 +10644,6 @@ module.exports = function View(serialized) {
         return brightness;
     };
 
-    self.setOutline = function(val) {
-        outline = val;
-    };
-
-    self.getOutline = function() {
-        return outline;
-    };
-
     self.setSamplesPerFrame = function(val) {
         spf = val;
     };
@@ -10669,6 +10666,14 @@ module.exports = function View(serialized) {
 
     self.getBondThreshold = function() {
         return bondThreshold;
+    };
+
+    self.setOutlineStrength = function(val) {
+        outlineStrength = clamp(0, 1, val);
+    };
+
+    self.getOutlineStrength = function() {
+        return outlineStrength;
     }
 
     self.getRect = function() {
