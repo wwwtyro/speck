@@ -22,7 +22,8 @@ module.exports = function (canvas, resolution) {
             rBonds = null,
             rDispQuad = null,
             rAccumulator = null,
-            rAO = null;
+            rAO = null,
+            rFXAA = null;
 
         var tSceneColor,
             tSceneNormal,
@@ -31,7 +32,8 @@ module.exports = function (canvas, resolution) {
             tRandRotNormal,
             tRandRotColor,
             tAccumulator,
-            tAccumulatorOut;
+            tAccumulatorOut,
+            tAO;
 
         var tiSceneColor,
             tiSceneNormal,
@@ -40,16 +42,19 @@ module.exports = function (canvas, resolution) {
             tiRandRotNormal,
             tiRandRotColor,
             tiAccumulator,
-            tiAccumulatorOut;
+            tiAccumulatorOut,
+            tiAO;
 
         var fbScene,
             fbRandRot,
-            fbAccumulator;
+            fbAccumulator,
+            fbAO;
 
         var progScene,
             progBonds,
             progAccumulator,
             progAO,
+            progFXAA,
             progDisplayQuad;
 
         var extFragDepth,
@@ -85,6 +90,7 @@ module.exports = function (canvas, resolution) {
             tiRandRotNormal  = 5;
             tiAccumulator    = 6;
             tiAccumulatorOut = 7;
+            tiAO             = 8;
 
             self.createTextures();
 
@@ -94,6 +100,7 @@ module.exports = function (canvas, resolution) {
             progDisplayQuad = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/textured-quad.glsl", 'utf8'));
             progAccumulator = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/accumulator.glsl", 'utf8'));
             progAO = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/ao.glsl", 'utf8'));
+            progFXAA = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/fxaa.glsl", 'utf8'));
 
             var position = [
                 -1, -1, 0,
@@ -136,6 +143,17 @@ module.exports = function (canvas, resolution) {
             attribs.aPosition.buffer.set(new Float32Array(position));
             var count = position.length / 9;
             rAO = new core.Renderable(gl, progAO, attribs, count);
+
+            // Initialize geometry.
+            var attribs = {
+                aPosition: {
+                    buffer: new core.Buffer(gl),
+                    size: 3
+                },
+            };
+            attribs.aPosition.buffer.set(new Float32Array(position));
+            var count = position.length / 9;
+            rFXAA = new core.Renderable(gl, progFXAA, attribs, count);
 
             samples = 0;
 
@@ -240,6 +258,20 @@ module.exports = function (canvas, resolution) {
             fbAccumulator = gl.createFramebuffer();
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbAccumulator);
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tAccumulatorOut, 0);
+
+            // fbAO
+            gl.activeTexture(gl.TEXTURE0 + tiAO);
+            tAO = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tAO);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+            fbAO = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbAO);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tAO, 0);
 
         }
 
@@ -407,6 +439,7 @@ module.exports = function (canvas, resolution) {
                     sampleCount++;
                 }
             }
+            renderAO(view);
             display(view);
         }
 
@@ -512,8 +545,8 @@ module.exports = function (canvas, resolution) {
             gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
         }
 
-        function display(view) {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        function renderAO(view) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbAO);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             progAO.setUniform("uSceneColor", "1i", tiSceneColor);
             progAO.setUniform("uSceneDepth", "1i", tiSceneDepth);
@@ -523,6 +556,14 @@ module.exports = function (canvas, resolution) {
             progAO.setUniform("uBrightness", "1f", 2.0 * view.getBrightness());
             progAO.setUniform("uOutlineStrength", "1f", view.getOutlineStrength());
             rAO.render();
+        }
+
+        function display(view) {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            progFXAA.setUniform("uTexture", "1i", tiAO);
+            progFXAA.setUniform("uRes", "1f", resolution);
+            rFXAA.render();
 
             // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
