@@ -439,7 +439,7 @@ module.exports = function (canvas, resolution) {
                     sampleCount++;
                 }
             }
-            renderAO(view);
+            // renderAO(view);
             display(view);
         }
 
@@ -545,8 +545,12 @@ module.exports = function (canvas, resolution) {
             gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
         }
 
-        function renderAO(view) {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fbAO);
+        function display(view) {
+            if (view.getFXAA()) {
+                gl.bindFramebuffer(gl.FRAMEBUFFER, fbAO);
+            } else {
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            }
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             progAO.setUniform("uSceneColor", "1i", tiSceneColor);
             progAO.setUniform("uSceneDepth", "1i", tiSceneDepth);
@@ -556,14 +560,14 @@ module.exports = function (canvas, resolution) {
             progAO.setUniform("uBrightness", "1f", 2.0 * view.getBrightness());
             progAO.setUniform("uOutlineStrength", "1f", view.getOutlineStrength());
             rAO.render();
-        }
 
-        function display(view) {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            progFXAA.setUniform("uTexture", "1i", tiAO);
-            progFXAA.setUniform("uRes", "1f", resolution);
-            rFXAA.render();
+            if (view.getFXAA()) {
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                progFXAA.setUniform("uTexture", "1i", tiAO);
+                progFXAA.setUniform("uRes", "1f", resolution);
+                rFXAA.render();
+            }
 
             // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);

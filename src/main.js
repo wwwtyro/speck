@@ -263,6 +263,10 @@ window.onload = function() {
         needReset = true;
     });
 
+    document.getElementById("fxaa").addEventListener("click", function(e) {
+        view.setFXAA(document.getElementById("fxaa").checked)
+    });
+
     document.getElementById("atom-radius").value = Math.round(view.getAtomScale() * 100);
     document.getElementById("bond-radius").value = Math.round(view.getBondScale() * 100);
     document.getElementById("bond-threshold").value = view.getBondThreshold();
@@ -270,6 +274,7 @@ window.onload = function() {
     document.getElementById("brightness").value = Math.round(view.getBrightness() * 100);
     document.getElementById("outline-strength").value = Math.round(view.getOutlineStrength() * 100);
     document.getElementById("bonds").checked = view.getBonds();
+    document.getElementById("fxaa").checked = view.getFXAA();
 
     function loop() {
         document.getElementById("atom-radius-text").innerHTML = Math.round(view.getAtomScale() * 100) + "%";

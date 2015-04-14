@@ -33,6 +33,7 @@ module.exports = function View(serialized) {
     var bonds = false;
     var bondThreshold = 1.2;
     var resolution = 768;
+    var fxaa = true;
 
     self.initialize = function() {
         if (serialized !== undefined) {
@@ -183,7 +184,15 @@ module.exports = function View(serialized) {
 
     self.getOutlineStrength = function() {
         return outlineStrength;
-    }
+    };
+
+    self.setFXAA = function(val) {
+        fxaa = val;
+    };
+
+    self.getFXAA = function() {
+        return fxaa;
+    };
 
     self.getRect = function() {
         var width = 1.0/zoom;
