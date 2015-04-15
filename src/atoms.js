@@ -8,8 +8,15 @@ module.exports = function() {
 
     self.initialize = function() {
         self.atoms = [];
-        self.bondThreshold = 1.2;
     };
+
+    self.serialize = function() {
+        return self.atoms;
+    };
+
+    self.deserialize = function(data) {
+        self.atoms = data;
+    }
 
     self.addAtom = function(symbol, x, y, z) {
         self.atoms.push({

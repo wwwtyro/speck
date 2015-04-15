@@ -54,7 +54,9 @@ module.exports = function View(serialized) {
             spf: spf,
             resolution: resolution,
             bonds: bonds,
-            bondThreshold: bondThreshold
+            bondThreshold: bondThreshold,
+            outlineStrength: outlineStrength,
+            fxaa: fxaa
         }
     };
 
@@ -70,7 +72,9 @@ module.exports = function View(serialized) {
         spf = data.spf;
         resolution = data.resolution;
         bonds = data.bonds;
-        bondThreshold = bondThreshold;
+        bondThreshold = data.bondThreshold;
+        fxaa = data.fxaa;
+        outlineStrength = data.outlineStrength;
     };
 
     self.clone = function() {

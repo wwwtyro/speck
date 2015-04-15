@@ -8,6 +8,7 @@ var elements = require('./elements');
 var View = require("./view");
 var Atoms = require("./atoms");
 var kb = require("keyboardjs");
+var lz = require("lz-string");
 
 kb.active = function(key) {
     var keys = kb.activeKeys();
@@ -47,8 +48,6 @@ window.onload = function() {
 
     var imposterCanvas = document.getElementById("imposter-canvas");
 
-    view.setResolution(768);
-
     imposter = new Imposter(imposterCanvas, view.getResolution());
 
     var structs = {};
@@ -60,7 +59,18 @@ window.onload = function() {
     structs.benzene = fs.readFileSync(__dirname + "/samples/benzene.xyz", 'utf8');
     structs.methane = fs.readFileSync(__dirname + "/samples/methane.xyz", 'utf8');
 
-    loadStructure(xyz(structs.testosterone)[0]);
+    if (location.hash !== "") {
+        var hash = location.hash.slice(1, location.hash.length);
+        var data = lz.decompressFromEncodedURIComponent(hash);
+        data = JSON.parse(data);
+        atoms.deserialize(data.atoms);
+        view.deserialize(data.view);
+        imposter.setAtoms(atoms, view);
+        imposter.setResolution(view.getResolution());
+        needReset = true;
+    } else {
+        loadStructure(xyz(structs.testosterone)[0]);
+    }
 
     var selector = document.getElementById("controls-sample");
     selector.addEventListener("change", function() {
@@ -161,10 +171,12 @@ window.onload = function() {
     function hideAllControls() {
         document.getElementById("controls-structure").style.display = "none";
         document.getElementById("controls-render").style.display = "none";
+        document.getElementById("controls-share").style.display = "none";
         document.getElementById("controls-help").style.display = "none";
         document.getElementById("controls-about").style.display = "none";
         document.getElementById("menu-button-structure").style.background = buttonUpColor;
         document.getElementById("menu-button-render").style.background = buttonUpColor;
+        document.getElementById("menu-button-share").style.background = buttonUpColor;
         document.getElementById("menu-button-help").style.background = buttonUpColor;
         document.getElementById("menu-button-about").style.background = buttonUpColor;
     }
@@ -180,6 +192,9 @@ window.onload = function() {
     });
     document.getElementById("menu-button-render").addEventListener("click", function() {
         showControl("render");
+    });
+    document.getElementById("menu-button-share").addEventListener("click", function() {
+        showControl("share");
     });
     document.getElementById("menu-button-help").addEventListener("click", function() {
         showControl("help");
@@ -267,6 +282,19 @@ window.onload = function() {
         view.setFXAA(document.getElementById("fxaa").checked)
     });
 
+    document.getElementById("share-url-button").addEventListener("click", function(e) {
+        var data = {
+            view: view.serialize(),
+            atoms: atoms.serialize()
+        }
+        data = lz.compressToEncodedURIComponent(JSON.stringify(data));
+        document.getElementById("share-url").value = location.href.split("#")[0] + "#" + data;
+    });
+
+    document.getElementById("share-url").addEventListener("click", function(e) {
+        this.select();
+    });
+
     document.getElementById("atom-radius").value = Math.round(view.getAtomScale() * 100);
     document.getElementById("bond-radius").value = Math.round(view.getBondScale() * 100);
     document.getElementById("bond-threshold").value = view.getBondThreshold();
@@ -275,6 +303,9 @@ window.onload = function() {
     document.getElementById("outline-strength").value = Math.round(view.getOutlineStrength() * 100);
     document.getElementById("bonds").checked = view.getBonds();
     document.getElementById("fxaa").checked = view.getFXAA();
+    document.getElementById("resolution").value = view.getResolution();
+    document.getElementById("samples-per-frame").value = view.getSamplesPerFrame();
+
 
     function loop() {
         document.getElementById("atom-radius-text").innerHTML = Math.round(view.getAtomScale() * 100) + "%";
