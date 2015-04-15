@@ -257,7 +257,7 @@ window.onload = function() {
         needReset = true;
     });
 
-    document.getElementById("bond-threshold-button").addEventListener("click", function(e) {
+    document.getElementById("bond-threshold").addEventListener("change", function(e) {
         view.setBondThreshold(parseFloat(document.getElementById("bond-threshold").value));
         imposter.setAtoms(atoms, view);
         needReset = true;
