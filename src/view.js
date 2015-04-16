@@ -1,7 +1,7 @@
 "use strict";
 
 
-var glm = require("gl-matrix");
+var glm = require("./gl-matrix");
 var elements = require("./elements")
 
 
@@ -24,6 +24,7 @@ module.exports = function View(serialized) {
     var zoom = 0.125;
     var translation = {x: 0.0, y: 0.0};
     var atomScale = 0.6;
+    var relativeAtomScale = 1.0;
     var bondScale = 0.5;
     var rotation = glm.mat4.create();
     var ao = 0.5;
@@ -47,6 +48,7 @@ module.exports = function View(serialized) {
             zoom: zoom,
             translation: {x: translation.x, y: translation.y},
             atomScale: atomScale,
+            relativeAtomScale: relativeAtomScale,
             bondScale: bondScale,
             rotation: glm.mat4.clone(rotation),
             ao: ao,
@@ -65,6 +67,7 @@ module.exports = function View(serialized) {
         zoom = data.zoom;
         translation = {x: data.translation.x, y: data.translation.y};
         atomScale = data.atomScale;
+        relativeAtomScale = data.relativeAtomScale;
         bondScale = data.bondScale;
         rotation = glm.mat4.clone(data.rotation);
         ao = data.ao;
@@ -132,6 +135,14 @@ module.exports = function View(serialized) {
 
     self.getAtomScale = function() {
         return atomScale;
+    };
+
+    self.setRelativeAtomScale = function(val) {
+        relativeAtomScale = clamp(0, 1, val);
+    };
+
+    self.getRelativeAtomScale = function() {
+        return relativeAtomScale;
     };
 
     self.setBondScale = function(val) {
@@ -214,7 +225,7 @@ module.exports = function View(serialized) {
     };
 
     self.getBondRadius = function() {
-        return bondScale * MIN_ATOM_RADIUS * atomScale;
+        return bondScale * atomScale * (1 + (MIN_ATOM_RADIUS - 1) * relativeAtomScale);
     };
 
     self.initialize();

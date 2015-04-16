@@ -1,6 +1,5 @@
 "use strict";
 
-var glm = require('gl-matrix');
 var Imposter = require('./imposter-renderer');
 var fs = require('fs');
 var xyz = require('./xyz');
@@ -136,6 +135,12 @@ window.onload = function() {
             view.setAtomScale(scale);
             document.getElementById("atom-radius").value = Math.round(scale * 100);
             needReset = true;
+        } else if (kb.active('z')) {
+            var scale = view.getRelativeAtomScale();
+            scale += wd/100;
+            view.setRelativeAtomScale(scale);
+            document.getElementById("relative-atom-radius").value = Math.round(scale * 100);
+            needReset = true;
         } else if (kb.active('b')) {
             var scale = view.getBondScale();
             scale += wd/100;
@@ -233,6 +238,12 @@ window.onload = function() {
         needReset = true;
     });
 
+    document.getElementById("relative-atom-radius").addEventListener("input", function(e) {
+        var scale = parseInt(document.getElementById("relative-atom-radius").value);
+        view.setRelativeAtomScale(scale/100);
+        needReset = true;
+    });
+
     document.getElementById("bond-radius").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("bond-radius").value);
         view.setBondScale(scale/100);
@@ -296,6 +307,7 @@ window.onload = function() {
     });
 
     document.getElementById("atom-radius").value = Math.round(view.getAtomScale() * 100);
+    document.getElementById("relative-atom-radius").value = Math.round(view.getRelativeAtomScale() * 100);
     document.getElementById("bond-radius").value = Math.round(view.getBondScale() * 100);
     document.getElementById("bond-threshold").value = view.getBondThreshold();
     document.getElementById("ambient-occlusion").value = Math.round(view.getAmbientOcclusion() * 100);
@@ -309,6 +321,7 @@ window.onload = function() {
 
     function loop() {
         document.getElementById("atom-radius-text").innerHTML = Math.round(view.getAtomScale() * 100) + "%";
+        document.getElementById("relative-atom-radius-text").innerHTML = Math.round(view.getRelativeAtomScale() * 100) + "%";
         document.getElementById("bond-radius-text").innerHTML = Math.round(view.getBondScale() * 100) + "%";
         document.getElementById("ambient-occlusion-text").innerHTML = Math.round(view.getAmbientOcclusion() * 100) + "%";
         document.getElementById("brightness-text").innerHTML = Math.round(view.getBrightness() * 100) + "%";

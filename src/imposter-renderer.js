@@ -1,7 +1,7 @@
 "use strict";
 
 var glm = require('./gl-matrix');
-var core = require('webgl.js');
+var core = require('./webgl.js');
 var fs = require('fs');
 var cube = require("./cube");
 var elements = require("./elements");
@@ -461,6 +461,7 @@ module.exports = function (canvas, resolution) {
             progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
             progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
             progScene.setUniform("uAtomScale", "1f", 2.5 * view.getAtomScale());
+            progScene.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
             progScene.setUniform("uRes", "1f", resolution);
             progScene.setUniform("uDepth", "1f", range);
             rScene.render();
@@ -505,6 +506,7 @@ module.exports = function (canvas, resolution) {
             progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
             progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
             progScene.setUniform("uAtomScale", "1f", 2.5 * v.getAtomScale());
+            progScene.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
             progScene.setUniform("uRes", "1f", resolution);
             progScene.setUniform("uDepth", "1f", range);
             rScene.render();
