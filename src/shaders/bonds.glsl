@@ -5,6 +5,8 @@ attribute vec3 aImposter;
 attribute vec3 aNormal;
 attribute vec3 aPosA;
 attribute vec3 aPosB;
+attribute vec3 aColA;
+attribute vec3 aColB;
 
 uniform mat4 uView;
 uniform mat4 uProjection;
@@ -12,9 +14,9 @@ uniform mat4 uModel;
 uniform mat4 uRotation;
 uniform float uBondRadius;
 
-varying vec3 vColor;
 varying vec3 vNormal;
 varying vec3 vPosA, vPosB;
+varying vec3 vColA, vColB;
 varying float vRadius;
 
 mat3 alignVector(vec3 a, vec3 b) {
@@ -56,6 +58,8 @@ void main() {
     vNormal = vec3(uRotation * vec4(R * aNormal, 1));
     vPosA = aPosA;
     vPosB = aPosB;
+    vColA = aColA;
+    vColB = aColB;
 }
 
 
@@ -73,9 +77,9 @@ uniform vec2 uTopRight;
 uniform float uDepth;
 uniform float uRes;
 
-varying vec3 vColor;
 varying vec3 vNormal;
 varying vec3 vPosA, vPosB;
+varying vec3 vColA, vColB;
 varying float vRadius;
 
 mat3 alignVector(vec3 a, vec3 b) {
@@ -127,11 +131,18 @@ void main() {
         discard;
     }
 
+    vec3 color;
+    if (coord.y < length(vPosA - vPosB) * 0.5) {
+        color = vColA;
+    } else {
+        color = vColB;
+    }
+
     R = alignVector(j, i);
     vec3 normal = normalize(R * vec3(coord.x, 0, coord.z));
 
     coord = r0 + rd * t;
-    gl_FragData[0] = vec4(1,1,1,1);
+    gl_FragData[0] = vec4(color,1);
     gl_FragData[1] = vec4(normal * 0.5 + 0.5, 1.0);
     gl_FragDepthEXT = -(coord.z - uDepth/2.0)/uDepth;
 }

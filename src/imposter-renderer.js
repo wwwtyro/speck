@@ -355,9 +355,13 @@ module.exports = function (canvas, resolution) {
                         if (glm.vec3.distance(l,m) > cutoff * view.getBondThreshold()) {
                             continue;
                         }
+                        var ca = elements[a.symbol].color;
+                        var cb = elements[b.symbol].color;
                         bonds.push({
                             a: a,
-                            b: b
+                            b: b,
+                            ca: ca,
+                            cb: cb
                         });
                     }
                 }
@@ -378,23 +382,37 @@ module.exports = function (canvas, resolution) {
                         aPosB: {
                             buffer: new core.Buffer(gl),
                             size: 3
+                        },
+                        aColA: {
+                            buffer: new core.Buffer(gl),
+                            size: 3
+                        },
+                        aColB: {
+                            buffer: new core.Buffer(gl),
+                            size: 3
                         }
                     };
 
                     var imposter = [];
                     var posa = [];
                     var posb = [];
+                    var cola = [];
+                    var colb = [];
 
                     for (var i = 0; i < bonds.length; i++) {
                         var b = bonds[i];
                         imposter.push.apply(imposter, cube.position);
                         posa.push.apply(posa, make36([b.a.x, b.a.y, b.a.z]));
                         posb.push.apply(posb, make36([b.b.x, b.b.y, b.b.z]));
+                        cola.push.apply(cola, make36([b.ca[0], b.ca[1], b.ca[2]]));
+                        colb.push.apply(colb, make36([b.cb[0], b.cb[1], b.cb[2]]));
                     }
 
                     attribs.aImposter.buffer.set(new Float32Array(imposter));
                     attribs.aPosA.buffer.set(new Float32Array(posa));
                     attribs.aPosB.buffer.set(new Float32Array(posb));
+                    attribs.aColA.buffer.set(new Float32Array(cola));
+                    attribs.aColB.buffer.set(new Float32Array(colb));
 
                     var count = imposter.length / 9;
 
@@ -439,7 +457,6 @@ module.exports = function (canvas, resolution) {
                     sampleCount++;
                 }
             }
-            // renderAO(view);
             display(view);
         }
 
