@@ -2,7 +2,6 @@
 precision highp float;
 
 attribute vec3 aImposter;
-attribute vec3 aNormal;
 attribute vec3 aPosA;
 attribute vec3 aPosB;
 attribute vec3 aColA;
@@ -55,7 +54,6 @@ void main() {
 
     vec4 position = uModel * vec4(pos, 1);
     gl_Position = uProjection * uView * position;
-    vNormal = vec3(uRotation * vec4(R * aNormal, 1));
     vPosA = aPosA;
     vPosB = aPosB;
     vColA = aColA;
@@ -77,7 +75,6 @@ uniform vec2 uTopRight;
 uniform float uDepth;
 uniform float uRes;
 
-varying vec3 vNormal;
 varying vec3 vPosA, vPosB;
 varying vec3 vColA, vColB;
 varying float vRadius;
