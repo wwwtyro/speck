@@ -33,6 +33,7 @@ module.exports = function View(serialized) {
     var spf = 32;
     var bonds = false;
     var bondThreshold = 1.2;
+    var bondShade = 0.0;
     var resolution = 768;
     var fxaa = true;
 
@@ -57,6 +58,7 @@ module.exports = function View(serialized) {
             resolution: resolution,
             bonds: bonds,
             bondThreshold: bondThreshold,
+            bondShade: bondShade,
             outlineStrength: outlineStrength,
             fxaa: fxaa
         }
@@ -76,6 +78,7 @@ module.exports = function View(serialized) {
         resolution = data.resolution;
         bonds = data.bonds;
         bondThreshold = data.bondThreshold;
+        bondShade = data.bondShade;
         fxaa = data.fxaa;
         outlineStrength = data.outlineStrength;
     };
@@ -151,6 +154,14 @@ module.exports = function View(serialized) {
 
     self.getBondScale = function() {
         return bondScale;
+    };
+
+    self.setBondShade = function(val) {
+        bondShade = clamp(0, 1, val);
+    };
+
+    self.getBondShade = function() {
+        return bondShade;
     };
 
     self.setAmbientOcclusion = function(val) {

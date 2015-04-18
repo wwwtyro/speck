@@ -493,6 +493,7 @@ module.exports = function (canvas, resolution) {
                 progBonds.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
                 progBonds.setUniform("uRes", "1f", resolution);
                 progBonds.setUniform("uBondRadius", "1f", 2.5 * view.getBondRadius());
+                progBonds.setUniform("uBondShade", "1f", view.getBondShade());
                 rBonds.render();
             }
         }
@@ -538,6 +539,7 @@ module.exports = function (canvas, resolution) {
                 progBonds.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
                 progBonds.setUniform("uRes", "1f", resolution);
                 progBonds.setUniform("uBondRadius", "1f", 2.5 * view.getBondRadius());
+                progBonds.setUniform("uBondShade", "1f", view.getBondShade());
                 rBonds.render();
             }
 

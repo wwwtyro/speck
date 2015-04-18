@@ -147,6 +147,12 @@ window.onload = function() {
             view.setBondScale(scale);
             document.getElementById("bond-radius").value = Math.round(scale * 100);
             needReset = true;
+        } else if (kb.active('s')) {
+            var scale = view.getBondShade();
+            scale += wd/100;
+            view.setBondShade(scale);
+            document.getElementById("bond-shade").value = Math.round(scale * 100);
+            needReset = true;
         } else if (kb.active('o')) {
             var ao = view.getAmbientOcclusion();
             ao += wd/100;
@@ -250,6 +256,12 @@ window.onload = function() {
         needReset = true;
     });
 
+    document.getElementById("bond-shade").addEventListener("input", function(e) {
+        var scale = parseInt(document.getElementById("bond-shade").value);
+        view.setBondShade(scale/100);
+        needReset = true;
+    });
+
     document.getElementById("ambient-occlusion").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("ambient-occlusion").value);
         view.setAmbientOcclusion(scale/100);
@@ -309,6 +321,7 @@ window.onload = function() {
     document.getElementById("atom-radius").value = Math.round(view.getAtomScale() * 100);
     document.getElementById("relative-atom-radius").value = Math.round(view.getRelativeAtomScale() * 100);
     document.getElementById("bond-radius").value = Math.round(view.getBondScale() * 100);
+    document.getElementById("bond-shade").value = Math.round(view.getBondShade() * 100);
     document.getElementById("bond-threshold").value = view.getBondThreshold();
     document.getElementById("ambient-occlusion").value = Math.round(view.getAmbientOcclusion() * 100);
     document.getElementById("brightness").value = Math.round(view.getBrightness() * 100);
@@ -323,6 +336,7 @@ window.onload = function() {
         document.getElementById("atom-radius-text").innerHTML = Math.round(view.getAtomScale() * 100) + "%";
         document.getElementById("relative-atom-radius-text").innerHTML = Math.round(view.getRelativeAtomScale() * 100) + "%";
         document.getElementById("bond-radius-text").innerHTML = Math.round(view.getBondScale() * 100) + "%";
+        document.getElementById("bond-shade-text").innerHTML = Math.round(view.getBondShade() * 100) + "%";
         document.getElementById("ambient-occlusion-text").innerHTML = Math.round(view.getAmbientOcclusion() * 100) + "%";
         document.getElementById("brightness-text").innerHTML = Math.round(view.getBrightness() * 100) + "%";
         document.getElementById("outline-strength-text").innerHTML = Math.round(view.getOutlineStrength() * 100) + "%";

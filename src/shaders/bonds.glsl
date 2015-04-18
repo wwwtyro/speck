@@ -76,6 +76,7 @@ uniform vec2 uBottomLeft;
 uniform vec2 uTopRight;
 uniform float uDepth;
 uniform float uRes;
+uniform float uBondShade;
 
 varying vec3 vNormal;
 varying vec3 vPosA, vPosB;
@@ -137,6 +138,8 @@ void main() {
     } else {
         color = vColB;
     }
+
+    color = mix(color, vec3(1,1,1), uBondShade);
 
     R = alignVector(j, i);
     vec3 normal = normalize(R * vec3(coord.x, 0, coord.z));
