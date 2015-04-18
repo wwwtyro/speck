@@ -443,7 +443,7 @@ module.exports = function (canvas, resolution) {
                 return;
             }
 
-            range = atoms.getRadius(view.getAtomScale()) * 2.0;
+            range = atoms.getRadius(view) * 2.0;
 
             if (!initialRender) {
                 scene(view);

@@ -1462,6 +1462,13 @@ if( typeof module !== 'undefined' && module != null ) {
 
 var elements = require("./elements");
 
+var MIN_ATOM_RADIUS = Infinity;
+var MAX_ATOM_RADIUS = -Infinity;
+for (var i = 0; i <= 118; i++) {
+    MIN_ATOM_RADIUS = Math.min(MIN_ATOM_RADIUS, elements[i].radius);
+    MAX_ATOM_RADIUS = Math.max(MAX_ATOM_RADIUS, elements[i].radius);
+}
+
 module.exports = function() {
 
     var self = this;
@@ -1534,7 +1541,7 @@ module.exports = function() {
 
     self.getRadius = function() {
         var a = self.getFarAtom();
-        var r = elements[a.symbol].radius;
+        var r = MAX_ATOM_RADIUS;
         var rd = Math.sqrt(r*r + r*r + r*r) * 2.5;
         return Math.sqrt(a.x*a.x + a.y*a.y + a.z*a.z) + rd;
     }
@@ -6538,7 +6545,7 @@ module.exports = function (canvas, resolution) {
                 return;
             }
 
-            range = atoms.getRadius(view.getAtomScale()) * 2.0;
+            range = atoms.getRadius(view) * 2.0;
 
             if (!initialRender) {
                 scene(view);
@@ -7065,8 +7072,10 @@ var elements = require("./elements")
 
 
 var MIN_ATOM_RADIUS = Infinity;
+var MAX_ATOM_RADIUS = Infinity;
 for (var i = 0; i <= 118; i++) {
     MIN_ATOM_RADIUS = Math.min(MIN_ATOM_RADIUS, elements[i].radius);
+    MAX_ATOM_RADIUS = Math.min(MAX_ATOM_RADIUS, elements[i].radius);
 }
 
 
