@@ -357,9 +357,13 @@ module.exports = function (canvas, resolution) {
                         }
                         var ca = elements[a.symbol].color;
                         var cb = elements[b.symbol].color;
+                        var ra = elements[a.symbol].radius;
+                        var rb = elements[b.symbol].radius;
                         bonds.push({
                             a: a,
                             b: b,
+                            ra: ra,
+                            rb: rb,
                             ca: ca,
                             cb: cb
                         });
@@ -383,6 +387,14 @@ module.exports = function (canvas, resolution) {
                             buffer: new core.Buffer(gl),
                             size: 3
                         },
+                        aRadA: {
+                            buffer: new core.Buffer(gl),
+                            size: 1
+                        },
+                        aRadB: {
+                            buffer: new core.Buffer(gl),
+                            size: 1
+                        },
                         aColA: {
                             buffer: new core.Buffer(gl),
                             size: 3
@@ -396,6 +408,8 @@ module.exports = function (canvas, resolution) {
                     var imposter = [];
                     var posa = [];
                     var posb = [];
+                    var rada = [];
+                    var radb = [];
                     var cola = [];
                     var colb = [];
 
@@ -404,6 +418,8 @@ module.exports = function (canvas, resolution) {
                         imposter.push.apply(imposter, cube.position);
                         posa.push.apply(posa, make36([b.a.x, b.a.y, b.a.z]));
                         posb.push.apply(posb, make36([b.b.x, b.b.y, b.b.z]));
+                        rada.push.apply(rada, make36([b.ra]));
+                        radb.push.apply(radb, make36([b.rb]));
                         cola.push.apply(cola, make36([b.ca[0], b.ca[1], b.ca[2]]));
                         colb.push.apply(colb, make36([b.cb[0], b.cb[1], b.cb[2]]));
                     }
@@ -411,6 +427,8 @@ module.exports = function (canvas, resolution) {
                     attribs.aImposter.buffer.set(new Float32Array(imposter));
                     attribs.aPosA.buffer.set(new Float32Array(posa));
                     attribs.aPosB.buffer.set(new Float32Array(posb));
+                    attribs.aRadA.buffer.set(new Float32Array(rada));
+                    attribs.aRadB.buffer.set(new Float32Array(radb));
                     attribs.aColA.buffer.set(new Float32Array(cola));
                     attribs.aColB.buffer.set(new Float32Array(colb));
 
@@ -494,6 +512,8 @@ module.exports = function (canvas, resolution) {
                 progBonds.setUniform("uRes", "1f", resolution);
                 progBonds.setUniform("uBondRadius", "1f", 2.5 * view.getBondRadius());
                 progBonds.setUniform("uBondShade", "1f", view.getBondShade());
+                progBonds.setUniform("uAtomScale", "1f", 2.5 * view.getAtomScale());
+                progBonds.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
                 rBonds.render();
             }
         }
@@ -540,6 +560,8 @@ module.exports = function (canvas, resolution) {
                 progBonds.setUniform("uRes", "1f", resolution);
                 progBonds.setUniform("uBondRadius", "1f", 2.5 * view.getBondRadius());
                 progBonds.setUniform("uBondShade", "1f", view.getBondShade());
+                progBonds.setUniform("uAtomScale", "1f", 2.5 * view.getAtomScale());
+                progBonds.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
                 rBonds.render();
             }
 

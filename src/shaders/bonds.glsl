@@ -4,6 +4,8 @@ precision highp float;
 attribute vec3 aImposter;
 attribute vec3 aPosA;
 attribute vec3 aPosB;
+attribute float aRadA;
+attribute float aRadB;
 attribute vec3 aColA;
 attribute vec3 aColB;
 
@@ -12,9 +14,12 @@ uniform mat4 uProjection;
 uniform mat4 uModel;
 uniform mat4 uRotation;
 uniform float uBondRadius;
+uniform float uAtomScale;
+uniform float uRelativeAtomScale;
 
 varying vec3 vNormal;
 varying vec3 vPosA, vPosB;
+varying float vRadA, vRadB;
 varying vec3 vColA, vColB;
 varying float vRadius;
 
@@ -56,6 +61,8 @@ void main() {
     gl_Position = uProjection * uView * position;
     vPosA = aPosA;
     vPosB = aPosB;
+    vRadA = uAtomScale * (1.0 + (aRadA - 1.0) * uRelativeAtomScale);
+    vRadB = uAtomScale * (1.0 + (aRadB - 1.0) * uRelativeAtomScale);
     vColA = aColA;
     vColB = aColB;
 }
@@ -77,6 +84,7 @@ uniform float uRes;
 uniform float uBondShade;
 
 varying vec3 vPosA, vPosB;
+varying float vRadA, vRadB;
 varying vec3 vColA, vColB;
 varying float vRadius;
 
@@ -130,7 +138,7 @@ void main() {
     }
 
     vec3 color;
-    if (coord.y < length(vPosA - vPosB) * 0.5) {
+    if (coord.y < vRadA + 0.5 * (length(vPosA - vPosB) - (vRadA + vRadB))) {
         color = vColA;
     } else {
         color = vColB;
