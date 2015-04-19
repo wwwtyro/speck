@@ -1,13 +1,14 @@
 "use strict";
 
-var Imposter = require('./imposter-renderer');
 var fs = require('fs');
+var kb = require("keyboardjs");
+var lz = require("lz-string");
+
+var Renderer = require('./renderer');
 var xyz = require('./xyz');
 var elements = require('./elements');
 var View = require("./view");
 var Atoms = require("./atoms");
-var kb = require("keyboardjs");
-var lz = require("lz-string");
 
 kb.active = function(key) {
     var keys = kb.activeKeys();
@@ -21,7 +22,7 @@ kb.active = function(key) {
 
 var atoms = new Atoms();
 var view = new View();
-var imposter = null;
+var renderer = null;
 var needReset = false;
 
 var renderContainer;
@@ -36,7 +37,7 @@ function loadStructure(data) {
         atoms.addAtom(a.symbol, x,y,z);
     }
     atoms.center();
-    imposter.setAtoms(atoms, view);
+    renderer.setAtoms(atoms, view);
     needReset = true;
 }
 
@@ -45,9 +46,9 @@ window.onload = function() {
 
     renderContainer = document.getElementById("render-container");
 
-    var imposterCanvas = document.getElementById("imposter-canvas");
+    var imposterCanvas = document.getElementById("renderer-canvas");
 
-    imposter = new Imposter(imposterCanvas, view.getResolution());
+    renderer = new Renderer(imposterCanvas, view.getResolution());
 
     var structs = {};
     structs.protein0 = fs.readFileSync(__dirname + "/samples/4E0O.xyz", 'utf8');
@@ -64,8 +65,8 @@ window.onload = function() {
         data = JSON.parse(data);
         atoms.deserialize(data.atoms);
         view.deserialize(data.view);
-        imposter.setAtoms(atoms, view);
-        imposter.setResolution(view.getResolution());
+        renderer.setAtoms(atoms, view);
+        renderer.setResolution(view.getResolution());
         needReset = true;
     } else {
         loadStructure(xyz(structs.testosterone)[0]);
@@ -285,19 +286,19 @@ window.onload = function() {
     document.getElementById("resolution").addEventListener("change", function(e) {
         var resolution = parseInt(document.getElementById("resolution").value);
         view.setResolution(resolution);
-        imposter.setResolution(resolution);
+        renderer.setResolution(resolution);
         needReset = true;
     });
 
     document.getElementById("bonds").addEventListener("click", function(e) {
         view.setBonds(document.getElementById("bonds").checked)
-        imposter.setAtoms(atoms, view);
+        renderer.setAtoms(atoms, view);
         needReset = true;
     });
 
     document.getElementById("bond-threshold").addEventListener("change", function(e) {
         view.setBondThreshold(parseFloat(document.getElementById("bond-threshold").value));
-        imposter.setAtoms(atoms, view);
+        renderer.setAtoms(atoms, view);
         needReset = true;
     });
 
@@ -341,10 +342,10 @@ window.onload = function() {
         document.getElementById("brightness-text").innerHTML = Math.round(view.getBrightness() * 100) + "%";
         document.getElementById("outline-strength-text").innerHTML = Math.round(view.getOutlineStrength() * 100) + "%";
         if (needReset) {
-            imposter.reset();
+            renderer.reset();
             needReset = false;
         }
-        imposter.render(view);
+        renderer.render(view);
         requestAnimationFrame(loop);
     }
 

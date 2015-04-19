@@ -95,7 +95,7 @@ module.exports = function (canvas, resolution) {
             self.createTextures();
 
             // Initialize shaders.
-            progScene = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/scene.glsl", 'utf8'));
+            progScene = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/atoms.glsl", 'utf8'));
             progBonds = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/bonds.glsl", 'utf8'));
             progDisplayQuad = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/textured-quad.glsl", 'utf8'));
             progAccumulator = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/accumulator.glsl", 'utf8'));

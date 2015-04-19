@@ -23,7 +23,7 @@ body {
     position: fixed;
 }
 
-#imposter-canvas {
+#renderer-canvas {
     width: 100%;
     height: 100%;
 }
