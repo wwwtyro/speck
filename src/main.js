@@ -1,14 +1,16 @@
 "use strict";
 
-var fs = require('fs');
+var fs = require("fs");
 var kb = require("keyboardjs");
 var lz = require("lz-string");
+var $ = require("jquery");
 
-var Renderer = require('./renderer');
-var xyz = require('./xyz');
-var elements = require('./elements');
+var Renderer = require("./renderer");
 var View = require("./view");
 var Atoms = require("./atoms");
+var xyz = require("./xyz");
+var samples = require("./samples");
+var elements = require("./elements");
 
 kb.active = function(key) {
     var keys = kb.activeKeys();
@@ -41,6 +43,15 @@ function loadStructure(data) {
     needReset = true;
 }
 
+function loadSample() {
+    var selector = document.getElementById("controls-sample");
+    $.ajax({
+        url: "static/samples/" + selector.value,
+        success: function(data) {
+            loadStructure(xyz(data)[0]);
+        }
+    });
+}
 
 window.onload = function() {
 
@@ -50,14 +61,19 @@ window.onload = function() {
 
     renderer = new Renderer(imposterCanvas, view.getResolution());
 
-    var structs = {};
-    structs.protein0 = fs.readFileSync(__dirname + "/samples/4E0O.xyz", 'utf8');
-    structs.protein1 = fs.readFileSync(__dirname + "/samples/4QCI.xyz", 'utf8');
-    structs.testosterone = fs.readFileSync(__dirname + "/samples/testosterone.xyz", 'utf8');
-    structs.au = fs.readFileSync(__dirname + "/samples/au.xyz", 'utf8');
-    structs.caffeine = fs.readFileSync(__dirname + "/samples/caffeine.xyz", 'utf8');
-    structs.benzene = fs.readFileSync(__dirname + "/samples/benzene.xyz", 'utf8');
-    structs.methane = fs.readFileSync(__dirname + "/samples/methane.xyz", 'utf8');
+    var selector = document.getElementById("controls-sample");
+    for (var i = 0; i < samples.length; i++) {
+        var sample = samples[i];
+        var option = document.createElement("option");
+        option.value = sample.file;
+        option.innerHTML = sample.name;
+        if (i === 0) {
+            option.selected = "selected";
+        }
+        selector.appendChild(option);
+    }
+
+    selector.addEventListener("change", loadSample);
 
     if (location.hash !== "") {
         var hash = location.hash.slice(1, location.hash.length);
@@ -69,14 +85,9 @@ window.onload = function() {
         renderer.setResolution(view.getResolution());
         needReset = true;
     } else {
-        loadStructure(xyz(structs.testosterone)[0]);
+        loadSample();
     }
 
-    var selector = document.getElementById("controls-sample");
-    selector.addEventListener("change", function() {
-        loadStructure(xyz(structs[selector.value])[0]);
-    });
-    
     var lastX = 0.0;
     var lastY = 0.0;
     var buttonDown = false;
@@ -130,41 +141,41 @@ window.onload = function() {
         else {
             wd = -1;
         }
-        if (kb.active('a')) {
+        if (kb.active("a")) {
             var scale = view.getAtomScale();
             scale += wd/100;
             view.setAtomScale(scale);
             document.getElementById("atom-radius").value = Math.round(scale * 100);
             needReset = true;
-        } else if (kb.active('z')) {
+        } else if (kb.active("z")) {
             var scale = view.getRelativeAtomScale();
             scale += wd/100;
             view.setRelativeAtomScale(scale);
             document.getElementById("relative-atom-radius").value = Math.round(scale * 100);
             needReset = true;
-        } else if (kb.active('b')) {
+        } else if (kb.active("b")) {
             var scale = view.getBondScale();
             scale += wd/100;
             view.setBondScale(scale);
             document.getElementById("bond-radius").value = Math.round(scale * 100);
             needReset = true;
-        } else if (kb.active('s')) {
+        } else if (kb.active("s")) {
             var scale = view.getBondShade();
             scale += wd/100;
             view.setBondShade(scale);
             document.getElementById("bond-shade").value = Math.round(scale * 100);
             needReset = true;
-        } else if (kb.active('o')) {
+        } else if (kb.active("o")) {
             var ao = view.getAmbientOcclusion();
             ao += wd/100;
             view.setAmbientOcclusion(ao);
             document.getElementById("ambient-occlusion").value = Math.round(ao * 100);
-        } else if (kb.active('l')) {
+        } else if (kb.active("l")) {
             var bright = view.getBrightness();
             bright += wd/100;
             view.setBrightness(bright);
             document.getElementById("brightness").value = Math.round(bright * 100);
-        } else if (kb.active('q')) {
+        } else if (kb.active("q")) {
             var outline = view.getOutlineStrength();
             outline += wd/100;
             view.setOutlineStrength(outline);
