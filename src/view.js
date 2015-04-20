@@ -37,6 +37,8 @@ module.exports = function View(serialized) {
     var bondThreshold = 1.2;
     var bondShade = 0.0;
     var resolution = 768;
+    var dofStrength = 0.0;
+    var dofPosition = 0.5;
     var fxaa = true;
 
     self.initialize = function() {
@@ -62,6 +64,8 @@ module.exports = function View(serialized) {
             bondThreshold: bondThreshold,
             bondShade: bondShade,
             outlineStrength: outlineStrength,
+            dofStrength: dofStrength,
+            dofPosition: dofPosition,
             fxaa: fxaa
         }
     };
@@ -83,14 +87,32 @@ module.exports = function View(serialized) {
         bondShade = data.bondShade;
         fxaa = data.fxaa;
         outlineStrength = data.outlineStrength;
+        dofStrength = data.dofStrength;
+        dofPosition = data.dofPosition;
     };
 
     self.clone = function() {
         return new View(self.serialize());
     };
 
+    self.setDofStrength = function(val) {
+        dofStrength = clamp(0, 1, val);
+    };
+
+    self.getDofStrength = function() {
+        return dofStrength;
+    };
+
+    self.setDofPosition = function(val) {
+        dofPosition = clamp(0, 1, val);
+    };
+
+    self.getDofPosition = function() {
+        return dofPosition;
+    };
+
     self.setResolution = function(res) {
-        resolution  = res;
+        resolution = res;
     };
 
     self.getResolution = function() {

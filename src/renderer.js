@@ -23,6 +23,7 @@ module.exports = function (canvas, resolution) {
             rDispQuad = null,
             rAccumulator = null,
             rAO = null,
+            rDOF = null,
             rFXAA = null;
 
         var tSceneColor,
@@ -33,6 +34,7 @@ module.exports = function (canvas, resolution) {
             tRandRotColor,
             tAccumulator,
             tAccumulatorOut,
+            tDOF,
             tAO;
 
         var tiSceneColor,
@@ -43,11 +45,13 @@ module.exports = function (canvas, resolution) {
             tiRandRotColor,
             tiAccumulator,
             tiAccumulatorOut,
+            tiDOF,
             tiAO;
 
         var fbScene,
             fbRandRot,
             fbAccumulator,
+            fbDOF,
             fbAO;
 
         var progScene,
@@ -55,6 +59,7 @@ module.exports = function (canvas, resolution) {
             progAccumulator,
             progAO,
             progFXAA,
+            progDOF,
             progDisplayQuad;
 
         var extFragDepth,
@@ -91,6 +96,7 @@ module.exports = function (canvas, resolution) {
             tiAccumulator    = 6;
             tiAccumulatorOut = 7;
             tiAO             = 8;
+            tiDOF            = 9;
 
             self.createTextures();
 
@@ -101,6 +107,7 @@ module.exports = function (canvas, resolution) {
             progAccumulator = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/accumulator.glsl", 'utf8'));
             progAO = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/ao.glsl", 'utf8'));
             progFXAA = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/fxaa.glsl", 'utf8'));
+            progDOF = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/dof.glsl", 'utf8'));
 
             var position = [
                 -1, -1, 0,
@@ -154,6 +161,17 @@ module.exports = function (canvas, resolution) {
             attribs.aPosition.buffer.set(new Float32Array(position));
             var count = position.length / 9;
             rFXAA = new core.Renderable(gl, progFXAA, attribs, count);
+
+            // Initialize geometry.
+            var attribs = {
+                aPosition: {
+                    buffer: new core.Buffer(gl),
+                    size: 3
+                },
+            };
+            attribs.aPosition.buffer.set(new Float32Array(position));
+            var count = position.length / 9;
+            rDOF = new core.Renderable(gl, progDOF, attribs, count);
 
             samples = 0;
 
@@ -272,6 +290,20 @@ module.exports = function (canvas, resolution) {
             fbAO = gl.createFramebuffer();
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbAO);
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tAO, 0);
+
+            // fbDOF
+            gl.activeTexture(gl.TEXTURE0 + tiDOF);
+            tDOF = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tDOF);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+            fbDOF = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbDOF);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tDOF, 0);
 
         }
 
@@ -604,10 +636,19 @@ module.exports = function (canvas, resolution) {
             progAO.setUniform("uOutlineStrength", "1f", view.getOutlineStrength());
             rAO.render();
 
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbDOF);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            progDOF.setUniform("uTexture", "1i", tiAO);
+            progDOF.setUniform("uDepth", "1i", tiSceneDepth);
+            progDOF.setUniform("uDOFPosition", "1f", view.getDofPosition());
+            progDOF.setUniform("uDOFStrength", "1f", view.getDofStrength());
+            progDOF.setUniform("uRes", "1f", resolution);
+            rDOF.render();
+
             if (view.getFXAA()) {
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                progFXAA.setUniform("uTexture", "1i", tiAO);
+                progFXAA.setUniform("uTexture", "1i", tiDOF);
                 progFXAA.setUniform("uRes", "1f", resolution);
                 rFXAA.render();
             }

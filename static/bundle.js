@@ -15462,6 +15462,16 @@ window.onload = function() {
             view.setRelativeAtomScale(scale);
             document.getElementById("relative-atom-radius").value = Math.round(scale * 100);
             needReset = true;
+        } else if (kb.active("d")) {
+            var scale = view.getDofStrength();
+            scale += wd/100;
+            view.setDofStrength(scale);
+            document.getElementById("dof-strength").value = Math.round(scale * 100);
+        } else if (kb.active("p")) {
+            var scale = view.getDofPosition();
+            scale += wd/100;
+            view.setDofPosition(scale);
+            document.getElementById("dof-position").value = Math.round(scale * 100);
         } else if (kb.active("b")) {
             var scale = view.getBondScale();
             scale += wd/100;
@@ -15571,6 +15581,16 @@ window.onload = function() {
         needReset = true;
     });
 
+    document.getElementById("dof-strength").addEventListener("input", function(e) {
+        var scale = parseInt(document.getElementById("dof-strength").value);
+        view.setDofStrength(scale/100);
+    });
+
+    document.getElementById("dof-position").addEventListener("input", function(e) {
+        var scale = parseInt(document.getElementById("dof-position").value);
+        view.setDofPosition(scale/100);
+    });
+
     document.getElementById("bond-radius").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("bond-radius").value);
         view.setBondScale(scale/100);
@@ -15651,6 +15671,8 @@ window.onload = function() {
     document.getElementById("fxaa").checked = view.getFXAA();
     document.getElementById("resolution").value = view.getResolution();
     document.getElementById("samples-per-frame").value = view.getSamplesPerFrame();
+    document.getElementById("dof-strength").value = Math.round(view.getDofStrength() * 100);
+    document.getElementById("dof-position").value = Math.round(view.getDofPosition() * 100);
 
 
     function loop() {
@@ -15661,6 +15683,8 @@ window.onload = function() {
         document.getElementById("ambient-occlusion-text").innerHTML = Math.round(view.getAmbientOcclusion() * 100) + "%";
         document.getElementById("brightness-text").innerHTML = Math.round(view.getBrightness() * 100) + "%";
         document.getElementById("outline-strength-text").innerHTML = Math.round(view.getOutlineStrength() * 100) + "%";
+        document.getElementById("dof-strength-text").innerHTML = Math.round(view.getDofStrength() * 100) + "%";
+        document.getElementById("dof-position-text").innerHTML = Math.round(view.getDofPosition() * 100) + "%";
         if (needReset) {
             renderer.reset();
             needReset = false;
@@ -15699,6 +15723,7 @@ module.exports = function (canvas, resolution) {
             rDispQuad = null,
             rAccumulator = null,
             rAO = null,
+            rDOF = null,
             rFXAA = null;
 
         var tSceneColor,
@@ -15709,6 +15734,7 @@ module.exports = function (canvas, resolution) {
             tRandRotColor,
             tAccumulator,
             tAccumulatorOut,
+            tDOF,
             tAO;
 
         var tiSceneColor,
@@ -15719,11 +15745,13 @@ module.exports = function (canvas, resolution) {
             tiRandRotColor,
             tiAccumulator,
             tiAccumulatorOut,
+            tiDOF,
             tiAO;
 
         var fbScene,
             fbRandRot,
             fbAccumulator,
+            fbDOF,
             fbAO;
 
         var progScene,
@@ -15731,6 +15759,7 @@ module.exports = function (canvas, resolution) {
             progAccumulator,
             progAO,
             progFXAA,
+            progDOF,
             progDisplayQuad;
 
         var extFragDepth,
@@ -15767,6 +15796,7 @@ module.exports = function (canvas, resolution) {
             tiAccumulator    = 6;
             tiAccumulatorOut = 7;
             tiAO             = 8;
+            tiDOF            = 9;
 
             self.createTextures();
 
@@ -15777,6 +15807,7 @@ module.exports = function (canvas, resolution) {
             progAccumulator = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneDepth;\nuniform sampler2D uSceneNormal;\nuniform sampler2D uRandRotDepth;\nuniform sampler2D uAccumulator;\nuniform mat4 uRot;\nuniform mat4 uInvRot;\nuniform vec2 uSceneBottomLeft;\nuniform vec2 uSceneTopRight;\nuniform vec2 uRotBottomLeft;\nuniform vec2 uRotTopRight;\nuniform float uDepth;\nuniform float uRes;\nuniform int uSampleCount;\n\nvoid main() {\n\n    vec4 dScene = texture2D(uSceneDepth, gl_FragCoord.xy/uRes);\n\n    vec3 r = vec3(uSceneBottomLeft + (gl_FragCoord.xy/uRes) * (uSceneTopRight - uSceneBottomLeft), 0.0);\n\n    r.z = -(dScene.r - 0.5) * uDepth;\n    r = vec3(uRot * vec4(r, 1));\n    float depth = -r.z/uDepth + 0.5;\n\n    vec2 p = (r.xy - uRotBottomLeft)/(uRotTopRight - uRotBottomLeft);\n\n    vec4 dRandRot = texture2D(uRandRotDepth, p);\n\n    float ao = step(dRandRot.r, depth * 0.99);\n\n    vec3 normal = texture2D(uSceneNormal, gl_FragCoord.xy/uRes).rgb * 2.0 - 1.0;\n    vec3 dir = vec3(uInvRot * vec4(0, 0, 1, 0));\n    float mag = dot(dir, normal);\n    float sampled = step(0.0, mag);\n\n    ao *= sampled;\n\n    vec4 acc = texture2D(uAccumulator, gl_FragCoord.xy/uRes);\n\n    if (uSampleCount < 256) {\n        acc.r += ao/255.0;\n    } else if (uSampleCount < 512) {\n        acc.g += ao/255.0;\n    } else if (uSampleCount < 768) {\n        acc.b += ao/255.0;\n    } else {\n        acc.a += ao/255.0;\n    }\n        \n    gl_FragColor = acc;\n\n}\n");
             progAO = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneColor;\nuniform sampler2D uSceneDepth;\nuniform sampler2D uAccumulatorOut;\nuniform float uRes;\nuniform float uAO;\nuniform float uBrightness;\nuniform float uOutlineStrength;\n\nvoid main() {\n    vec2 p = gl_FragCoord.xy/uRes;\n    vec4 sceneColor = texture2D(uSceneColor, p);\n    if (uOutlineStrength > 0.0) {\n        float depth = texture2D(uSceneDepth, p).r;\n        float r = 1.0/uRes;\n        float d0 = abs(texture2D(uSceneDepth, p + vec2(-r,  0)).r - depth);\n        float d1 = abs(texture2D(uSceneDepth, p + vec2( r,  0)).r - depth);\n        float d2 = abs(texture2D(uSceneDepth, p + vec2( 0, -r)).r - depth);\n        float d3 = abs(texture2D(uSceneDepth, p + vec2( 0,  r)).r - depth);\n        float d = max(d0, d1);\n        d = max(d, d2);\n        d = max(d, d3);\n        sceneColor.rgb *= pow(1.0 - d, uOutlineStrength * 32.0);\n        sceneColor.a = max(step(0.003, d), sceneColor.a);\n    }\n    vec4 dAccum = texture2D(uAccumulatorOut, p);\n    float shade = max(0.0, 1.0 - (dAccum.r + dAccum.g + dAccum.b + dAccum.a) * 0.25 * uAO);\n    shade = pow(shade, 2.0);\n    gl_FragColor = vec4(uBrightness * sceneColor.rgb * shade, sceneColor.a);\n}\n");
             progFXAA = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uTexture;\nuniform float uRes;\n\nvoid main() {\n    float FXAA_SPAN_MAX = 8.0;\n    float FXAA_REDUCE_MUL = 1.0/8.0;\n    float FXAA_REDUCE_MIN = 1.0/128.0;\n\n    vec2 texCoords = gl_FragCoord.xy/uRes;\n\n    vec4 rgbNW = texture2D(uTexture, texCoords + (vec2(-1.0, -1.0) / uRes));\n    vec4 rgbNE = texture2D(uTexture, texCoords + (vec2(1.0, -1.0) / uRes));\n    vec4 rgbSW = texture2D(uTexture, texCoords + (vec2(-1.0, 1.0) / uRes));\n    vec4 rgbSE = texture2D(uTexture, texCoords + (vec2(1.0, 1.0) / uRes));\n    vec4 rgbM  = texture2D(uTexture, texCoords);\n\n    vec4 luma = vec4(0.299, 0.587, 0.114, 1.0);\n    float lumaNW = dot(rgbNW, luma);\n    float lumaNE = dot(rgbNE, luma);\n    float lumaSW = dot(rgbSW, luma);\n    float lumaSE = dot(rgbSE, luma);\n    float lumaM  = dot(rgbM,  luma);\n\n    float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));\n    float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));\n\n    vec2 dir;\n    dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));\n    dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));\n\n    float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) * (0.25 * FXAA_REDUCE_MUL), FXAA_REDUCE_MIN);\n\n    float rcpDirMin = 1.0/(min(abs(dir.x), abs(dir.y)) + dirReduce);\n\n    dir = min(vec2(FXAA_SPAN_MAX, FXAA_SPAN_MAX), max(vec2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX), dir * rcpDirMin)) / uRes;\n\n    vec4 rgbA = (1.0/2.0) * \n        (texture2D(uTexture, texCoords.xy + dir * (1.0/3.0 - 0.5)) + \n         texture2D(uTexture, texCoords.xy + dir * (2.0/3.0 - 0.5)));\n    vec4 rgbB = rgbA * (1.0/2.0) + (1.0/4.0) * \n        (texture2D(uTexture, texCoords.xy + dir * (0.0/3.0 - 0.5)) +\n         texture2D(uTexture, texCoords.xy + dir * (3.0/3.0 - 0.5)));\n    float lumaB = dot(rgbB, luma);\n\n    if((lumaB < lumaMin) || (lumaB > lumaMax)){\n        gl_FragColor = rgbA;\n    } else {\n        gl_FragColor = rgbB;\n    }\n\n}");
+            progDOF = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uTexture;\nuniform sampler2D uDepth;\nuniform float uRes;\nuniform float uDOFPosition;\nuniform float uDOFStrength;\n\nvoid main() {\n    float invRes = 1.0/uRes;\n    vec2 coord = gl_FragCoord.xy * invRes;\n\n    float depth = texture2D(uDepth, coord).r;\n    float scale = abs(uDOFPosition - depth) * uDOFStrength * 256.0;\n\n    vec2 samples[64];\n    samples[0] = vec2(-0.235357, -1.588132);\n    samples[1] = vec2(0.032515, -1.231496);\n    samples[2] = vec2(0.024227, -1.132140);\n    samples[3] = vec2(-1.461785, 0.984939);\n    samples[4] = vec2(-0.249909, -1.137626);\n    samples[5] = vec2(1.014209, 0.638697);\n    samples[6] = vec2(0.124567, 2.392972);\n    samples[7] = vec2(1.840600, 0.225645);\n    samples[8] = vec2(-0.097884, 0.683734);\n    samples[9] = vec2(-1.728485, 1.574568);\n    samples[10] = vec2(-0.056567, -0.470173);\n    samples[11] = vec2(0.284706, -0.001546);\n    samples[12] = vec2(-2.219195, 1.688671);\n    samples[13] = vec2(-0.047446, 0.595799);\n    samples[14] = vec2(-1.098921, -0.598496);\n    samples[15] = vec2(0.138993, 0.262436);\n    samples[16] = vec2(0.340561, -1.060691);\n    samples[17] = vec2(0.697036, 0.579514);\n    samples[18] = vec2(0.939659, 0.324136);\n    samples[19] = vec2(-0.071267, -0.538781);\n    samples[20] = vec2(0.186444, 1.040561);\n    samples[21] = vec2(0.290718, -1.281741);\n    samples[22] = vec2(-0.693334, -0.331386);\n    samples[23] = vec2(0.728461, 1.264020);\n    samples[24] = vec2(0.131709, 0.843209);\n    samples[25] = vec2(-1.461604, 0.314785);\n    samples[26] = vec2(-0.638726, 0.806682);\n    samples[27] = vec2(0.887382, -0.719629);\n    samples[28] = vec2(-1.380846, -0.393138);\n    samples[29] = vec2(0.616917, -0.593151);\n    samples[30] = vec2(1.048332, -0.829016);\n    samples[31] = vec2(1.178416, 0.204305);\n    samples[32] = vec2(-0.015033, -0.113922);\n    samples[33] = vec2(0.747141, 1.192196);\n    samples[34] = vec2(0.933324, -0.903756);\n    samples[35] = vec2(1.989845, 0.278918);\n    samples[36] = vec2(2.169654, 0.373756);\n    samples[37] = vec2(-0.155409, 0.964275);\n    samples[38] = vec2(-1.810682, 1.116107);\n    samples[39] = vec2(1.340511, -0.004973);\n    samples[40] = vec2(-0.435435, 0.138854);\n    samples[41] = vec2(1.135632, -0.022170);\n    samples[42] = vec2(-0.053724, 0.275418);\n    samples[43] = vec2(0.801748, -0.724595);\n    samples[44] = vec2(-0.751016, -0.213260);\n    samples[45] = vec2(-0.051067, 0.506691);\n    samples[46] = vec2(0.934748, 1.428895);\n    samples[47] = vec2(-1.633387, -1.195244);\n    samples[48] = vec2(1.305308, -1.036673);\n    samples[49] = vec2(-0.401534, -1.186216);\n    samples[50] = vec2(-1.058134, 0.367656);\n    samples[51] = vec2(-0.024799, -0.795987);\n    samples[52] = vec2(-0.397374, -1.845638);\n    samples[53] = vec2(0.487839, 0.872820);\n    samples[54] = vec2(-1.735779, 2.006692);\n    samples[55] = vec2(-0.098321, -0.754747);\n    samples[56] = vec2(-0.612245, 0.046972);\n    samples[57] = vec2(-0.259972, -0.770346);\n    samples[58] = vec2(1.339886, 0.531935);\n    samples[59] = vec2(0.530813, -1.047743);\n    samples[60] = vec2(0.460716, -0.335207);\n    samples[61] = vec2(-1.378303, -0.961039);\n    samples[62] = vec2(0.738591, -0.883880);\n    samples[63] = vec2(-0.888296, 1.723557);\n\n    vec4 s = vec4(0,0,0,0);\n\n    for (int i = 0; i < 64; i++) {\n        s += texture2D(uTexture, coord + scale * samples[i] * invRes);\n    }\n\n    s = s / 64.0;    \n\n    s *= texture2D(uTexture, coord).a;\n\n    gl_FragColor = s;\n}");
 
             var position = [
                 -1, -1, 0,
@@ -15830,6 +15861,17 @@ module.exports = function (canvas, resolution) {
             attribs.aPosition.buffer.set(new Float32Array(position));
             var count = position.length / 9;
             rFXAA = new core.Renderable(gl, progFXAA, attribs, count);
+
+            // Initialize geometry.
+            var attribs = {
+                aPosition: {
+                    buffer: new core.Buffer(gl),
+                    size: 3
+                },
+            };
+            attribs.aPosition.buffer.set(new Float32Array(position));
+            var count = position.length / 9;
+            rDOF = new core.Renderable(gl, progDOF, attribs, count);
 
             samples = 0;
 
@@ -15948,6 +15990,20 @@ module.exports = function (canvas, resolution) {
             fbAO = gl.createFramebuffer();
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbAO);
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tAO, 0);
+
+            // fbDOF
+            gl.activeTexture(gl.TEXTURE0 + tiDOF);
+            tDOF = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tDOF);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+            fbDOF = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbDOF);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tDOF, 0);
 
         }
 
@@ -16280,10 +16336,19 @@ module.exports = function (canvas, resolution) {
             progAO.setUniform("uOutlineStrength", "1f", view.getOutlineStrength());
             rAO.render();
 
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbDOF);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            progDOF.setUniform("uTexture", "1i", tiAO);
+            progDOF.setUniform("uDepth", "1i", tiSceneDepth);
+            progDOF.setUniform("uDOFPosition", "1f", view.getDofPosition());
+            progDOF.setUniform("uDOFStrength", "1f", view.getDofStrength());
+            progDOF.setUniform("uRes", "1f", resolution);
+            rDOF.render();
+
             if (view.getFXAA()) {
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                progFXAA.setUniform("uTexture", "1i", tiAO);
+                progFXAA.setUniform("uTexture", "1i", tiDOF);
                 progFXAA.setUniform("uRes", "1f", resolution);
                 rFXAA.render();
             }
@@ -16355,6 +16420,8 @@ module.exports = function View(serialized) {
     var bondThreshold = 1.2;
     var bondShade = 0.0;
     var resolution = 768;
+    var dofStrength = 0.0;
+    var dofPosition = 0.5;
     var fxaa = true;
 
     self.initialize = function() {
@@ -16380,6 +16447,8 @@ module.exports = function View(serialized) {
             bondThreshold: bondThreshold,
             bondShade: bondShade,
             outlineStrength: outlineStrength,
+            dofStrength: dofStrength,
+            dofPosition: dofPosition,
             fxaa: fxaa
         }
     };
@@ -16401,14 +16470,32 @@ module.exports = function View(serialized) {
         bondShade = data.bondShade;
         fxaa = data.fxaa;
         outlineStrength = data.outlineStrength;
+        dofStrength = data.dofStrength;
+        dofPosition = data.dofPosition;
     };
 
     self.clone = function() {
         return new View(self.serialize());
     };
 
+    self.setDofStrength = function(val) {
+        dofStrength = clamp(0, 1, val);
+    };
+
+    self.getDofStrength = function() {
+        return dofStrength;
+    };
+
+    self.setDofPosition = function(val) {
+        dofPosition = clamp(0, 1, val);
+    };
+
+    self.getDofPosition = function() {
+        return dofPosition;
+    };
+
     self.setResolution = function(res) {
-        resolution  = res;
+        resolution = res;
     };
 
     self.getResolution = function() {

@@ -153,6 +153,16 @@ window.onload = function() {
             view.setRelativeAtomScale(scale);
             document.getElementById("relative-atom-radius").value = Math.round(scale * 100);
             needReset = true;
+        } else if (kb.active("d")) {
+            var scale = view.getDofStrength();
+            scale += wd/100;
+            view.setDofStrength(scale);
+            document.getElementById("dof-strength").value = Math.round(scale * 100);
+        } else if (kb.active("p")) {
+            var scale = view.getDofPosition();
+            scale += wd/100;
+            view.setDofPosition(scale);
+            document.getElementById("dof-position").value = Math.round(scale * 100);
         } else if (kb.active("b")) {
             var scale = view.getBondScale();
             scale += wd/100;
@@ -262,6 +272,16 @@ window.onload = function() {
         needReset = true;
     });
 
+    document.getElementById("dof-strength").addEventListener("input", function(e) {
+        var scale = parseInt(document.getElementById("dof-strength").value);
+        view.setDofStrength(scale/100);
+    });
+
+    document.getElementById("dof-position").addEventListener("input", function(e) {
+        var scale = parseInt(document.getElementById("dof-position").value);
+        view.setDofPosition(scale/100);
+    });
+
     document.getElementById("bond-radius").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("bond-radius").value);
         view.setBondScale(scale/100);
@@ -342,6 +362,8 @@ window.onload = function() {
     document.getElementById("fxaa").checked = view.getFXAA();
     document.getElementById("resolution").value = view.getResolution();
     document.getElementById("samples-per-frame").value = view.getSamplesPerFrame();
+    document.getElementById("dof-strength").value = Math.round(view.getDofStrength() * 100);
+    document.getElementById("dof-position").value = Math.round(view.getDofPosition() * 100);
 
 
     function loop() {
@@ -352,6 +374,8 @@ window.onload = function() {
         document.getElementById("ambient-occlusion-text").innerHTML = Math.round(view.getAmbientOcclusion() * 100) + "%";
         document.getElementById("brightness-text").innerHTML = Math.round(view.getBrightness() * 100) + "%";
         document.getElementById("outline-strength-text").innerHTML = Math.round(view.getOutlineStrength() * 100) + "%";
+        document.getElementById("dof-strength-text").innerHTML = Math.round(view.getDofStrength() * 100) + "%";
+        document.getElementById("dof-position-text").innerHTML = Math.round(view.getDofPosition() * 100) + "%";
         if (needReset) {
             renderer.reset();
             needReset = false;
