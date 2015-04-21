@@ -1,4 +1,47 @@
 
+module.exports.Texture = function(gl, index, data, width, height, options) {
+    options = options || {};
+    options.target = options.target || gl.TEXTURE_2D;
+    options.mag = options.mag || gl.NEAREST;
+    options.min = options.min || gl.NEAREST;
+    options.wraps = options.wraps || gl.CLAMP_TO_EDGE;
+    options.wrapt = options.wrapt || gl.CLAMP_TO_EDGE;
+    options.internalFormat = options.internalFormat || gl.RGBA;
+    options.format = options.format || gl.RGBA;
+    options.type = options.type || gl.UNSIGNED_BYTE;
+
+    var self = this;
+
+    self.initialize = function() {
+        self.index = index;
+        self.activate();
+        self.texture = gl.createTexture();
+        self.bind();
+        gl.texParameteri(options.target, gl.TEXTURE_MAG_FILTER, options.mag);
+        gl.texParameteri(options.target, gl.TEXTURE_MIN_FILTER, options.min);
+        gl.texParameteri(options.target, gl.TEXTURE_WRAP_S, options.wraps);
+        gl.texParameteri(options.target, gl.TEXTURE_WRAP_T, options.wrapt);
+        gl.texImage2D(options.target, 0, options.internalFormat, width, height, 
+            0, options.format, options.type, data);
+    }
+
+    self.bind = function() {
+        gl.bindTexture(options.target, self.texture);
+    };
+
+    self.activate = function() {
+        gl.activeTexture(gl.TEXTURE0 + self.index);
+    };
+
+    self.reset = function() {
+        self.activate();
+        self.bind();
+        gl.texImage2D(options.target, 0, options.internalFormat, width, height, 
+            0, options.format, options.type, data);
+    }
+
+    self.initialize();
+}
 
 
 module.exports.Buffer = function(gl) {

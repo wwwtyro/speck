@@ -37,17 +37,6 @@ module.exports = function (canvas, resolution) {
             tDOF,
             tAO;
 
-        var tiSceneColor,
-            tiSceneNormal,
-            tiSceneDepth,
-            tiRandRotDepth,
-            tiRandRotNormal,
-            tiRandRotColor,
-            tiAccumulator,
-            tiAccumulatorOut,
-            tiDOF,
-            tiAO;
-
         var fbScene,
             fbRandRot,
             fbAccumulator,
@@ -85,18 +74,6 @@ module.exports = function (canvas, resolution) {
             extFragDepth = gl.getExtension("EXT_frag_depth");
             extDepthTexture = gl.getExtension("WEBGL_depth_texture");
             extDrawBuffers = gl.getExtension("WEBGL_draw_buffers");
-
-            // Define texture locations.
-            tiSceneColor     = 0;
-            tiSceneDepth     = 1;
-            tiSceneNormal    = 2;
-            tiRandRotColor   = 3;
-            tiRandRotDepth   = 4;
-            tiRandRotNormal  = 5;
-            tiAccumulator    = 6;
-            tiAccumulatorOut = 7;
-            tiAO             = 8;
-            tiDOF            = 9;
 
             self.createTextures();
 
@@ -179,32 +156,15 @@ module.exports = function (canvas, resolution) {
 
         self.createTextures = function() {
             // fbRandRot
-            gl.activeTexture(gl.TEXTURE0 + tiRandRotDepth);
-            tRandRotDepth = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, tRandRotDepth);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, resolution, resolution, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_SHORT, null);            
+            tRandRotColor = new core.Texture(gl, 0, null, resolution, resolution);
 
-            gl.activeTexture(gl.TEXTURE0 + tiRandRotColor);
-            tRandRotColor = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, tRandRotColor);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            tRandRotNormal = new core.Texture(gl, 1, null, resolution, resolution);
 
-            gl.activeTexture(gl.TEXTURE0 + tiRandRotNormal);
-            tRandRotNormal = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, tRandRotNormal);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            tRandRotDepth = new core.Texture(gl, 2, null, resolution, resolution, {
+                internalFormat: gl.DEPTH_COMPONENT,
+                format: gl.DEPTH_COMPONENT,
+                type: gl.UNSIGNED_SHORT
+            });
 
             fbRandRot = gl.createFramebuffer();
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbRandRot);
@@ -212,37 +172,20 @@ module.exports = function (canvas, resolution) {
                 extDrawBuffers.COLOR_ATTACHMENT0_WEBGL,
                 extDrawBuffers.COLOR_ATTACHMENT1_WEBGL,
             ]);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, extDrawBuffers.COLOR_ATTACHMENT0_WEBGL, gl.TEXTURE_2D, tRandRotColor, 0);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, extDrawBuffers.COLOR_ATTACHMENT1_WEBGL, gl.TEXTURE_2D, tRandRotNormal, 0);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, tRandRotDepth, 0);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, extDrawBuffers.COLOR_ATTACHMENT0_WEBGL, gl.TEXTURE_2D, tRandRotColor.texture, 0);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, extDrawBuffers.COLOR_ATTACHMENT1_WEBGL, gl.TEXTURE_2D, tRandRotNormal.texture, 0);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, tRandRotDepth.texture, 0);
 
             // fbScene
-            gl.activeTexture(gl.TEXTURE0 + tiSceneColor);
-            tSceneColor = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, tSceneColor);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            tSceneColor = new core.Texture(gl, 3, null, resolution, resolution);
 
-            gl.activeTexture(gl.TEXTURE0 + tiSceneNormal);
-            tSceneNormal = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, tSceneNormal);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            tSceneNormal = new core.Texture(gl, 4, null, resolution, resolution);
 
-            gl.activeTexture(gl.TEXTURE0 + tiSceneDepth);
-            tSceneDepth = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, tSceneDepth);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, resolution, resolution, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_SHORT, null);            
+            tSceneDepth = new core.Texture(gl, 5, null, resolution, resolution, {
+                internalFormat: gl.DEPTH_COMPONENT,
+                format: gl.DEPTH_COMPONENT,
+                type: gl.UNSIGNED_SHORT
+            });
 
             fbScene = gl.createFramebuffer();
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene);
@@ -250,60 +193,32 @@ module.exports = function (canvas, resolution) {
                 extDrawBuffers.COLOR_ATTACHMENT0_WEBGL,
                 extDrawBuffers.COLOR_ATTACHMENT1_WEBGL,
             ]);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, extDrawBuffers.COLOR_ATTACHMENT0_WEBGL, gl.TEXTURE_2D, tSceneColor, 0);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, extDrawBuffers.COLOR_ATTACHMENT1_WEBGL, gl.TEXTURE_2D, tSceneNormal, 0);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, tSceneDepth, 0);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, extDrawBuffers.COLOR_ATTACHMENT0_WEBGL, gl.TEXTURE_2D, tSceneColor.texture, 0);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, extDrawBuffers.COLOR_ATTACHMENT1_WEBGL, gl.TEXTURE_2D, tSceneNormal.texture, 0);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, tSceneDepth.texture, 0);
 
             // fbAccumulator
-            gl.activeTexture(gl.TEXTURE0 + tiAccumulator);
-            tAccumulator = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, tAccumulator);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            tAccumulator = new core.Texture(gl, 6, null, resolution, resolution);
 
-            gl.activeTexture(gl.TEXTURE0 + tiAccumulatorOut);
-            tAccumulatorOut = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, tAccumulatorOut);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            tAccumulatorOut = new core.Texture(gl, 7, null, resolution, resolution);
 
             fbAccumulator = gl.createFramebuffer();
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbAccumulator);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tAccumulatorOut, 0);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tAccumulatorOut.texture, 0);
 
             // fbAO
-            gl.activeTexture(gl.TEXTURE0 + tiAO);
-            tAO = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, tAO);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            tAO = new core.Texture(gl, 8, null, resolution, resolution);
 
             fbAO = gl.createFramebuffer();
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbAO);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tAO, 0);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tAO.texture, 0);
 
             // fbDOF
-            gl.activeTexture(gl.TEXTURE0 + tiDOF);
-            tDOF = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, tDOF);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            tDOF = new core.Texture(gl, 9, null, resolution, resolution);
 
             fbDOF = gl.createFramebuffer();
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbDOF);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tDOF, 0);
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tDOF.texture, 0);
 
         }
 
@@ -477,12 +392,8 @@ module.exports = function (canvas, resolution) {
         self.reset = function() {
             sampleCount = 0;
             initialRender = false;
-            gl.activeTexture(gl.TEXTURE0 + tiAccumulator);
-            gl.bindTexture(gl.TEXTURE_2D, tAccumulator);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-            gl.activeTexture(gl.TEXTURE0 + tiAccumulatorOut);
-            gl.bindTexture(gl.TEXTURE_2D, tAccumulatorOut);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, resolution, resolution, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            tAccumulator.reset();
+            tAccumulatorOut.reset();
         }
 
         self.render = function(view) {
@@ -602,10 +513,10 @@ module.exports = function (canvas, resolution) {
             var invRot = glm.mat4.invert(glm.mat4.create(), rot);
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbAccumulator);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            progAccumulator.setUniform("uSceneDepth", "1i", tiSceneDepth);
-            progAccumulator.setUniform("uSceneNormal", "1i", tiSceneNormal);
-            progAccumulator.setUniform("uRandRotDepth", "1i", tiRandRotDepth);
-            progAccumulator.setUniform("uAccumulator", "1i", tiAccumulator);
+            progAccumulator.setUniform("uSceneDepth", "1i", tSceneDepth.index);
+            progAccumulator.setUniform("uSceneNormal", "1i", tSceneNormal.index);
+            progAccumulator.setUniform("uRandRotDepth", "1i", tRandRotDepth.index);
+            progAccumulator.setUniform("uAccumulator", "1i", tAccumulator.index);
             progAccumulator.setUniform("uSceneBottomLeft", "2fv", [sceneRect.left, sceneRect.bottom]);
             progAccumulator.setUniform("uSceneTopRight", "2fv", [sceneRect.right, sceneRect.top]);
             progAccumulator.setUniform("uRotBottomLeft", "2fv", [rotRect.left, rotRect.bottom]);
@@ -616,7 +527,7 @@ module.exports = function (canvas, resolution) {
             progAccumulator.setUniform("uInvRot", "Matrix4fv", false, invRot);
             progAccumulator.setUniform("uSampleCount", "1i", sampleCount);
             rAccumulator.render();
-            gl.bindTexture(gl.TEXTURE_2D, tAccumulator);
+            tAccumulator.bind();
             gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
         }
 
@@ -627,9 +538,9 @@ module.exports = function (canvas, resolution) {
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             }
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            progAO.setUniform("uSceneColor", "1i", tiSceneColor);
-            progAO.setUniform("uSceneDepth", "1i", tiSceneDepth);
-            progAO.setUniform("uAccumulatorOut", "1i", tiAccumulatorOut);
+            progAO.setUniform("uSceneColor", "1i", tSceneColor.index);
+            progAO.setUniform("uSceneDepth", "1i", tSceneDepth.index);
+            progAO.setUniform("uAccumulatorOut", "1i", tAccumulatorOut.index);
             progAO.setUniform("uRes", "1f", resolution);
             progAO.setUniform("uAO", "1f", 2.0 * view.getAmbientOcclusion());
             progAO.setUniform("uBrightness", "1f", 2.0 * view.getBrightness());
@@ -638,8 +549,8 @@ module.exports = function (canvas, resolution) {
 
             gl.bindFramebuffer(gl.FRAMEBUFFER, fbDOF);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            progDOF.setUniform("uTexture", "1i", tiAO);
-            progDOF.setUniform("uDepth", "1i", tiSceneDepth);
+            progDOF.setUniform("uTexture", "1i", tAO.index);
+            progDOF.setUniform("uDepth", "1i", tSceneDepth.index);
             progDOF.setUniform("uDOFPosition", "1f", view.getDofPosition());
             progDOF.setUniform("uDOFStrength", "1f", view.getDofStrength());
             progDOF.setUniform("uRes", "1f", resolution);
@@ -648,14 +559,14 @@ module.exports = function (canvas, resolution) {
             if (view.getFXAA()) {
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                progFXAA.setUniform("uTexture", "1i", tiDOF);
+                progFXAA.setUniform("uTexture", "1i", tDOF.index);
                 progFXAA.setUniform("uRes", "1f", resolution);
                 rFXAA.render();
             }
 
             // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            // progDisplayQuad.setUniform("uTexture", "1i", tiSceneNormal);
+            // progDisplayQuad.setUniform("uTexture", "1i", tSceneNormal.index);
             // progDisplayQuad.setUniform("uRes", "1f", resolution);
             // rDispQuad.render();
             // return;
