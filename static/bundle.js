@@ -15769,7 +15769,11 @@ module.exports = function (canvas, resolution) {
 
             window.gl = gl; //debug
 
-            ext = core.getExtensions(gl, ["EXT_frag_depth", "WEBGL_depth_texture", "WEBGL_draw_buffers"]);
+            ext = core.getExtensions(gl, [
+                "EXT_frag_depth", 
+                "WEBGL_depth_texture", 
+                "WEBGL_draw_buffers"
+            ]);
 
             self.createTextures();
 
