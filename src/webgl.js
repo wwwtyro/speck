@@ -1,5 +1,18 @@
 
 
+module.exports.getExtensions = function(gl, extArray) {
+    var ext = {};
+    for (var i = 0; i < extArray.length; i++) {
+        var e = gl.getExtension(extArray[i]);
+        if (e === null) {
+            throw "Extension " + extArray[i] + " not available.";
+        }
+        ext[extArray[i]] = e;
+    }
+    return ext;
+};
+
+
 module.exports.Framebuffer = function(gl, color, depth, ext) {
 
     var self = this;

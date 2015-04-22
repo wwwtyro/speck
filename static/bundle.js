@@ -15751,9 +15751,7 @@ module.exports = function (canvas, resolution) {
             progDOF,
             progDisplayQuad;
 
-        var extFragDepth,
-            extDrawBuffers,
-            extDepthTexture;
+        var ext;
 
         var sampleCount = 0,
             initialRender = false;
@@ -15769,9 +15767,9 @@ module.exports = function (canvas, resolution) {
             gl.clearDepth(1);
             gl.viewport(0,0,resolution,resolution);
 
-            extFragDepth = gl.getExtension("EXT_frag_depth");
-            extDepthTexture = gl.getExtension("WEBGL_depth_texture");
-            extDrawBuffers = gl.getExtension("WEBGL_draw_buffers");
+            window.gl = gl; //debug
+
+            ext = core.getExtensions(gl, ["EXT_frag_depth", "WEBGL_depth_texture", "WEBGL_draw_buffers"]);
 
             self.createTextures();
 
@@ -15825,7 +15823,7 @@ module.exports = function (canvas, resolution) {
                 type: gl.UNSIGNED_SHORT
             });
 
-            fbRandRot = new core.Framebuffer(gl, [tRandRotColor, tRandRotNormal], tRandRotDepth, extDrawBuffers);
+            fbRandRot = new core.Framebuffer(gl, [tRandRotColor, tRandRotNormal], tRandRotDepth, ext.WEBGL_draw_buffers);
 
             // fbScene
             tSceneColor = new core.Texture(gl, 3, null, resolution, resolution);
@@ -15838,7 +15836,7 @@ module.exports = function (canvas, resolution) {
                 type: gl.UNSIGNED_SHORT
             });
 
-            fbScene = new core.Framebuffer(gl, [tSceneColor, tSceneNormal], tSceneDepth, extDrawBuffers);
+            fbScene = new core.Framebuffer(gl, [tSceneColor, tSceneNormal], tSceneDepth, ext.WEBGL_draw_buffers);
 
             // fbAccumulator
             tAccumulator = new core.Texture(gl, 6, null, resolution, resolution);
@@ -16494,6 +16492,19 @@ module.exports = function View(serialized) {
 
 
 },{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./gl-matrix":"/home/rye/Dropbox/src/speck/src/gl-matrix.js"}],"/home/rye/Dropbox/src/speck/src/webgl.js":[function(require,module,exports){
+
+
+module.exports.getExtensions = function(gl, extArray) {
+    var ext = {};
+    for (var i = 0; i < extArray.length; i++) {
+        var e = gl.getExtension(extArray[i]);
+        if (e === null) {
+            throw "Extension " + extArray[i] + " not available.";
+        }
+        ext[extArray[i]] = e;
+    }
+    return ext;
+};
 
 
 module.exports.Framebuffer = function(gl, color, depth, ext) {
