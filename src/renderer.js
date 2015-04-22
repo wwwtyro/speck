@@ -69,8 +69,6 @@ module.exports = function (canvas, resolution) {
             gl.clearDepth(1);
             gl.viewport(0,0,resolution,resolution);
 
-            window.gl = gl;
-
             extFragDepth = gl.getExtension("EXT_frag_depth");
             extDepthTexture = gl.getExtension("WEBGL_depth_texture");
             extDrawBuffers = gl.getExtension("WEBGL_draw_buffers");
@@ -104,50 +102,11 @@ module.exports = function (canvas, resolution) {
             };
             attribs.aPosition.buffer.set(new Float32Array(position));
             var count = position.length / 9;
+
             rDispQuad = new core.Renderable(gl, progDisplayQuad, attribs, count);
-
-            // Initialize geometry.
-            var attribs = {
-                aPosition: {
-                    buffer: new core.Buffer(gl),
-                    size: 3
-                },
-            };
-            attribs.aPosition.buffer.set(new Float32Array(position));
-            var count = position.length / 9;
             rAccumulator = new core.Renderable(gl, progAccumulator, attribs, count);
-
-            // Initialize geometry.
-            var attribs = {
-                aPosition: {
-                    buffer: new core.Buffer(gl),
-                    size: 3
-                },
-            };
-            attribs.aPosition.buffer.set(new Float32Array(position));
-            var count = position.length / 9;
             rAO = new core.Renderable(gl, progAO, attribs, count);
-
-            // Initialize geometry.
-            var attribs = {
-                aPosition: {
-                    buffer: new core.Buffer(gl),
-                    size: 3
-                },
-            };
-            attribs.aPosition.buffer.set(new Float32Array(position));
-            var count = position.length / 9;
             rFXAA = new core.Renderable(gl, progFXAA, attribs, count);
-
-            // Initialize geometry.
-            var attribs = {
-                aPosition: {
-                    buffer: new core.Buffer(gl),
-                    size: 3
-                },
-            };
-            attribs.aPosition.buffer.set(new Float32Array(position));
-            var count = position.length / 9;
             rDOF = new core.Renderable(gl, progDOF, attribs, count);
 
             samples = 0;
@@ -166,15 +125,7 @@ module.exports = function (canvas, resolution) {
                 type: gl.UNSIGNED_SHORT
             });
 
-            fbRandRot = gl.createFramebuffer();
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fbRandRot);
-            extDrawBuffers.drawBuffersWEBGL([
-                extDrawBuffers.COLOR_ATTACHMENT0_WEBGL,
-                extDrawBuffers.COLOR_ATTACHMENT1_WEBGL,
-            ]);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, extDrawBuffers.COLOR_ATTACHMENT0_WEBGL, gl.TEXTURE_2D, tRandRotColor.texture, 0);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, extDrawBuffers.COLOR_ATTACHMENT1_WEBGL, gl.TEXTURE_2D, tRandRotNormal.texture, 0);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, tRandRotDepth.texture, 0);
+            fbRandRot = new core.Framebuffer(gl, [tRandRotColor, tRandRotNormal], tRandRotDepth, extDrawBuffers);
 
             // fbScene
             tSceneColor = new core.Texture(gl, 3, null, resolution, resolution);
@@ -187,39 +138,20 @@ module.exports = function (canvas, resolution) {
                 type: gl.UNSIGNED_SHORT
             });
 
-            fbScene = gl.createFramebuffer();
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene);
-            extDrawBuffers.drawBuffersWEBGL([
-                extDrawBuffers.COLOR_ATTACHMENT0_WEBGL,
-                extDrawBuffers.COLOR_ATTACHMENT1_WEBGL,
-            ]);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, extDrawBuffers.COLOR_ATTACHMENT0_WEBGL, gl.TEXTURE_2D, tSceneColor.texture, 0);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, extDrawBuffers.COLOR_ATTACHMENT1_WEBGL, gl.TEXTURE_2D, tSceneNormal.texture, 0);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, tSceneDepth.texture, 0);
+            fbScene = new core.Framebuffer(gl, [tSceneColor, tSceneNormal], tSceneDepth, extDrawBuffers);
 
             // fbAccumulator
             tAccumulator = new core.Texture(gl, 6, null, resolution, resolution);
-
             tAccumulatorOut = new core.Texture(gl, 7, null, resolution, resolution);
-
-            fbAccumulator = gl.createFramebuffer();
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fbAccumulator);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tAccumulatorOut.texture, 0);
+            fbAccumulator = new core.Framebuffer(gl, [tAccumulatorOut]);
 
             // fbAO
             tAO = new core.Texture(gl, 8, null, resolution, resolution);
-
-            fbAO = gl.createFramebuffer();
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fbAO);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tAO.texture, 0);
+            fbAO = new core.Framebuffer(gl, [tAO]);
 
             // fbDOF
             tDOF = new core.Texture(gl, 9, null, resolution, resolution);
-
-            fbDOF = gl.createFramebuffer();
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fbDOF);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tDOF.texture, 0);
-
+            fbDOF = new core.Framebuffer(gl, [tDOF]);
         }
 
         self.setResolution = function(res) {
@@ -423,7 +355,7 @@ module.exports = function (canvas, resolution) {
 
         function scene(view) {
             // Render the depth/color buffers.
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fbScene);
+            fbScene.bind();
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             var rect = view.getRect();
             var projection = glm.mat4.create();
@@ -471,7 +403,7 @@ module.exports = function (canvas, resolution) {
                 glm.mat4.rotate(rot, rot, Math.random() * 10, axis);
             }
             v.setRotation(glm.mat4.multiply(glm.mat4.create(), rot, v.getRotation()));
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fbRandRot);
+            fbRandRot.bind()
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             var rect = v.getRect();
             var projection = glm.mat4.create();
@@ -511,7 +443,7 @@ module.exports = function (canvas, resolution) {
             var sceneRect = view.getRect();
             var rotRect = v.getRect();
             var invRot = glm.mat4.invert(glm.mat4.create(), rot);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fbAccumulator);
+            fbAccumulator.bind();
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             progAccumulator.setUniform("uSceneDepth", "1i", tSceneDepth.index);
             progAccumulator.setUniform("uSceneNormal", "1i", tSceneNormal.index);
@@ -533,7 +465,7 @@ module.exports = function (canvas, resolution) {
 
         function display(view) {
             if (view.getFXAA()) {
-                gl.bindFramebuffer(gl.FRAMEBUFFER, fbAO);
+                fbAO.bind();
             } else {
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             }
@@ -547,7 +479,7 @@ module.exports = function (canvas, resolution) {
             progAO.setUniform("uOutlineStrength", "1f", view.getOutlineStrength());
             rAO.render();
 
-            gl.bindFramebuffer(gl.FRAMEBUFFER, fbDOF);
+            fbDOF.bind();
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             progDOF.setUniform("uTexture", "1i", tAO.index);
             progDOF.setUniform("uDepth", "1i", tSceneDepth.index);
