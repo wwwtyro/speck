@@ -1,5 +1,18 @@
 
 
+module.exports.buildAttribs = function(gl, layout) {
+    var attribs = {};
+    for (var key in layout) {
+        attribs[key] = {
+            buffer: new Buffer(gl),
+            size: layout[key]
+        }
+    }
+    console.log(attribs);
+    return attribs;
+}
+
+
 module.exports.getExtensions = function(gl, extArray) {
     var ext = {};
     for (var i = 0; i < extArray.length; i++) {

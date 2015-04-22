@@ -24,23 +24,21 @@ module.exports = function (canvas, resolution) {
             rAccumulator = null,
             rAO = null,
             rDOF = null,
+            rBlur = null,
             rFXAA = null;
 
-        var tSceneColor,
-            tSceneNormal,
-            tSceneDepth,
-            tRandRotDepth,
-            tRandRotNormal,
-            tRandRotColor,
-            tAccumulator,
-            tAccumulatorOut,
+        var tSceneColor, tSceneNormal, tSceneDepth,
+            tRandRotDepth, tRandRotNormal, tRandRotColor,
+            tAccumulator, tAccumulatorOut,
             tDOF,
+            tBlur, tBlurOut,
             tAO;
 
         var fbScene,
             fbRandRot,
             fbAccumulator,
             fbDOF,
+            fbBlur,
             fbAO;
 
         var progScene,
@@ -49,6 +47,7 @@ module.exports = function (canvas, resolution) {
             progAO,
             progFXAA,
             progDOF,
+            progBlur,
             progDisplayQuad;
 
         var ext;
@@ -84,6 +83,7 @@ module.exports = function (canvas, resolution) {
             progAccumulator = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/accumulator.glsl", 'utf8'));
             progAO = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/ao.glsl", 'utf8'));
             progFXAA = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/fxaa.glsl", 'utf8'));
+            progBlur = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/blur.glsl", 'utf8'));
             progDOF = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/dof.glsl", 'utf8'));
 
             var position = [
@@ -96,12 +96,7 @@ module.exports = function (canvas, resolution) {
             ];
 
             // Initialize geometry.
-            var attribs = {
-                aPosition: {
-                    buffer: new core.Buffer(gl),
-                    size: 3
-                },
-            };
+            var attribs = core.buildAttribs(gl, {aPosition: 3});
             attribs.aPosition.buffer.set(new Float32Array(position));
             var count = position.length / 9;
 
@@ -110,6 +105,7 @@ module.exports = function (canvas, resolution) {
             rAO = new core.Renderable(gl, progAO, attribs, count);
             rFXAA = new core.Renderable(gl, progFXAA, attribs, count);
             rDOF = new core.Renderable(gl, progDOF, attribs, count);
+            rBlur = new core.Renderable(gl, progBlur, attribs, count);
 
             samples = 0;
 
@@ -154,6 +150,11 @@ module.exports = function (canvas, resolution) {
             // fbDOF
             tDOF = new core.Texture(gl, 9, null, resolution, resolution);
             fbDOF = new core.Framebuffer(gl, [tDOF]);
+
+            // fbBlur
+            tBlur = new core.Texture(gl, 10, null, resolution, resolution);
+            tBlurOut = new core.Texture(gl, 11, null, resolution, resolution);
+            fbDOF = new core.Framebuffer(gl, [tBlurOut]);
         }
 
         self.setResolution = function(res) {
@@ -177,25 +178,9 @@ module.exports = function (canvas, resolution) {
             }
 
             // Atoms
-
-            var attribs = {
-                aImposter: {
-                    buffer: new core.Buffer(gl),
-                    size: 3
-                },
-                aPosition: {
-                    buffer: new core.Buffer(gl),
-                    size: 3
-                },
-                aRadius: {
-                    buffer: new core.Buffer(gl),
-                    size: 1
-                },
-                aColor: {
-                    buffer: new core.Buffer(gl),
-                    size: 3
-                },
-            };
+            var attribs = core.buildAttribs(gl, {
+                aImposter: 3, aPosition: 3, aRadius: 3, aColor: 3
+            });
 
             var imposter = [];
             var position = [];
@@ -255,36 +240,15 @@ module.exports = function (canvas, resolution) {
 
                 if (bonds.length > 0) {
 
-                    var attribs = {
-                        aImposter: {
-                            buffer: new core.Buffer(gl),
-                            size: 3
-                        },
-                        aPosA: {
-                            buffer: new core.Buffer(gl),
-                            size: 3
-                        },
-                        aPosB: {
-                            buffer: new core.Buffer(gl),
-                            size: 3
-                        },
-                        aRadA: {
-                            buffer: new core.Buffer(gl),
-                            size: 1
-                        },
-                        aRadB: {
-                            buffer: new core.Buffer(gl),
-                            size: 1
-                        },
-                        aColA: {
-                            buffer: new core.Buffer(gl),
-                            size: 3
-                        },
-                        aColB: {
-                            buffer: new core.Buffer(gl),
-                            size: 3
-                        }
-                    };
+                    var attribs = core.buildAttribs(gl, {
+                        aImposter: 3,
+                        aPosA: 3,
+                        aPosB: 3,
+                        aRadA: 1,
+                        aRadB: 1,
+                        aColA: 3,
+                        aColB: 3
+                    })
 
                     var imposter = [];
                     var posa = [];
@@ -481,9 +445,23 @@ module.exports = function (canvas, resolution) {
             progAO.setUniform("uOutlineStrength", "1f", view.getOutlineStrength());
             rAO.render();
 
+            fbBlur.bind();
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            progBlur.setUniform("uTexture", "1i", tAO.index);
+            progBlur.setUniform("uRes", "1f", resolution);
+            rBlur.render();
+            tBlur.bind();
+            gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
+            
+            fbBlur.bind();
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            progBlur.setUniform("uTexture", "1i", tBlur.index);
+            progBlur.setUniform("uRes", "1f", resolution);
+            rBlur.render();
+
             fbDOF.bind();
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            progDOF.setUniform("uTexture", "1i", tAO.index);
+            progDOF.setUniform("uTexture", "1i", tBlurOut.index);
             progDOF.setUniform("uDepth", "1i", tSceneDepth.index);
             progDOF.setUniform("uDOFPosition", "1f", view.getDofPosition());
             progDOF.setUniform("uDOFStrength", "1f", view.getDofStrength());
