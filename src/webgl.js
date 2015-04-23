@@ -1,19 +1,21 @@
 
-
-module.exports.buildAttribs = function(gl, layout) {
+//|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+function buildAttribs(gl, layout) {
     var attribs = {};
     for (var key in layout) {
         attribs[key] = {
-            buffer: new Buffer(gl),
+            buffer: new GLBuffer(gl),
             size: layout[key]
         }
     }
-    console.log(attribs);
     return attribs;
 }
 
+module.exports.buildAttribs = buildAttribs;
 
-module.exports.getExtensions = function(gl, extArray) {
+
+//|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+function getExtensions(gl, extArray) {
     var ext = {};
     for (var i = 0; i < extArray.length; i++) {
         var e = gl.getExtension(extArray[i]);
@@ -25,8 +27,11 @@ module.exports.getExtensions = function(gl, extArray) {
     return ext;
 };
 
+module.exports.getExtensions = getExtensions;
 
-module.exports.Framebuffer = function(gl, color, depth, ext) {
+
+//|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+function Framebuffer(gl, color, depth, ext) {
 
     var self = this;
 
@@ -59,8 +64,11 @@ module.exports.Framebuffer = function(gl, color, depth, ext) {
 
 };
 
+module.exports.Framebuffer = Framebuffer;
 
-module.exports.Texture = function(gl, index, data, width, height, options) {
+
+//|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+function Texture(gl, index, data, width, height, options) {
     options = options || {};
     options.target = options.target || gl.TEXTURE_2D;
     options.mag = options.mag || gl.NEAREST;
@@ -104,8 +112,11 @@ module.exports.Texture = function(gl, index, data, width, height, options) {
     self.initialize();
 }
 
+module.exports.Texture = Texture;
 
-module.exports.Buffer = function(gl) {
+
+//|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+function GLBuffer(gl) {
 
     var self = this;
 
@@ -125,9 +136,11 @@ module.exports.Buffer = function(gl) {
     self.initialize();
 };
 
+module.exports.GLBuffer = GLBuffer;
 
 
-module.exports.Renderable = function(gl, program, buffers, primitiveCount) {
+//|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+function Renderable(gl, program, buffers, primitiveCount) {
 
     var self = this;
 
@@ -160,7 +173,11 @@ module.exports.Renderable = function(gl, program, buffers, primitiveCount) {
     self.initialize();
 };
 
-module.exports.InstancedRenderable = function(gl, program, buffers, primitiveCount, instancedExt) {
+module.exports.Renderable = Renderable;
+
+
+//|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+function InstancedRenderable(gl, program, buffers, primitiveCount, instancedExt) {
 
     var self = this;
 
@@ -192,10 +209,11 @@ module.exports.InstancedRenderable = function(gl, program, buffers, primitiveCou
     self.initialize();
 };
 
+module.exports.InstancedRenderable = InstancedRenderable;
 
 
-
-module.exports.Program = function(gl, vertexSource, fragmentSource) {
+//|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+function Program(gl, vertexSource, fragmentSource) {
 
     var self = this;
 
@@ -287,6 +305,10 @@ module.exports.Program = function(gl, vertexSource, fragmentSource) {
         return attribs;
     }   
 
+//|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
     self.initialize();
+
 };
 
+//|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+module.exports.Program = Program;

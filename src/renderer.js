@@ -154,7 +154,7 @@ module.exports = function (canvas, resolution) {
             // fbBlur
             tBlur = new core.Texture(gl, 10, null, resolution, resolution);
             tBlurOut = new core.Texture(gl, 11, null, resolution, resolution);
-            fbDOF = new core.Framebuffer(gl, [tBlurOut]);
+            fbBlur = new core.Framebuffer(gl, [tBlurOut]);
         }
 
         self.setResolution = function(res) {
@@ -179,7 +179,7 @@ module.exports = function (canvas, resolution) {
 
             // Atoms
             var attribs = core.buildAttribs(gl, {
-                aImposter: 3, aPosition: 3, aRadius: 3, aColor: 3
+                aImposter: 3, aPosition: 3, aRadius: 1, aColor: 3
             });
 
             var imposter = [];
@@ -425,6 +425,7 @@ module.exports = function (canvas, resolution) {
             progAccumulator.setUniform("uInvRot", "Matrix4fv", false, invRot);
             progAccumulator.setUniform("uSampleCount", "1i", sampleCount);
             rAccumulator.render();
+            tAccumulator.activate();
             tAccumulator.bind();
             gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
         }
@@ -445,30 +446,35 @@ module.exports = function (canvas, resolution) {
             progAO.setUniform("uOutlineStrength", "1f", view.getOutlineStrength());
             rAO.render();
 
-            fbBlur.bind();
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            progBlur.setUniform("uTexture", "1i", tAO.index);
-            progBlur.setUniform("uRes", "1f", resolution);
-            rBlur.render();
-            tBlur.bind();
-            gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
-            
-            fbBlur.bind();
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            progBlur.setUniform("uTexture", "1i", tBlur.index);
-            progBlur.setUniform("uRes", "1f", resolution);
-            rBlur.render();
-
-            fbDOF.bind();
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            progDOF.setUniform("uTexture", "1i", tBlurOut.index);
-            progDOF.setUniform("uDepth", "1i", tSceneDepth.index);
-            progDOF.setUniform("uDOFPosition", "1f", view.getDofPosition());
-            progDOF.setUniform("uDOFStrength", "1f", view.getDofStrength());
-            progDOF.setUniform("uRes", "1f", resolution);
-            rDOF.render();
-
             if (view.getFXAA()) {
+                fbBlur.bind();
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                progBlur.setUniform("uTexture", "1i", tAO.index);
+                progBlur.setUniform("uRes", "1f", resolution);
+                progBlur.setUniform("leftRight", "1i", 1);
+                rBlur.render();
+                tBlur.activate();
+                // tBlur.bind();
+                gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
+                // gl.bindTexture(gl.TEXTURE_2D, null);
+                
+                fbBlur.bind();
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                progBlur.setUniform("uTexture", "1i", tBlur.index);
+                progBlur.setUniform("uRes", "1f", resolution);
+                progBlur.setUniform("leftRight", "1i", 0);
+                rBlur.render();
+
+                fbDOF.bind();
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                progDOF.setUniform("uBlur", "1i", tBlurOut.index);
+                progDOF.setUniform("uColor", "1i", tAO.index);
+                progDOF.setUniform("uDepth", "1i", tSceneDepth.index);
+                progDOF.setUniform("uDOFPosition", "1f", view.getDofPosition());
+                progDOF.setUniform("uDOFStrength", "1f", view.getDofStrength());
+                progDOF.setUniform("uRes", "1f", resolution);
+                rDOF.render();
+
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                 progFXAA.setUniform("uTexture", "1i", tDOF.index);
