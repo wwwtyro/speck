@@ -15724,21 +15724,18 @@ module.exports = function (canvas, resolution) {
             rAccumulator = null,
             rAO = null,
             rDOF = null,
-            rBlur = null,
             rFXAA = null;
 
         var tSceneColor, tSceneNormal, tSceneDepth,
             tRandRotDepth, tRandRotNormal, tRandRotColor,
             tAccumulator, tAccumulatorOut,
-            tDOF,
-            tBlur, tBlurOut,
+            tDOF, tDOFOut,
             tAO;
 
         var fbScene,
             fbRandRot,
             fbAccumulator,
             fbDOF,
-            fbBlur,
             fbAO;
 
         var progScene,
@@ -15747,7 +15744,6 @@ module.exports = function (canvas, resolution) {
             progAO,
             progFXAA,
             progDOF,
-            progBlur,
             progDisplayQuad;
 
         var ext;
@@ -15783,8 +15779,7 @@ module.exports = function (canvas, resolution) {
             progAccumulator = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneDepth;\nuniform sampler2D uSceneNormal;\nuniform sampler2D uRandRotDepth;\nuniform sampler2D uAccumulator;\nuniform mat4 uRot;\nuniform mat4 uInvRot;\nuniform vec2 uSceneBottomLeft;\nuniform vec2 uSceneTopRight;\nuniform vec2 uRotBottomLeft;\nuniform vec2 uRotTopRight;\nuniform float uDepth;\nuniform float uRes;\nuniform int uSampleCount;\n\nvoid main() {\n\n    vec4 dScene = texture2D(uSceneDepth, gl_FragCoord.xy/uRes);\n\n    vec3 r = vec3(uSceneBottomLeft + (gl_FragCoord.xy/uRes) * (uSceneTopRight - uSceneBottomLeft), 0.0);\n\n    r.z = -(dScene.r - 0.5) * uDepth;\n    r = vec3(uRot * vec4(r, 1));\n    float depth = -r.z/uDepth + 0.5;\n\n    vec2 p = (r.xy - uRotBottomLeft)/(uRotTopRight - uRotBottomLeft);\n\n    vec4 dRandRot = texture2D(uRandRotDepth, p);\n\n    float ao = step(dRandRot.r, depth * 0.99);\n\n    vec3 normal = texture2D(uSceneNormal, gl_FragCoord.xy/uRes).rgb * 2.0 - 1.0;\n    vec3 dir = vec3(uInvRot * vec4(0, 0, 1, 0));\n    float mag = dot(dir, normal);\n    float sampled = step(0.0, mag);\n\n    ao *= sampled;\n\n    vec4 acc = texture2D(uAccumulator, gl_FragCoord.xy/uRes);\n\n    if (uSampleCount < 256) {\n        acc.r += ao/255.0;\n    } else if (uSampleCount < 512) {\n        acc.g += ao/255.0;\n    } else if (uSampleCount < 768) {\n        acc.b += ao/255.0;\n    } else {\n        acc.a += ao/255.0;\n    }\n        \n    gl_FragColor = acc;\n\n}\n");
             progAO = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneColor;\nuniform sampler2D uSceneDepth;\nuniform sampler2D uAccumulatorOut;\nuniform float uRes;\nuniform float uAO;\nuniform float uBrightness;\nuniform float uOutlineStrength;\n\nvoid main() {\n    vec2 p = gl_FragCoord.xy/uRes;\n    vec4 sceneColor = texture2D(uSceneColor, p);\n    if (uOutlineStrength > 0.0) {\n        float depth = texture2D(uSceneDepth, p).r;\n        float r = 1.0/uRes;\n        float d0 = abs(texture2D(uSceneDepth, p + vec2(-r,  0)).r - depth);\n        float d1 = abs(texture2D(uSceneDepth, p + vec2( r,  0)).r - depth);\n        float d2 = abs(texture2D(uSceneDepth, p + vec2( 0, -r)).r - depth);\n        float d3 = abs(texture2D(uSceneDepth, p + vec2( 0,  r)).r - depth);\n        float d = max(d0, d1);\n        d = max(d, d2);\n        d = max(d, d3);\n        sceneColor.rgb *= pow(1.0 - d, uOutlineStrength * 32.0);\n        sceneColor.a = max(step(0.003, d), sceneColor.a);\n    }\n    vec4 dAccum = texture2D(uAccumulatorOut, p);\n    float shade = max(0.0, 1.0 - (dAccum.r + dAccum.g + dAccum.b + dAccum.a) * 0.25 * uAO);\n    shade = pow(shade, 2.0);\n    gl_FragColor = vec4(uBrightness * sceneColor.rgb * shade, sceneColor.a);\n}\n");
             progFXAA = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uTexture;\nuniform float uRes;\n\nvoid main() {\n    float FXAA_SPAN_MAX = 8.0;\n    float FXAA_REDUCE_MUL = 1.0/8.0;\n    float FXAA_REDUCE_MIN = 1.0/128.0;\n\n    vec2 texCoords = gl_FragCoord.xy/uRes;\n\n    vec4 rgbNW = texture2D(uTexture, texCoords + (vec2(-1.0, -1.0) / uRes));\n    vec4 rgbNE = texture2D(uTexture, texCoords + (vec2(1.0, -1.0) / uRes));\n    vec4 rgbSW = texture2D(uTexture, texCoords + (vec2(-1.0, 1.0) / uRes));\n    vec4 rgbSE = texture2D(uTexture, texCoords + (vec2(1.0, 1.0) / uRes));\n    vec4 rgbM  = texture2D(uTexture, texCoords);\n\n    vec4 luma = vec4(0.299, 0.587, 0.114, 1.0);\n    float lumaNW = dot(rgbNW, luma);\n    float lumaNE = dot(rgbNE, luma);\n    float lumaSW = dot(rgbSW, luma);\n    float lumaSE = dot(rgbSE, luma);\n    float lumaM  = dot(rgbM,  luma);\n\n    float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));\n    float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));\n\n    vec2 dir;\n    dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));\n    dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));\n\n    float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) * (0.25 * FXAA_REDUCE_MUL), FXAA_REDUCE_MIN);\n\n    float rcpDirMin = 1.0/(min(abs(dir.x), abs(dir.y)) + dirReduce);\n\n    dir = min(vec2(FXAA_SPAN_MAX, FXAA_SPAN_MAX), max(vec2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX), dir * rcpDirMin)) / uRes;\n\n    vec4 rgbA = (1.0/2.0) * \n        (texture2D(uTexture, texCoords.xy + dir * (1.0/3.0 - 0.5)) + \n         texture2D(uTexture, texCoords.xy + dir * (2.0/3.0 - 0.5)));\n    vec4 rgbB = rgbA * (1.0/2.0) + (1.0/4.0) * \n        (texture2D(uTexture, texCoords.xy + dir * (0.0/3.0 - 0.5)) +\n         texture2D(uTexture, texCoords.xy + dir * (3.0/3.0 - 0.5)));\n    float lumaB = dot(rgbB, luma);\n\n    if((lumaB < lumaMin) || (lumaB > lumaMax)){\n        gl_FragColor = rgbA;\n    } else {\n        gl_FragColor = rgbB;\n    }\n\n}");
-            progBlur = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uTexture;\nuniform float uRes;\nuniform int leftRight;\n\nvoid main() {\n    vec2 dir;\n    if (leftRight == 1) {\n        dir = vec2(1,0)/uRes;\n    } else {\n        dir = vec2(0,1)/uRes;\n    }\n    const int range = 16;\n    vec4 sample = vec4(0,0,0,0);\n    for (int i = -range; i <= range; i++) {\n        vec2 p = gl_FragCoord.xy/uRes + dir * float(i);\n        sample += texture2D(uTexture, p);\n    }\n    sample /= float(range) * 2.0 + 1.0;\n    gl_FragColor = sample;\n}\n");
-            progDOF = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uColor;\nuniform sampler2D uBlur;\nuniform sampler2D uDepth;\nuniform float uRes;\nuniform float uDOFPosition;\nuniform float uDOFStrength;\n\nvoid main() {\n    float invRes = 1.0/uRes;\n    vec2 coord = gl_FragCoord.xy * invRes;\n\n    float depth = texture2D(uDepth, coord).r;\n    float scale = pow(abs(uDOFPosition - depth) * uDOFStrength, 0.5);\n\n    vec4 color = texture2D(uColor, coord);\n    vec4 blur = texture2D(uBlur, coord);\n\n    scale = smoothstep(0.0, 1.0, scale);\n\n    gl_FragColor = mix(color, blur, scale);\n}");
+            progDOF = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uColor;\nuniform sampler2D uDepth;\nuniform float uRes;\nuniform float uDOFPosition;\nuniform float uDOFStrength;\nuniform int leftRight;\n\nvoid main() {\n    float invRes = 1.0/uRes;\n    vec2 coord = gl_FragCoord.xy * invRes;\n\n    float depth = texture2D(uDepth, coord).r;\n    float scale = abs(uDOFPosition - depth);\n\n    int steps = int(128.0 * uDOFStrength * 1.0);\n\n    vec2 dir = vec2(1, 0);\n    if (leftRight == 1) {\n        dir = vec2(0, 1);\n    }\n\n    vec2 p = coord - dir * invRes * float(steps) * 0.5;\n    vec4 sample = texture2D(uColor, coord);\n    int i = 0;\n    float count = 1.0;\n    for(int _ = 0; _ < 128; _++) {\n        float d = texture2D(uDepth, p).r;\n        float s = pow(abs(uDOFPosition - d), 2.0) * step(d, depth);\n        sample += texture2D(uColor, p) * s;\n        count += s;\n        p += dir * invRes;\n        i++;\n        if (i > steps) {\n            break;\n        }\n    }\n\n    gl_FragColor = sample/count;\n}");
 
             var position = [
                 -1, -1, 0,
@@ -15805,7 +15800,6 @@ module.exports = function (canvas, resolution) {
             rAO = new core.Renderable(gl, progAO, attribs, count);
             rFXAA = new core.Renderable(gl, progFXAA, attribs, count);
             rDOF = new core.Renderable(gl, progDOF, attribs, count);
-            rBlur = new core.Renderable(gl, progBlur, attribs, count);
 
             samples = 0;
 
@@ -15849,12 +15843,8 @@ module.exports = function (canvas, resolution) {
 
             // fbDOF
             tDOF = new core.Texture(gl, 9, null, resolution, resolution);
-            fbDOF = new core.Framebuffer(gl, [tDOF]);
-
-            // fbBlur
-            tBlur = new core.Texture(gl, 10, null, resolution, resolution);
-            tBlurOut = new core.Texture(gl, 11, null, resolution, resolution);
-            fbBlur = new core.Framebuffer(gl, [tBlurOut]);
+            tDOFOut = new core.Texture(gl, 10, null, resolution, resolution);
+            fbDOF = new core.Framebuffer(gl, [tDOFOut]);
         }
 
         self.setResolution = function(res) {
@@ -16147,37 +16137,49 @@ module.exports = function (canvas, resolution) {
             rAO.render();
 
             if (view.getFXAA()) {
-                fbBlur.bind();
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                progBlur.setUniform("uTexture", "1i", tAO.index);
-                progBlur.setUniform("uRes", "1f", resolution);
-                progBlur.setUniform("leftRight", "1i", 1);
-                rBlur.render();
-                tBlur.activate();
-                // tBlur.bind();
-                gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
-                // gl.bindTexture(gl.TEXTURE_2D, null);
+                // fbBlur.bind();
+                // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                // progBlur.setUniform("uTexture", "1i", tAO.index);
+                // progBlur.setUniform("uRes", "1f", resolution);
+                // progBlur.setUniform("leftRight", "1i", 1);
+                // rBlur.render();
+                // tBlur.activate();
+                // // tBlur.bind();
+                // gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
+                // // gl.bindTexture(gl.TEXTURE_2D, null);
                 
-                fbBlur.bind();
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                progBlur.setUniform("uTexture", "1i", tBlur.index);
-                progBlur.setUniform("uRes", "1f", resolution);
-                progBlur.setUniform("leftRight", "1i", 0);
-                rBlur.render();
+                // fbBlur.bind();
+                // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                // progBlur.setUniform("uTexture", "1i", tBlur.index);
+                // progBlur.setUniform("uRes", "1f", resolution);
+                // progBlur.setUniform("leftRight", "1i", 0);
+                // rBlur.render();
 
                 fbDOF.bind();
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                progDOF.setUniform("uBlur", "1i", tBlurOut.index);
                 progDOF.setUniform("uColor", "1i", tAO.index);
                 progDOF.setUniform("uDepth", "1i", tSceneDepth.index);
                 progDOF.setUniform("uDOFPosition", "1f", view.getDofPosition());
                 progDOF.setUniform("uDOFStrength", "1f", view.getDofStrength());
+                progDOF.setUniform("leftRight", "1i", 0);
+                progDOF.setUniform("uRes", "1f", resolution);
+                rDOF.render();
+                tDOF.activate();
+                gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
+
+                fbDOF.bind();
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                progDOF.setUniform("uColor", "1i", tDOF.index);
+                progDOF.setUniform("uDepth", "1i", tSceneDepth.index);
+                progDOF.setUniform("uDOFPosition", "1f", view.getDofPosition());
+                progDOF.setUniform("uDOFStrength", "1f", view.getDofStrength());
+                progDOF.setUniform("leftRight", "1i", 1);
                 progDOF.setUniform("uRes", "1f", resolution);
                 rDOF.render();
 
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                progFXAA.setUniform("uTexture", "1i", tDOF.index);
+                progFXAA.setUniform("uTexture", "1i", tDOFOut.index);
                 progFXAA.setUniform("uRes", "1f", resolution);
                 rFXAA.render();
             }

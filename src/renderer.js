@@ -24,21 +24,18 @@ module.exports = function (canvas, resolution) {
             rAccumulator = null,
             rAO = null,
             rDOF = null,
-            rBlur = null,
             rFXAA = null;
 
         var tSceneColor, tSceneNormal, tSceneDepth,
             tRandRotDepth, tRandRotNormal, tRandRotColor,
             tAccumulator, tAccumulatorOut,
-            tDOF,
-            tBlur, tBlurOut,
+            tDOF, tDOFOut,
             tAO;
 
         var fbScene,
             fbRandRot,
             fbAccumulator,
             fbDOF,
-            fbBlur,
             fbAO;
 
         var progScene,
@@ -47,7 +44,6 @@ module.exports = function (canvas, resolution) {
             progAO,
             progFXAA,
             progDOF,
-            progBlur,
             progDisplayQuad;
 
         var ext;
@@ -83,7 +79,6 @@ module.exports = function (canvas, resolution) {
             progAccumulator = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/accumulator.glsl", 'utf8'));
             progAO = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/ao.glsl", 'utf8'));
             progFXAA = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/fxaa.glsl", 'utf8'));
-            progBlur = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/blur.glsl", 'utf8'));
             progDOF = loadProgram(gl, fs.readFileSync(__dirname + "/shaders/dof.glsl", 'utf8'));
 
             var position = [
@@ -105,7 +100,6 @@ module.exports = function (canvas, resolution) {
             rAO = new core.Renderable(gl, progAO, attribs, count);
             rFXAA = new core.Renderable(gl, progFXAA, attribs, count);
             rDOF = new core.Renderable(gl, progDOF, attribs, count);
-            rBlur = new core.Renderable(gl, progBlur, attribs, count);
 
             samples = 0;
 
@@ -149,12 +143,8 @@ module.exports = function (canvas, resolution) {
 
             // fbDOF
             tDOF = new core.Texture(gl, 9, null, resolution, resolution);
-            fbDOF = new core.Framebuffer(gl, [tDOF]);
-
-            // fbBlur
-            tBlur = new core.Texture(gl, 10, null, resolution, resolution);
-            tBlurOut = new core.Texture(gl, 11, null, resolution, resolution);
-            fbBlur = new core.Framebuffer(gl, [tBlurOut]);
+            tDOFOut = new core.Texture(gl, 10, null, resolution, resolution);
+            fbDOF = new core.Framebuffer(gl, [tDOFOut]);
         }
 
         self.setResolution = function(res) {
@@ -447,37 +437,49 @@ module.exports = function (canvas, resolution) {
             rAO.render();
 
             if (view.getFXAA()) {
-                fbBlur.bind();
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                progBlur.setUniform("uTexture", "1i", tAO.index);
-                progBlur.setUniform("uRes", "1f", resolution);
-                progBlur.setUniform("leftRight", "1i", 1);
-                rBlur.render();
-                tBlur.activate();
-                // tBlur.bind();
-                gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
-                // gl.bindTexture(gl.TEXTURE_2D, null);
+                // fbBlur.bind();
+                // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                // progBlur.setUniform("uTexture", "1i", tAO.index);
+                // progBlur.setUniform("uRes", "1f", resolution);
+                // progBlur.setUniform("leftRight", "1i", 1);
+                // rBlur.render();
+                // tBlur.activate();
+                // // tBlur.bind();
+                // gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
+                // // gl.bindTexture(gl.TEXTURE_2D, null);
                 
-                fbBlur.bind();
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                progBlur.setUniform("uTexture", "1i", tBlur.index);
-                progBlur.setUniform("uRes", "1f", resolution);
-                progBlur.setUniform("leftRight", "1i", 0);
-                rBlur.render();
+                // fbBlur.bind();
+                // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                // progBlur.setUniform("uTexture", "1i", tBlur.index);
+                // progBlur.setUniform("uRes", "1f", resolution);
+                // progBlur.setUniform("leftRight", "1i", 0);
+                // rBlur.render();
 
                 fbDOF.bind();
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                progDOF.setUniform("uBlur", "1i", tBlurOut.index);
                 progDOF.setUniform("uColor", "1i", tAO.index);
                 progDOF.setUniform("uDepth", "1i", tSceneDepth.index);
                 progDOF.setUniform("uDOFPosition", "1f", view.getDofPosition());
                 progDOF.setUniform("uDOFStrength", "1f", view.getDofStrength());
+                progDOF.setUniform("leftRight", "1i", 0);
+                progDOF.setUniform("uRes", "1f", resolution);
+                rDOF.render();
+                tDOF.activate();
+                gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
+
+                fbDOF.bind();
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                progDOF.setUniform("uColor", "1i", tDOF.index);
+                progDOF.setUniform("uDepth", "1i", tSceneDepth.index);
+                progDOF.setUniform("uDOFPosition", "1f", view.getDofPosition());
+                progDOF.setUniform("uDOFStrength", "1f", view.getDofStrength());
+                progDOF.setUniform("leftRight", "1i", 1);
                 progDOF.setUniform("uRes", "1f", resolution);
                 rDOF.render();
 
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                progFXAA.setUniform("uTexture", "1i", tDOF.index);
+                progFXAA.setUniform("uTexture", "1i", tDOFOut.index);
                 progFXAA.setUniform("uRes", "1f", resolution);
                 rFXAA.render();
             }
