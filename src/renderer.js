@@ -437,23 +437,6 @@ module.exports = function (canvas, resolution) {
             rAO.render();
 
             if (view.getFXAA()) {
-                // fbBlur.bind();
-                // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                // progBlur.setUniform("uTexture", "1i", tAO.index);
-                // progBlur.setUniform("uRes", "1f", resolution);
-                // progBlur.setUniform("leftRight", "1i", 1);
-                // rBlur.render();
-                // tBlur.activate();
-                // // tBlur.bind();
-                // gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
-                // // gl.bindTexture(gl.TEXTURE_2D, null);
-                
-                // fbBlur.bind();
-                // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                // progBlur.setUniform("uTexture", "1i", tBlur.index);
-                // progBlur.setUniform("uRes", "1f", resolution);
-                // progBlur.setUniform("leftRight", "1i", 0);
-                // rBlur.render();
 
                 fbDOF.bind();
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -461,19 +444,6 @@ module.exports = function (canvas, resolution) {
                 progDOF.setUniform("uDepth", "1i", tSceneDepth.index);
                 progDOF.setUniform("uDOFPosition", "1f", view.getDofPosition());
                 progDOF.setUniform("uDOFStrength", "1f", view.getDofStrength());
-                progDOF.setUniform("leftRight", "1i", 0);
-                progDOF.setUniform("uRes", "1f", resolution);
-                rDOF.render();
-                tDOF.activate();
-                gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
-
-                fbDOF.bind();
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                progDOF.setUniform("uColor", "1i", tDOF.index);
-                progDOF.setUniform("uDepth", "1i", tSceneDepth.index);
-                progDOF.setUniform("uDOFPosition", "1f", view.getDofPosition());
-                progDOF.setUniform("uDOFStrength", "1f", view.getDofStrength());
-                progDOF.setUniform("leftRight", "1i", 1);
                 progDOF.setUniform("uRes", "1f", resolution);
                 rDOF.render();
 
