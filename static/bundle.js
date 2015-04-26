@@ -15726,7 +15726,7 @@ module.exports = function (canvas, resolution, aoResolution) {
         var gl, 
             canvas;
 
-        var rScene = null,
+        var rAtoms = null,
             rBonds = null,
             rDispQuad = null,
             rAccumulator = null,
@@ -15738,20 +15738,19 @@ module.exports = function (canvas, resolution, aoResolution) {
             tSceneNormal,
             tSceneDepth,
             tRandRotDepth,
-            tRandRotNormal,
             tRandRotColor,
             tAccumulator,
             tAccumulatorOut,
             tDOF,
             tAO;
 
-        var fbScene,
+        var fbSceneColor, fbSceneNormal,
             fbRandRot,
             fbAccumulator,
             fbDOF,
             fbAO;
 
-        var progScene,
+        var progAtoms,
             progBonds,
             progAccumulator,
             progAO,
@@ -15780,14 +15779,13 @@ module.exports = function (canvas, resolution, aoResolution) {
             ext = core.getExtensions(gl, [
                 "EXT_frag_depth", 
                 "WEBGL_depth_texture", 
-                "WEBGL_draw_buffers"
             ]);
 
             self.createTextures();
 
             // Initialize shaders.
-            progScene = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aImposter;\nattribute vec3 aPosition;\nattribute float aRadius;\nattribute vec3 aColor;\n\nuniform mat4 uView;\nuniform mat4 uProjection;\nuniform mat4 uModel;\nuniform float uAtomScale;\nuniform float uRelativeAtomScale;\n\nvarying vec3 vColor;\nvarying vec3 vPosition;\nvarying float vRadius;\n\nvoid main() {\n    vRadius = uAtomScale * (1.0 + (aRadius - 1.0) * uRelativeAtomScale);\n    gl_Position = uProjection * uView * uModel * vec4(vRadius * aImposter + aPosition, 1.0);\n    vColor = aColor;\n    vPosition = vec3(uModel * vec4(aPosition, 1));\n}\n\n\n// __split__\n\n\n#version 100\n#extension GL_EXT_frag_depth: enable\n#extension GL_EXT_draw_buffers: require\nprecision highp float;\n\nuniform vec2 uBottomLeft;\nuniform vec2 uTopRight;\nuniform float uRes;\nuniform float uDepth;\n\nvarying vec3 vPosition;\nvarying float vRadius;\nvarying vec3 vColor;\n\nvec2 res = vec2(uRes, uRes);\n\nfloat raySphereIntersect(vec3 r0, vec3 rd) {\n    float a = dot(rd, rd);\n    vec3 s0_r0 = r0 - vPosition;\n    float b = 2.0 * dot(rd, s0_r0);\n    float c = dot(s0_r0, s0_r0) - (vRadius * vRadius);\n    float disc = b*b - 4.0*a*c;\n    if (disc <= 0.0) {\n        return -1.0;\n    }\n    return (-b - sqrt(disc))/(2.0*a);\n}\n\nvoid main() {\n    vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/res) * (uTopRight - uBottomLeft), 0.0);\n    vec3 rd = vec3(0, 0, -1);\n    float t = raySphereIntersect(r0, rd);\n    if (t < 0.0) {\n        discard;\n    }\n    vec3 coord = r0 + rd * t;\n    vec3 normal = normalize(coord - vPosition);\n    gl_FragData[0] = vec4(vColor, 1);\n    gl_FragData[1] = vec4(normal * 0.5 + 0.5, 1.0);\n    gl_FragDepthEXT = -coord.z/uDepth;\n}\n");
-            progBonds = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aImposter;\nattribute vec3 aPosA;\nattribute vec3 aPosB;\nattribute float aRadA;\nattribute float aRadB;\nattribute vec3 aColA;\nattribute vec3 aColB;\n\nuniform mat4 uView;\nuniform mat4 uProjection;\nuniform mat4 uModel;\nuniform mat4 uRotation;\nuniform float uBondRadius;\nuniform float uAtomScale;\nuniform float uRelativeAtomScale;\n\nvarying vec3 vNormal;\nvarying vec3 vPosA, vPosB;\nvarying float vRadA, vRadB;\nvarying vec3 vColA, vColB;\nvarying float vRadius;\n\nmat3 alignVector(vec3 a, vec3 b) {\n    vec3 v = cross(a, b);\n    float s = length(v);\n    float c = dot(a, b);\n    mat3 I = mat3(\n        1, 0, 0,\n        0, 1, 0,\n        0, 0, 1\n    );\n    mat3 vx = mat3(\n        0, v.z, -v.y,\n        -v.z, 0, v.x,\n        v.y, -v.x, 0\n    );\n    return I + vx + vx * vx * ((1.0 - c) / (s * s));\n}\n\nvoid main() {\n    vRadius = uBondRadius;\n    vec3 pos = vec3(aImposter);\n    // Scale the box in x and z to be bond-radius.\n    pos = pos * vec3(vRadius, 1, vRadius);\n    // Shift the origin-centered cube so that the bottom is at the origin.\n    pos = pos + vec3(0, 1, 0);\n    // Stretch the box in y so that it is the length of the bond.\n    pos = pos * vec3(1, length(aPosA - aPosB) * 0.5, 1);\n    // Find the rotation that aligns vec3(0, 1, 0) with vec3(uPosB - uPosA) and apply it.\n    vec3 a = normalize(vec3(-0.000001, 1.000001, 0.000001));\n    vec3 b = normalize(aPosB - aPosA);\n    mat3 R = alignVector(a, b);\n    pos = R * pos;\n    // Shift the cube so that the bottom is centered at the middle of atom A.\n    pos = pos + aPosA;\n\n    vec4 position = uModel * vec4(pos, 1);\n    gl_Position = uProjection * uView * position;\n    vPosA = aPosA;\n    vPosB = aPosB;\n    vRadA = uAtomScale * (1.0 + (aRadA - 1.0) * uRelativeAtomScale);\n    vRadB = uAtomScale * (1.0 + (aRadB - 1.0) * uRelativeAtomScale);\n    vColA = aColA;\n    vColB = aColB;\n}\n\n\n// __split__\n\n\n#version 100\n#extension GL_EXT_frag_depth: enable\n#extension GL_EXT_draw_buffers: require\nprecision highp float;\n\nuniform mat4 uRotation;\nuniform vec2 uBottomLeft;\nuniform vec2 uTopRight;\nuniform float uDepth;\nuniform float uRes;\nuniform float uBondShade;\n\nvarying vec3 vPosA, vPosB;\nvarying float vRadA, vRadB;\nvarying vec3 vColA, vColB;\nvarying float vRadius;\n\nmat3 alignVector(vec3 a, vec3 b) {\n    vec3 v = cross(a, b);\n    float s = length(v);\n    float c = dot(a, b);\n    mat3 I = mat3(\n        1, 0, 0,\n        0, 1, 0,\n        0, 0, 1\n    );\n    mat3 vx = mat3(\n        0, v.z, -v.y,\n        -v.z, 0, v.x,\n        v.y, -v.x, 0\n    );\n    return I + vx + vx * vx * ((1.0 - c) / (s * s));\n}\n\nvoid main() {\n\n    vec2 res = vec2(uRes, uRes);\n    vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/res) * (uTopRight - uBottomLeft), uDepth/2.0);\n    vec3 rd = vec3(0, 0, -1);\n\n    vec3 i = normalize(vPosB - vPosA);\n         i = vec3(uRotation * vec4(i, 0));\n    vec3 j = normalize(vec3(-0.000001, 1.000001, 0.000001));\n    mat3 R = alignVector(i, j);\n\n    vec3 r0p = r0 - vec3(uRotation * vec4(vPosA, 0));\n    r0p = R * r0p;\n    vec3 rdp = R * rd;\n\n    float a = dot(rdp.xz, rdp.xz);\n    float b = 2.0 * dot(rdp.xz, r0p.xz);\n    float c = dot(r0p.xz, r0p.xz) - vRadius*vRadius;\n    float disc = b*b - 4.0*a*c;\n    if (disc <= 0.0) {\n        discard;\n    }\n    float t = (-b - sqrt(disc))/(2.0*a);\n    if (t < 0.0) {\n        discard;\n    }\n\n    vec3 coord = r0p + rdp * t;\n    if (coord.y < 0.0 || coord.y > length(vPosA - vPosB)) {\n        discard;\n    }\n\n    vec3 color;\n    if (coord.y < vRadA + 0.5 * (length(vPosA - vPosB) - (vRadA + vRadB))) {\n        color = vColA;\n    } else {\n        color = vColB;\n    }\n\n    color = mix(color, vec3(1,1,1), uBondShade);\n\n    R = alignVector(j, i);\n    vec3 normal = normalize(R * vec3(coord.x, 0, coord.z));\n\n    coord = r0 + rd * t;\n    gl_FragData[0] = vec4(color,1);\n    gl_FragData[1] = vec4(normal * 0.5 + 0.5, 1.0);\n    gl_FragDepthEXT = -(coord.z - uDepth/2.0)/uDepth;\n}\n");
+            progAtoms = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aImposter;\nattribute vec3 aPosition;\nattribute float aRadius;\nattribute vec3 aColor;\n\nuniform mat4 uView;\nuniform mat4 uProjection;\nuniform mat4 uModel;\nuniform float uAtomScale;\nuniform float uRelativeAtomScale;\n\nvarying vec3 vColor;\nvarying vec3 vPosition;\nvarying float vRadius;\n\nvoid main() {\n    vRadius = uAtomScale * (1.0 + (aRadius - 1.0) * uRelativeAtomScale);\n    gl_Position = uProjection * uView * uModel * vec4(vRadius * aImposter + aPosition, 1.0);\n    vColor = aColor;\n    vPosition = vec3(uModel * vec4(aPosition, 1));\n}\n\n\n// __split__\n\n\n#version 100\n#extension GL_EXT_frag_depth: enable\nprecision highp float;\n\nuniform vec2 uBottomLeft;\nuniform vec2 uTopRight;\nuniform float uRes;\nuniform float uDepth;\nuniform int uMode;\n\nvarying vec3 vPosition;\nvarying float vRadius;\nvarying vec3 vColor;\n\nvec2 res = vec2(uRes, uRes);\n\nfloat raySphereIntersect(vec3 r0, vec3 rd) {\n    float a = dot(rd, rd);\n    vec3 s0_r0 = r0 - vPosition;\n    float b = 2.0 * dot(rd, s0_r0);\n    float c = dot(s0_r0, s0_r0) - (vRadius * vRadius);\n    float disc = b*b - 4.0*a*c;\n    if (disc <= 0.0) {\n        return -1.0;\n    }\n    return (-b - sqrt(disc))/(2.0*a);\n}\n\nvoid main() {\n    vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/res) * (uTopRight - uBottomLeft), 0.0);\n    vec3 rd = vec3(0, 0, -1);\n    float t = raySphereIntersect(r0, rd);\n    if (t < 0.0) {\n        discard;\n    }\n    vec3 coord = r0 + rd * t;\n    vec3 normal = normalize(coord - vPosition);\n    if (uMode == 0) {\n        gl_FragColor = vec4(vColor, 1);\n    } else if (uMode == 1) {\n        gl_FragColor = vec4(normal * 0.5 + 0.5, 1.0);\n    }\n    gl_FragDepthEXT = -coord.z/uDepth;\n}\n");
+            progBonds = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aImposter;\nattribute vec3 aPosA;\nattribute vec3 aPosB;\nattribute float aRadA;\nattribute float aRadB;\nattribute vec3 aColA;\nattribute vec3 aColB;\n\nuniform mat4 uView;\nuniform mat4 uProjection;\nuniform mat4 uModel;\nuniform mat4 uRotation;\nuniform float uBondRadius;\nuniform float uAtomScale;\nuniform float uRelativeAtomScale;\n\nvarying vec3 vNormal;\nvarying vec3 vPosA, vPosB;\nvarying float vRadA, vRadB;\nvarying vec3 vColA, vColB;\nvarying float vRadius;\n\nmat3 alignVector(vec3 a, vec3 b) {\n    vec3 v = cross(a, b);\n    float s = length(v);\n    float c = dot(a, b);\n    mat3 I = mat3(\n        1, 0, 0,\n        0, 1, 0,\n        0, 0, 1\n    );\n    mat3 vx = mat3(\n        0, v.z, -v.y,\n        -v.z, 0, v.x,\n        v.y, -v.x, 0\n    );\n    return I + vx + vx * vx * ((1.0 - c) / (s * s));\n}\n\nvoid main() {\n    vRadius = uBondRadius;\n    vec3 pos = vec3(aImposter);\n    // Scale the box in x and z to be bond-radius.\n    pos = pos * vec3(vRadius, 1, vRadius);\n    // Shift the origin-centered cube so that the bottom is at the origin.\n    pos = pos + vec3(0, 1, 0);\n    // Stretch the box in y so that it is the length of the bond.\n    pos = pos * vec3(1, length(aPosA - aPosB) * 0.5, 1);\n    // Find the rotation that aligns vec3(0, 1, 0) with vec3(uPosB - uPosA) and apply it.\n    vec3 a = normalize(vec3(-0.000001, 1.000001, 0.000001));\n    vec3 b = normalize(aPosB - aPosA);\n    mat3 R = alignVector(a, b);\n    pos = R * pos;\n    // Shift the cube so that the bottom is centered at the middle of atom A.\n    pos = pos + aPosA;\n\n    vec4 position = uModel * vec4(pos, 1);\n    gl_Position = uProjection * uView * position;\n    vPosA = aPosA;\n    vPosB = aPosB;\n    vRadA = uAtomScale * (1.0 + (aRadA - 1.0) * uRelativeAtomScale);\n    vRadB = uAtomScale * (1.0 + (aRadB - 1.0) * uRelativeAtomScale);\n    vColA = aColA;\n    vColB = aColB;\n}\n\n\n// __split__\n\n\n#version 100\n#extension GL_EXT_frag_depth: enable\nprecision highp float;\n\nuniform mat4 uRotation;\nuniform vec2 uBottomLeft;\nuniform vec2 uTopRight;\nuniform float uDepth;\nuniform float uRes;\nuniform float uBondShade;\nuniform int uMode;\n\nvarying vec3 vPosA, vPosB;\nvarying float vRadA, vRadB;\nvarying vec3 vColA, vColB;\nvarying float vRadius;\n\nmat3 alignVector(vec3 a, vec3 b) {\n    vec3 v = cross(a, b);\n    float s = length(v);\n    float c = dot(a, b);\n    mat3 I = mat3(\n        1, 0, 0,\n        0, 1, 0,\n        0, 0, 1\n    );\n    mat3 vx = mat3(\n        0, v.z, -v.y,\n        -v.z, 0, v.x,\n        v.y, -v.x, 0\n    );\n    return I + vx + vx * vx * ((1.0 - c) / (s * s));\n}\n\nvoid main() {\n\n    vec2 res = vec2(uRes, uRes);\n    vec3 r0 = vec3(uBottomLeft + (gl_FragCoord.xy/res) * (uTopRight - uBottomLeft), uDepth/2.0);\n    vec3 rd = vec3(0, 0, -1);\n\n    vec3 i = normalize(vPosB - vPosA);\n         i = vec3(uRotation * vec4(i, 0));\n    vec3 j = normalize(vec3(-0.000001, 1.000001, 0.000001));\n    mat3 R = alignVector(i, j);\n\n    vec3 r0p = r0 - vec3(uRotation * vec4(vPosA, 0));\n    r0p = R * r0p;\n    vec3 rdp = R * rd;\n\n    float a = dot(rdp.xz, rdp.xz);\n    float b = 2.0 * dot(rdp.xz, r0p.xz);\n    float c = dot(r0p.xz, r0p.xz) - vRadius*vRadius;\n    float disc = b*b - 4.0*a*c;\n    if (disc <= 0.0) {\n        discard;\n    }\n    float t = (-b - sqrt(disc))/(2.0*a);\n    if (t < 0.0) {\n        discard;\n    }\n\n    vec3 coord = r0p + rdp * t;\n    if (coord.y < 0.0 || coord.y > length(vPosA - vPosB)) {\n        discard;\n    }\n\n    vec3 color;\n    if (coord.y < vRadA + 0.5 * (length(vPosA - vPosB) - (vRadA + vRadB))) {\n        color = vColA;\n    } else {\n        color = vColB;\n    }\n\n    color = mix(color, vec3(1,1,1), uBondShade);\n\n    R = alignVector(j, i);\n    vec3 normal = normalize(R * vec3(coord.x, 0, coord.z));\n\n    coord = r0 + rd * t;\n    if (uMode == 0) {\n        gl_FragColor = vec4(color, 1);\n    } else if (uMode == 1) {\n        gl_FragColor = vec4(normal * 0.5 + 0.5, 1.0);\n    }\n    gl_FragDepthEXT = -(coord.z - uDepth/2.0)/uDepth;\n}\n");
             progDisplayQuad = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uTexture;\nuniform float uRes;\n\nvoid main() {\n    gl_FragColor = texture2D(uTexture, gl_FragCoord.xy/uRes);\n}\n");
             progAccumulator = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneDepth;\nuniform sampler2D uSceneNormal;\nuniform sampler2D uRandRotDepth;\nuniform sampler2D uAccumulator;\nuniform mat4 uRot;\nuniform mat4 uInvRot;\nuniform vec2 uSceneBottomLeft;\nuniform vec2 uSceneTopRight;\nuniform vec2 uRotBottomLeft;\nuniform vec2 uRotTopRight;\nuniform float uDepth;\nuniform float uRes;\nuniform int uSampleCount;\n\nvoid main() {\n\n    float dScene = texture2D(uSceneDepth, gl_FragCoord.xy/uRes).r;\n\n    vec3 r = vec3(uSceneBottomLeft + (gl_FragCoord.xy/uRes) * (uSceneTopRight - uSceneBottomLeft), 0.0);\n\n    r.z = -(dScene - 0.5) * uDepth;\n    r = vec3(uRot * vec4(r, 1));\n    float depth = -r.z/uDepth + 0.5;\n\n    vec2 p = (r.xy - uRotBottomLeft)/(uRotTopRight - uRotBottomLeft);\n\n    float dRandRot = texture2D(uRandRotDepth, p).r;\n\n    float ao = step(dRandRot, depth * 0.99);\n\n    vec3 normal = texture2D(uSceneNormal, gl_FragCoord.xy/uRes).rgb * 2.0 - 1.0;\n    vec3 dir = vec3(uInvRot * vec4(0, 0, 1, 0));\n    float mag = dot(dir, normal);\n    float sampled = step(0.0, mag);\n\n    ao *= sampled;\n\n    vec4 acc = texture2D(uAccumulator, gl_FragCoord.xy/uRes);\n\n    if (uSampleCount < 256) {\n        acc.r += ao/255.0;\n    } else if (uSampleCount < 512) {\n        acc.g += ao/255.0;\n    } else if (uSampleCount < 768) {\n        acc.b += ao/255.0;\n    } else {\n        acc.a += ao/255.0;\n    }\n        \n    gl_FragColor = acc;\n\n}\n");
             progAO = loadProgram(gl, "#version 100\nprecision highp float;\n\nattribute vec3 aPosition;\n\nvoid main() {\n    gl_Position = vec4(aPosition, 1);\n}\n\n\n// __split__\n\n\n#version 100\nprecision highp float;\n\nuniform sampler2D uSceneColor;\nuniform sampler2D uSceneDepth;\nuniform sampler2D uAccumulatorOut;\nuniform float uRes;\nuniform float uAO;\nuniform float uBrightness;\nuniform float uOutlineStrength;\n\nvoid main() {\n    vec2 p = gl_FragCoord.xy/uRes;\n    vec4 sceneColor = texture2D(uSceneColor, p);\n    if (uOutlineStrength > 0.0) {\n        float depth = texture2D(uSceneDepth, p).r;\n        float r = 1.0/uRes;\n        float d0 = abs(texture2D(uSceneDepth, p + vec2(-r,  0)).r - depth);\n        float d1 = abs(texture2D(uSceneDepth, p + vec2( r,  0)).r - depth);\n        float d2 = abs(texture2D(uSceneDepth, p + vec2( 0, -r)).r - depth);\n        float d3 = abs(texture2D(uSceneDepth, p + vec2( 0,  r)).r - depth);\n        float d = max(d0, d1);\n        d = max(d, d2);\n        d = max(d, d3);\n        sceneColor.rgb *= pow(1.0 - d, uOutlineStrength * 32.0);\n        sceneColor.a = max(step(0.003, d), sceneColor.a);\n    }\n    vec4 dAccum = texture2D(uAccumulatorOut, p);\n    float shade = max(0.0, 1.0 - (dAccum.r + dAccum.g + dAccum.b + dAccum.a) * 0.25 * uAO);\n    shade = pow(shade, 2.0);\n    gl_FragColor = vec4(uBrightness * sceneColor.rgb * shade, sceneColor.a);\n}\n");
@@ -15827,40 +15825,40 @@ module.exports = function (canvas, resolution, aoResolution) {
             // fbRandRot
             tRandRotColor = new core.Texture(gl, 0, null, aoResolution, aoResolution);
 
-            tRandRotNormal = new core.Texture(gl, 1, null, aoResolution, aoResolution);
-
-            tRandRotDepth = new core.Texture(gl, 2, null, aoResolution, aoResolution, {
+            tRandRotDepth = new core.Texture(gl, 1, null, aoResolution, aoResolution, {
                 internalFormat: gl.DEPTH_COMPONENT,
                 format: gl.DEPTH_COMPONENT,
                 type: gl.UNSIGNED_SHORT
             });
 
-            fbRandRot = new core.Framebuffer(gl, [tRandRotColor, tRandRotNormal], tRandRotDepth, ext.WEBGL_draw_buffers);
+            fbRandRot = new core.Framebuffer(gl, [tRandRotColor], tRandRotDepth);
 
             // fbScene
-            tSceneColor = new core.Texture(gl, 3, null, resolution, resolution);
+            tSceneColor = new core.Texture(gl, 2, null, resolution, resolution);
 
-            tSceneNormal = new core.Texture(gl, 4, null, resolution, resolution);
+            tSceneNormal = new core.Texture(gl, 3, null, resolution, resolution);
 
-            tSceneDepth = new core.Texture(gl, 5, null, resolution, resolution, {
+            tSceneDepth = new core.Texture(gl, 4, null, resolution, resolution, {
                 internalFormat: gl.DEPTH_COMPONENT,
                 format: gl.DEPTH_COMPONENT,
                 type: gl.UNSIGNED_SHORT
             });
 
-            fbScene = new core.Framebuffer(gl, [tSceneColor, tSceneNormal], tSceneDepth, ext.WEBGL_draw_buffers);
+            fbSceneColor = new core.Framebuffer(gl, [tSceneColor], tSceneDepth);
+
+            fbSceneNormal = new core.Framebuffer(gl, [tSceneNormal], tSceneDepth);
 
             // fbAccumulator
-            tAccumulator = new core.Texture(gl, 6, null, resolution, resolution);
-            tAccumulatorOut = new core.Texture(gl, 7, null, resolution, resolution);
+            tAccumulator = new core.Texture(gl, 5, null, resolution, resolution);
+            tAccumulatorOut = new core.Texture(gl, 6, null, resolution, resolution);
             fbAccumulator = new core.Framebuffer(gl, [tAccumulatorOut]);
 
             // fbAO
-            tAO = new core.Texture(gl, 8, null, resolution, resolution);
+            tAO = new core.Texture(gl, 7, null, resolution, resolution);
             fbAO = new core.Framebuffer(gl, [tAO]);
 
             // fbDOF
-            tDOF = new core.Texture(gl, 9, null, resolution, resolution);
+            tDOF = new core.Texture(gl, 8, null, resolution, resolution);
             fbDOF = new core.Framebuffer(gl, [tDOF]);
         }
 
@@ -15927,7 +15925,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
             var count = imposter.length / 9;
 
-            rScene = new core.Renderable(gl, progScene, attribs, count);
+            rAtoms = new core.Renderable(gl, progAtoms, attribs, count);
 
             // Bonds
 
@@ -16043,7 +16041,7 @@ module.exports = function (canvas, resolution, aoResolution) {
             if (atoms === undefined) {
                 return;
             }
-            if (rScene == null) {
+            if (rAtoms == null) {
                 return;
             }
 
@@ -16066,8 +16064,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
         function scene(view) {
             gl.viewport(0, 0, resolution, resolution);
-            // Render the depth/color buffers.
-            fbScene.bind();
+            fbSceneColor.bind();
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             var rect = view.getRect();
             var projection = glm.mat4.create();
@@ -16077,18 +16074,20 @@ module.exports = function (canvas, resolution, aoResolution) {
             var model = glm.mat4.create();
             glm.mat4.translate(model, model, [0, 0, -range/2]);
             glm.mat4.multiply(model, model, view.getRotation());
-            progScene.setUniform("uProjection", "Matrix4fv", false, projection);
-            progScene.setUniform("uView", "Matrix4fv", false, viewMat);
-            progScene.setUniform("uModel", "Matrix4fv", false, model);
-            progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
-            progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
-            progScene.setUniform("uAtomScale", "1f", 2.5 * view.getAtomScale());
-            progScene.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
-            progScene.setUniform("uRes", "1f", resolution);
-            progScene.setUniform("uDepth", "1f", range);
-            rScene.render();
+            progAtoms.setUniform("uProjection", "Matrix4fv", false, projection);
+            progAtoms.setUniform("uView", "Matrix4fv", false, viewMat);
+            progAtoms.setUniform("uModel", "Matrix4fv", false, model);
+            progAtoms.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
+            progAtoms.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
+            progAtoms.setUniform("uAtomScale", "1f", 2.5 * view.getAtomScale());
+            progAtoms.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
+            progAtoms.setUniform("uRes", "1f", resolution);
+            progAtoms.setUniform("uDepth", "1f", range);
+            progAtoms.setUniform("uMode", "1i", 0);
+            rAtoms.render();
 
             if (view.getBonds() && rBonds != null) {
+                fbSceneColor.bind();
                 progBonds.setUniform("uProjection", "Matrix4fv", false, projection);
                 progBonds.setUniform("uView", "Matrix4fv", false, viewMat);
                 progBonds.setUniform("uModel", "Matrix4fv", false, model);
@@ -16101,8 +16100,20 @@ module.exports = function (canvas, resolution, aoResolution) {
                 progBonds.setUniform("uBondShade", "1f", view.getBondShade());
                 progBonds.setUniform("uAtomScale", "1f", 2.5 * view.getAtomScale());
                 progBonds.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
+                progBonds.setUniform("uMode", "1i", 0);
                 rBonds.render();
             }
+
+            fbSceneNormal.bind();
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            progAtoms.setUniform("uMode", "1i", 1);
+            rAtoms.render();            
+
+            if (view.getBonds() && rBonds != null) {
+                progBonds.setUniform("uMode", "1i", 1);
+                rBonds.render();
+            }            
+
         }
 
         function sample(view) {
@@ -16126,16 +16137,17 @@ module.exports = function (canvas, resolution, aoResolution) {
             var model = glm.mat4.create();
             glm.mat4.translate(model, model, [0, 0, -range/2]);
             glm.mat4.multiply(model, model, v.getRotation());
-            progScene.setUniform("uProjection", "Matrix4fv", false, projection);
-            progScene.setUniform("uView", "Matrix4fv", false, viewMat);
-            progScene.setUniform("uModel", "Matrix4fv", false, model);
-            progScene.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
-            progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
-            progScene.setUniform("uAtomScale", "1f", 2.5 * v.getAtomScale());
-            progScene.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
-            progScene.setUniform("uRes", "1f", aoResolution);
-            progScene.setUniform("uDepth", "1f", range);
-            rScene.render();
+            progAtoms.setUniform("uProjection", "Matrix4fv", false, projection);
+            progAtoms.setUniform("uView", "Matrix4fv", false, viewMat);
+            progAtoms.setUniform("uModel", "Matrix4fv", false, model);
+            progAtoms.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
+            progAtoms.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
+            progAtoms.setUniform("uAtomScale", "1f", 2.5 * v.getAtomScale());
+            progAtoms.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
+            progAtoms.setUniform("uRes", "1f", aoResolution);
+            progAtoms.setUniform("uDepth", "1f", range);
+            progAtoms.setUniform("uMode", "1i", 0);
+            rAtoms.render();
 
             if (view.getBonds() && rBonds != null) {
                 progBonds.setUniform("uProjection", "Matrix4fv", false, projection);
@@ -16150,6 +16162,7 @@ module.exports = function (canvas, resolution, aoResolution) {
                 progBonds.setUniform("uBondShade", "1f", view.getBondShade());
                 progBonds.setUniform("uAtomScale", "1f", 2.5 * view.getAtomScale());
                 progBonds.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
+                progBonds.setUniform("uMode", "1i", 0);
                 rBonds.render();
             }
 
@@ -16173,6 +16186,7 @@ module.exports = function (canvas, resolution, aoResolution) {
             progAccumulator.setUniform("uInvRot", "Matrix4fv", false, invRot);
             progAccumulator.setUniform("uSampleCount", "1i", sampleCount);
             rAccumulator.render();
+            tAccumulator.activate();
             tAccumulator.bind();
             gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
         }
@@ -16213,7 +16227,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
             // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            // progDisplayQuad.setUniform("uTexture", "1i", tSceneNormal.index);
+            // progDisplayQuad.setUniform("uTexture", "1i", tSceneColor.index);
             // progDisplayQuad.setUniform("uRes", "1f", resolution);
             // rDispQuad.render();
         }
@@ -16277,7 +16291,7 @@ module.exports = function View(serialized) {
     var bonds = false;
     var bondThreshold = 1.2;
     var bondShade = 0.0;
-    var resolution = 512;
+    var resolution = 768;
     var dofStrength = 0.0;
     var dofPosition = 0.5;
     var fxaa = true;
