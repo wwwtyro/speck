@@ -30,13 +30,14 @@ module.exports = function View(serialized) {
     var bondScale = 0.5;
     var rotation = glm.mat4.create();
     var ao = 0.5;
+    var aoRes = 128;
     var brightness = 0.5;
     var outlineStrength = 0.0;
     var spf = 32;
     var bonds = false;
     var bondThreshold = 1.2;
     var bondShade = 0.0;
-    var resolution = 768;
+    var resolution = 512;
     var dofStrength = 0.0;
     var dofPosition = 0.5;
     var fxaa = true;
@@ -57,6 +58,7 @@ module.exports = function View(serialized) {
             bondScale: bondScale,
             rotation: glm.mat4.clone(rotation),
             ao: ao,
+            aoRes: aoRes,
             brightness: brightness,
             spf: spf,
             resolution: resolution,
@@ -79,6 +81,7 @@ module.exports = function View(serialized) {
         bondScale = data.bondScale;
         rotation = glm.mat4.clone(data.rotation);
         ao = data.ao;
+        aoRes = data.aoRes;
         brightness = data.brightness;
         spf = data.spf;
         resolution = data.resolution;
@@ -94,6 +97,14 @@ module.exports = function View(serialized) {
     self.clone = function() {
         return new View(self.serialize());
     };
+
+    self.setAORes = function(val) {
+        aoRes = val;
+    };
+
+    self.getAORes = function() {
+        return aoRes;
+    }
 
     self.setDofStrength = function(val) {
         dofStrength = clamp(0, 1, val);

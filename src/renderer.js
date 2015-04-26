@@ -7,7 +7,7 @@ var cube = require("./cube");
 var elements = require("./elements");
 var View = require("./view");
 
-module.exports = function (canvas, resolution) {
+module.exports = function (canvas, resolution, aoResolution) {
 
         var self = this;
 
@@ -117,11 +117,11 @@ module.exports = function (canvas, resolution) {
 
         self.createTextures = function() {
             // fbRandRot
-            tRandRotColor = new core.Texture(gl, 0, null, resolution, resolution);
+            tRandRotColor = new core.Texture(gl, 0, null, aoResolution, aoResolution);
 
-            tRandRotNormal = new core.Texture(gl, 1, null, resolution, resolution);
+            tRandRotNormal = new core.Texture(gl, 1, null, aoResolution, aoResolution);
 
-            tRandRotDepth = new core.Texture(gl, 2, null, resolution, resolution, {
+            tRandRotDepth = new core.Texture(gl, 2, null, aoResolution, aoResolution, {
                 internalFormat: gl.DEPTH_COMPONENT,
                 format: gl.DEPTH_COMPONENT,
                 type: gl.UNSIGNED_SHORT
@@ -156,7 +156,8 @@ module.exports = function (canvas, resolution) {
             fbDOF = new core.Framebuffer(gl, [tDOF]);
         }
 
-        self.setResolution = function(res) {
+        self.setResolution = function(res, aoRes) {
+            aoResolution = aoRes;
             resolution = res;
             canvas.width = canvas.height = resolution;
             gl.viewport(0,0,resolution,resolution);
@@ -356,6 +357,7 @@ module.exports = function (canvas, resolution) {
         }
 
         function scene(view) {
+            gl.viewport(0, 0, resolution, resolution);
             // Render the depth/color buffers.
             fbScene.bind();
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -396,8 +398,9 @@ module.exports = function (canvas, resolution) {
         }
 
         function sample(view) {
+            gl.viewport(0, 0, aoResolution, aoResolution);
             var v = view.clone();
-            v.setZoom(1/range);
+            v.setZoom(2/range);
             v.setTranslation(0, 0);
             var rot = glm.mat4.create();
             for (var i = 0; i < 3; i++) {
@@ -422,7 +425,7 @@ module.exports = function (canvas, resolution) {
             progScene.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
             progScene.setUniform("uAtomScale", "1f", 2.5 * v.getAtomScale());
             progScene.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
-            progScene.setUniform("uRes", "1f", resolution);
+            progScene.setUniform("uRes", "1f", aoResolution);
             progScene.setUniform("uDepth", "1f", range);
             rScene.render();
 
@@ -434,7 +437,7 @@ module.exports = function (canvas, resolution) {
                 progBonds.setUniform("uDepth", "1f", range);
                 progBonds.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
                 progBonds.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
-                progBonds.setUniform("uRes", "1f", resolution);
+                progBonds.setUniform("uRes", "1f", aoResolution);
                 progBonds.setUniform("uBondRadius", "1f", 2.5 * view.getBondRadius());
                 progBonds.setUniform("uBondShade", "1f", view.getBondShade());
                 progBonds.setUniform("uAtomScale", "1f", 2.5 * view.getAtomScale());
@@ -442,6 +445,7 @@ module.exports = function (canvas, resolution) {
                 rBonds.render();
             }
 
+            gl.viewport(0, 0, resolution, resolution);
             var sceneRect = view.getRect();
             var rotRect = v.getRect();
             var invRot = glm.mat4.invert(glm.mat4.create(), rot);
@@ -466,6 +470,7 @@ module.exports = function (canvas, resolution) {
         }
 
         function display(view) {
+            gl.viewport(0, 0, resolution, resolution);
             if (view.getFXAA()) {
                 fbAO.bind();
             } else {
@@ -503,7 +508,6 @@ module.exports = function (canvas, resolution) {
             // progDisplayQuad.setUniform("uTexture", "1i", tSceneNormal.index);
             // progDisplayQuad.setUniform("uRes", "1f", resolution);
             // rDispQuad.render();
-            // return;
         }
 
         self.initialize();
