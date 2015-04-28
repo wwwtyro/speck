@@ -81,6 +81,27 @@
                         <td class="control-help">o + scrollwheel</td>
                     </tr>
                     <tr>
+                        <td align="right">Brightness</td>
+                        <td><input id="brightness" type="range" min="0" max="100" value="50" class="control-width"></td>
+                        <td id="brightness-text"></td>
+                        <td class="control-help">l + scrollwheel</td>
+                    </tr>
+                    <tr>
+                        <td align="right">AO Resolution</td>
+                        <td>
+                            <select id="ao-resolution">
+                                <option value="16">16x16</option>
+                                <option value="32">32x32</option>
+                                <option value="64">64x64</option>
+                                <option value="128">128x128</option>
+                                <option value="256">256x256</option>
+                                <option value="512">512x512</option>
+                                <option value="1024">1024x1024</option>
+                                <option value="2048">2048x2048</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
                         <td align="right">Samples per frame</td>
                         <td>
                             <select id="samples-per-frame">
@@ -90,15 +111,12 @@
                                 <option value="4">4</option>
                                 <option value="8">8</option>
                                 <option value="16">16</option>
-                                <option value="32" selected="selected">32</option>
+                                <option value="32">32</option>
+                                <option value="64">64</option>
+                                <option value="128">128</option>
+                                <option value="256">256</option>
                             </select>
                         </td>
-                    </tr>
-                    <tr>
-                        <td align="right">Brightness</td>
-                        <td><input id="brightness" type="range" min="0" max="100" value="50" class="control-width"></td>
-                        <td id="brightness-text"></td>
-                        <td class="control-help">l + scrollwheel</td>
                     </tr>
                     <tr><td colspan="10"><hr></td></tr>
                     <tr>
@@ -130,7 +148,7 @@
                             <select id="resolution">
                                 <option value="256">256x256</option>
                                 <option value="512">512x512</option>
-                                <option value="768" selected="selected">768x768</option>
+                                <option value="768">768x768</option>
                                 <option value="1024">1024x1024</option>
                                 <option value="1536">1536x1536</option>
                                 <option value="2048">2048x2048</option>

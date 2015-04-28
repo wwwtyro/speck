@@ -59,7 +59,7 @@ window.onload = function() {
 
     var imposterCanvas = document.getElementById("renderer-canvas");
 
-    renderer = new Renderer(imposterCanvas, view.getResolution());
+    renderer = new Renderer(imposterCanvas, view.getResolution(), view.getAORes());
 
     var selector = document.getElementById("controls-sample");
     for (var i = 0; i < samples.length; i++) {
@@ -82,7 +82,7 @@ window.onload = function() {
         atoms.deserialize(data.atoms);
         view.deserialize(data.view);
         renderer.setAtoms(atoms, view);
-        renderer.setResolution(view.getResolution());
+        renderer.setResolution(view.getResolution(), view.getAORes());
         needReset = true;
     } else {
         loadSample();
@@ -304,6 +304,13 @@ window.onload = function() {
         view.setBrightness(scale/100);
     });
 
+    document.getElementById("ao-resolution").addEventListener("change", function(e) {
+        var resolution = parseInt(document.getElementById("ao-resolution").value);
+        view.setAORes(resolution);
+        renderer.setResolution(view.getResolution(), resolution);
+        needReset = true;
+    });
+
     document.getElementById("outline-strength").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("outline-strength").value);
         view.setOutlineStrength(scale/100);
@@ -317,7 +324,7 @@ window.onload = function() {
     document.getElementById("resolution").addEventListener("change", function(e) {
         var resolution = parseInt(document.getElementById("resolution").value);
         view.setResolution(resolution);
-        renderer.setResolution(resolution);
+        renderer.setResolution(resolution, view.getAORes());
         needReset = true;
     });
 
@@ -357,11 +364,12 @@ window.onload = function() {
     document.getElementById("bond-threshold").value = view.getBondThreshold();
     document.getElementById("ambient-occlusion").value = Math.round(view.getAmbientOcclusion() * 100);
     document.getElementById("brightness").value = Math.round(view.getBrightness() * 100);
+    document.getElementById("ao-resolution").value = view.getAORes();
+    document.getElementById("samples-per-frame").value = view.getSamplesPerFrame();
     document.getElementById("outline-strength").value = Math.round(view.getOutlineStrength() * 100);
     document.getElementById("bonds").checked = view.getBonds();
     document.getElementById("fxaa").checked = view.getFXAA();
     document.getElementById("resolution").value = view.getResolution();
-    document.getElementById("samples-per-frame").value = view.getSamplesPerFrame();
     document.getElementById("dof-strength").value = Math.round(view.getDofStrength() * 100);
     document.getElementById("dof-position").value = Math.round(view.getDofPosition() * 100);
 

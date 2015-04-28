@@ -73,7 +73,6 @@ void main() {
 
 #version 100
 #extension GL_EXT_frag_depth: enable
-#extension GL_EXT_draw_buffers: require
 precision highp float;
 
 uniform mat4 uRotation;
@@ -82,6 +81,7 @@ uniform vec2 uTopRight;
 uniform float uDepth;
 uniform float uRes;
 uniform float uBondShade;
+uniform int uMode;
 
 varying vec3 vPosA, vPosB;
 varying float vRadA, vRadB;
@@ -150,7 +150,10 @@ void main() {
     vec3 normal = normalize(R * vec3(coord.x, 0, coord.z));
 
     coord = r0 + rd * t;
-    gl_FragData[0] = vec4(color,1);
-    gl_FragData[1] = vec4(normal * 0.5 + 0.5, 1.0);
+    if (uMode == 0) {
+        gl_FragColor = vec4(color, 1);
+    } else if (uMode == 1) {
+        gl_FragColor = vec4(normal * 0.5 + 0.5, 1.0);
+    }
     gl_FragDepthEXT = -(coord.z - uDepth/2.0)/uDepth;
 }

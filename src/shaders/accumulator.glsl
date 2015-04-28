@@ -30,19 +30,19 @@ uniform int uSampleCount;
 
 void main() {
 
-    vec4 dScene = texture2D(uSceneDepth, gl_FragCoord.xy/uRes);
+    float dScene = texture2D(uSceneDepth, gl_FragCoord.xy/uRes).r;
 
     vec3 r = vec3(uSceneBottomLeft + (gl_FragCoord.xy/uRes) * (uSceneTopRight - uSceneBottomLeft), 0.0);
 
-    r.z = -(dScene.r - 0.5) * uDepth;
+    r.z = -(dScene - 0.5) * uDepth;
     r = vec3(uRot * vec4(r, 1));
     float depth = -r.z/uDepth + 0.5;
 
     vec2 p = (r.xy - uRotBottomLeft)/(uRotTopRight - uRotBottomLeft);
 
-    vec4 dRandRot = texture2D(uRandRotDepth, p);
+    float dRandRot = texture2D(uRandRotDepth, p).r;
 
-    float ao = step(dRandRot.r, depth * 0.99);
+    float ao = step(dRandRot, depth * 0.99);
 
     vec3 normal = texture2D(uSceneNormal, gl_FragCoord.xy/uRes).rgb * 2.0 - 1.0;
     vec3 dir = vec3(uInvRot * vec4(0, 0, 1, 0));
