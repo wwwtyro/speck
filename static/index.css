@@ -42,7 +42,7 @@ body {
     position: fixed;
     top: 0px;
     width: 100%;
-    border-top: 4px solid #3bf;
+    border-bottom: 4px solid #3bf;
 }
 
 #error {
