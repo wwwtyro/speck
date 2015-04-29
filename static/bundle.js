@@ -15326,6 +15326,13 @@ window._speck_debug_getView = function() {
     console.log(JSON.stringify(view.serialize()));
 }
 
+window.onerror = function(e, url, line) {
+    var error = document.getElementById("error");
+    error.style.display = "block";
+    var error = document.getElementById("error-text");
+    error.innerHTML = "Sorry, an error has occurred:<br><br>Line #" + line + ": " + e;
+}
+
 kb.active = function(key) {
     var keys = kb.activeKeys();
     for (var i = 0; i < keys.length; i++) {
@@ -15569,6 +15576,10 @@ window.onload = function() {
     reflow();
 
     window.addEventListener("resize", reflow);
+
+    document.getElementById("close-error").addEventListener("click", function() {
+        document.getElementById("error").style.display = "none";
+    });
 
     document.getElementById("xyz-button").addEventListener("click", function() {
         loadStructure(xyz(document.getElementById("xyz-data").value)[0]);
