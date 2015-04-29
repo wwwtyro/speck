@@ -340,8 +340,8 @@ window.onload = function() {
         needReset = true;
     });
 
-    document.getElementById("fxaa").addEventListener("click", function(e) {
-        view.setFXAA(document.getElementById("fxaa").checked)
+    document.getElementById("fxaa").addEventListener("change", function(e) {
+        view.setFXAA(parseInt(document.getElementById("fxaa").value))
     });
 
     document.getElementById("share-url-button").addEventListener("click", function(e) {
@@ -368,7 +368,7 @@ window.onload = function() {
     document.getElementById("samples-per-frame").value = view.getSamplesPerFrame();
     document.getElementById("outline-strength").value = Math.round(view.getOutlineStrength() * 100);
     document.getElementById("bonds").checked = view.getBonds();
-    document.getElementById("fxaa").checked = view.getFXAA();
+    document.getElementById("fxaa").value = view.getFXAA();
     document.getElementById("resolution").value = view.getResolution();
     document.getElementById("dof-strength").value = Math.round(view.getDofStrength() * 100);
     document.getElementById("dof-position").value = Math.round(view.getDofPosition() * 100);

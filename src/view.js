@@ -40,7 +40,7 @@ module.exports = function View(serialized) {
     var resolution = 768;
     var dofStrength = 0.0;
     var dofPosition = 0.5;
-    var fxaa = true;
+    var fxaa = 1;
 
     self.initialize = function() {
         if (serialized !== undefined) {

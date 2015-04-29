@@ -29,12 +29,14 @@ module.exports = function (canvas, resolution, aoResolution) {
         var tSceneColor, tSceneNormal, tSceneDepth,
             tRandRotDepth, tRandRotColor,
             tAccumulator, tAccumulatorOut,
-            tDOF, tDOFOut,
+            tFXAA, tFXAAOut,
+            tDOF,
             tAO;
 
         var fbSceneColor, fbSceneNormal,
             fbRandRot,
             fbAccumulator,
+            fbFXAA,
             fbDOF,
             fbAO;
 
@@ -141,10 +143,14 @@ module.exports = function (canvas, resolution, aoResolution) {
             tAO = new core.Texture(gl, 7, null, resolution, resolution);
             fbAO = new core.Framebuffer(gl, [tAO]);
 
+            // fbFXAA
+            tFXAA = new core.Texture(gl, 8, null, resolution, resolution);
+            tFXAAOut = new core.Texture(gl, 9, null, resolution, resolution);
+            fbFXAA = new core.Framebuffer(gl, [tFXAAOut]);
+
             // fbDOF
-            tDOF = new core.Texture(gl, 9, null, resolution, resolution);
-            tDOFOut = new core.Texture(gl, 10, null, resolution, resolution);
-            fbDOF = new core.Framebuffer(gl, [tDOFOut]);
+            tDOF = new core.Texture(gl, 10, null, resolution, resolution);
+            fbDOF = new core.Framebuffer(gl, [tDOF]);
         }
 
         self.setResolution = function(res, aoRes) {
@@ -479,7 +485,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
         function display(view) {
             gl.viewport(0, 0, resolution, resolution);
-            if (view.getFXAA()) {
+            if (view.getFXAA() > 0 || view.getDofStrength() > 0) {
                 fbAO.bind();
             } else {
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -494,23 +500,42 @@ module.exports = function (canvas, resolution, aoResolution) {
             progAO.setUniform("uOutlineStrength", "1f", view.getOutlineStrength());
             rAO.render();
 
-            if (view.getFXAA()) {
+            if (view.getFXAA() > 0) {
+                if (view.getDofStrength() > 0) {
+                    fbFXAA.bind();
+                } else {
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                }
+                for (var i = 0; i < view.getFXAA(); i++) {
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    if (i == 0) {
+                        progFXAA.setUniform("uTexture", "1i", tAO.index);
+                    } else {
+                        progFXAA.setUniform("uTexture", "1i", tFXAA.index);
+                    }
+                    progFXAA.setUniform("uRes", "1f", resolution);
+                    rFXAA.render();
+                    tFXAA.activate();
+                    tFXAA.bind();
+                    gl.copyTexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 0, 0, resolution, resolution, 0);
+                }
+            }
 
-                fbDOF.bind();
+            if (view.getDofStrength() > 0) {
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                progDOF.setUniform("uColor", "1i", tAO.index);
+                if (view.getFXAA() > 0) {
+                    progDOF.setUniform("uColor", "1i", tFXAA.index);
+                } else {
+                    progDOF.setUniform("uColor", "1i", tAO.index);
+                }
                 progDOF.setUniform("uDepth", "1i", tSceneDepth.index);
                 progDOF.setUniform("uDOFPosition", "1f", view.getDofPosition());
                 progDOF.setUniform("uDOFStrength", "1f", view.getDofStrength());
                 progDOF.setUniform("uRes", "1f", resolution);
                 rDOF.render();
-
-                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                progFXAA.setUniform("uTexture", "1i", tDOFOut.index);
-                progFXAA.setUniform("uRes", "1f", resolution);
-                rFXAA.render();
             }
+
 
             // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
