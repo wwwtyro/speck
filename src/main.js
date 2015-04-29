@@ -401,6 +401,9 @@ window.onload = function() {
         document.getElementById("outline-strength-text").innerHTML = Math.round(view.getOutlineStrength() * 100) + "%";
         document.getElementById("dof-strength-text").innerHTML = Math.round(view.getDofStrength() * 100) + "%";
         document.getElementById("dof-position-text").innerHTML = Math.round(view.getDofPosition() * 100) + "%";
+
+        document.getElementById("ao-indicator").style.width = Math.round(renderer.getAOProgress() * 100) + "%";
+
         if (needReset) {
             renderer.reset();
             needReset = false;

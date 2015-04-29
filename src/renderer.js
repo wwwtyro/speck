@@ -54,6 +54,10 @@ module.exports = function (canvas, resolution, aoResolution) {
             colorRendered = false,
             normalRendered = false;
 
+        self.getAOProgress = function() {
+            return sampleCount/1024;
+        }
+
         self.initialize = function() {
 
             // Initialize canvas/gl.
