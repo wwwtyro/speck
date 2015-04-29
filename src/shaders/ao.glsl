@@ -27,7 +27,7 @@ void main() {
     vec4 sceneColor = texture2D(uSceneColor, p);
     if (uOutlineStrength > 0.0) {
         float depth = texture2D(uSceneDepth, p).r;
-        float r = 1.0/uRes;
+        float r = 1.0/511.0;
         float d0 = abs(texture2D(uSceneDepth, p + vec2(-r,  0)).r - depth);
         float d1 = abs(texture2D(uSceneDepth, p + vec2( r,  0)).r - depth);
         float d2 = abs(texture2D(uSceneDepth, p + vec2( 0, -r)).r - depth);
