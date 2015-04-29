@@ -92,6 +92,8 @@ void main() {
     float invRes = 1.0/uRes;
     vec2 coord = gl_FragCoord.xy * invRes;
 
+    float strength = uDOFStrength * uRes/768.0;
+
     float depth = texture2D(uDepth, coord).r;
     float range = uDOFPosition - depth;
     float scale = abs(range);
@@ -100,7 +102,7 @@ void main() {
     float count = 1.0;
     for(int i = 0; i < 64; i++) {
         vec2 p = samples[i];
-        p = coord + scale * 64.0 * uDOFStrength * p * invRes;
+        p = coord + scale * 64.0 * strength * p * invRes;
         float d = texture2D(uDepth, p).r;
         float r = uDOFPosition - d;
         float s = abs(r);
