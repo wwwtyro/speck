@@ -15320,6 +15320,11 @@ var Atoms = require("./atoms");
 var xyz = require("./xyz");
 var samples = require("./samples");
 var elements = require("./elements");
+var presets = require("./presets");
+
+window._speck_debug_getView = function() {
+    console.log(JSON.stringify(view.serialize()));
+}
 
 kb.active = function(key) {
     var keys = kb.activeKeys();
@@ -15637,6 +15642,14 @@ window.onload = function() {
         needReset = true;
     });
 
+    document.getElementById("view-preset").addEventListener("change", function(e) {
+        var preset = document.getElementById("view-preset").value;
+        view.deserialize(JSON.parse(presets[preset]));
+        updateControls();
+        renderer.setAtoms(atoms, view);
+        needReset = true;
+    });
+
     document.getElementById("bonds").addEventListener("click", function(e) {
         view.setBonds(document.getElementById("bonds").checked)
         renderer.setAtoms(atoms, view);
@@ -15666,22 +15679,26 @@ window.onload = function() {
         this.select();
     });
 
-    document.getElementById("atom-radius").value = Math.round(view.getAtomScale() * 100);
-    document.getElementById("relative-atom-radius").value = Math.round(view.getRelativeAtomScale() * 100);
-    document.getElementById("bond-radius").value = Math.round(view.getBondScale() * 100);
-    document.getElementById("bond-shade").value = Math.round(view.getBondShade() * 100);
-    document.getElementById("bond-threshold").value = view.getBondThreshold();
-    document.getElementById("ambient-occlusion").value = Math.round(view.getAmbientOcclusion() * 100);
-    document.getElementById("brightness").value = Math.round(view.getBrightness() * 100);
-    document.getElementById("ao-resolution").value = view.getAORes();
-    document.getElementById("samples-per-frame").value = view.getSamplesPerFrame();
-    document.getElementById("outline-strength").value = Math.round(view.getOutlineStrength() * 100);
-    document.getElementById("bonds").checked = view.getBonds();
-    document.getElementById("fxaa").value = view.getFXAA();
-    document.getElementById("resolution").value = view.getResolution();
-    document.getElementById("dof-strength").value = Math.round(view.getDofStrength() * 100);
-    document.getElementById("dof-position").value = Math.round(view.getDofPosition() * 100);
 
+    function updateControls() {
+        document.getElementById("atom-radius").value = Math.round(view.getAtomScale() * 100);
+        document.getElementById("relative-atom-radius").value = Math.round(view.getRelativeAtomScale() * 100);
+        document.getElementById("bond-radius").value = Math.round(view.getBondScale() * 100);
+        document.getElementById("bond-shade").value = Math.round(view.getBondShade() * 100);
+        document.getElementById("bond-threshold").value = view.getBondThreshold();
+        document.getElementById("ambient-occlusion").value = Math.round(view.getAmbientOcclusion() * 100);
+        document.getElementById("brightness").value = Math.round(view.getBrightness() * 100);
+        document.getElementById("ao-resolution").value = view.getAORes();
+        document.getElementById("samples-per-frame").value = view.getSamplesPerFrame();
+        document.getElementById("outline-strength").value = Math.round(view.getOutlineStrength() * 100);
+        document.getElementById("bonds").checked = view.getBonds();
+        document.getElementById("fxaa").value = view.getFXAA();
+        document.getElementById("resolution").value = view.getResolution();
+        document.getElementById("dof-strength").value = Math.round(view.getDofStrength() * 100);
+        document.getElementById("dof-position").value = Math.round(view.getDofPosition() * 100);
+    }
+
+    updateControls();
 
     function loop() {
         document.getElementById("atom-radius-text").innerHTML = Math.round(view.getAtomScale() * 100) + "%";
@@ -15705,7 +15722,14 @@ window.onload = function() {
 
 }
 
-},{"./atoms":"/home/rye/Dropbox/src/speck/src/atoms.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./renderer":"/home/rye/Dropbox/src/speck/src/renderer.js","./samples":"/home/rye/Dropbox/src/speck/src/samples.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./xyz":"/home/rye/Dropbox/src/speck/src/xyz.js","jquery":"/home/rye/Dropbox/src/speck/node_modules/jquery/dist/jquery.js","keyboardjs":"/home/rye/Dropbox/src/speck/node_modules/keyboardjs/keyboard.js","lz-string":"/home/rye/Dropbox/src/speck/node_modules/lz-string/libs/lz-string.js"}],"/home/rye/Dropbox/src/speck/src/renderer.js":[function(require,module,exports){
+},{"./atoms":"/home/rye/Dropbox/src/speck/src/atoms.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./presets":"/home/rye/Dropbox/src/speck/src/presets.js","./renderer":"/home/rye/Dropbox/src/speck/src/renderer.js","./samples":"/home/rye/Dropbox/src/speck/src/samples.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./xyz":"/home/rye/Dropbox/src/speck/src/xyz.js","jquery":"/home/rye/Dropbox/src/speck/node_modules/jquery/dist/jquery.js","keyboardjs":"/home/rye/Dropbox/src/speck/node_modules/keyboardjs/keyboard.js","lz-string":"/home/rye/Dropbox/src/speck/node_modules/lz-string/libs/lz-string.js"}],"/home/rye/Dropbox/src/speck/src/presets.js":[function(require,module,exports){
+module.exports = {
+    default: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.6,"relativeAtomScale":1,"bondScale":0.5,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0.5,"aoRes":128,"brightness":0.5,"spf":32,"resolution":768,"bonds":false,"bondThreshold":1.2,"bondShade":0,"outlineStrength":0,"dofStrength":0,"dofPosition":0.5,"fxaa":1}',
+    stickball: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.24999999999999967,"relativeAtomScale":0.7099999999999997,"bondScale":0.5099999999999996,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0.5,"aoRes":128,"brightness":0.5,"spf":32,"resolution":768,"bonds":true,"bondThreshold":1.2,"bondShade":0,"outlineStrength":0,"dofStrength":0,"dofPosition":0.5,"fxaa":1}',
+    toon: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.6,"relativeAtomScale":1,"bondScale":0.5,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0,"aoRes":128,"brightness":0.5,"spf":0,"resolution":768,"bonds":false,"bondThreshold":1.2,"bondShade":0,"outlineStrength":1,"dofStrength":0,"dofPosition":0.5,"fxaa":3}',
+    licorice: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.09999999999999958,"relativeAtomScale":0,"bondScale":1,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0.5,"aoRes":128,"brightness":0.5,"spf":32,"resolution":768,"bonds":true,"bondThreshold":1.2,"bondShade":0,"outlineStrength":0,"dofStrength":0,"dofPosition":0.5,"fxaa":1}',
+};
+},{}],"/home/rye/Dropbox/src/speck/src/renderer.js":[function(require,module,exports){
 "use strict";
 
 var glm = require('./gl-matrix');

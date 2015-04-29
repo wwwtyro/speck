@@ -11,6 +11,11 @@ var Atoms = require("./atoms");
 var xyz = require("./xyz");
 var samples = require("./samples");
 var elements = require("./elements");
+var presets = require("./presets");
+
+window._speck_debug_getView = function() {
+    console.log(JSON.stringify(view.serialize()));
+}
 
 kb.active = function(key) {
     var keys = kb.activeKeys();
@@ -328,6 +333,14 @@ window.onload = function() {
         needReset = true;
     });
 
+    document.getElementById("view-preset").addEventListener("change", function(e) {
+        var preset = document.getElementById("view-preset").value;
+        view.deserialize(JSON.parse(presets[preset]));
+        updateControls();
+        renderer.setAtoms(atoms, view);
+        needReset = true;
+    });
+
     document.getElementById("bonds").addEventListener("click", function(e) {
         view.setBonds(document.getElementById("bonds").checked)
         renderer.setAtoms(atoms, view);
@@ -357,22 +370,26 @@ window.onload = function() {
         this.select();
     });
 
-    document.getElementById("atom-radius").value = Math.round(view.getAtomScale() * 100);
-    document.getElementById("relative-atom-radius").value = Math.round(view.getRelativeAtomScale() * 100);
-    document.getElementById("bond-radius").value = Math.round(view.getBondScale() * 100);
-    document.getElementById("bond-shade").value = Math.round(view.getBondShade() * 100);
-    document.getElementById("bond-threshold").value = view.getBondThreshold();
-    document.getElementById("ambient-occlusion").value = Math.round(view.getAmbientOcclusion() * 100);
-    document.getElementById("brightness").value = Math.round(view.getBrightness() * 100);
-    document.getElementById("ao-resolution").value = view.getAORes();
-    document.getElementById("samples-per-frame").value = view.getSamplesPerFrame();
-    document.getElementById("outline-strength").value = Math.round(view.getOutlineStrength() * 100);
-    document.getElementById("bonds").checked = view.getBonds();
-    document.getElementById("fxaa").value = view.getFXAA();
-    document.getElementById("resolution").value = view.getResolution();
-    document.getElementById("dof-strength").value = Math.round(view.getDofStrength() * 100);
-    document.getElementById("dof-position").value = Math.round(view.getDofPosition() * 100);
 
+    function updateControls() {
+        document.getElementById("atom-radius").value = Math.round(view.getAtomScale() * 100);
+        document.getElementById("relative-atom-radius").value = Math.round(view.getRelativeAtomScale() * 100);
+        document.getElementById("bond-radius").value = Math.round(view.getBondScale() * 100);
+        document.getElementById("bond-shade").value = Math.round(view.getBondShade() * 100);
+        document.getElementById("bond-threshold").value = view.getBondThreshold();
+        document.getElementById("ambient-occlusion").value = Math.round(view.getAmbientOcclusion() * 100);
+        document.getElementById("brightness").value = Math.round(view.getBrightness() * 100);
+        document.getElementById("ao-resolution").value = view.getAORes();
+        document.getElementById("samples-per-frame").value = view.getSamplesPerFrame();
+        document.getElementById("outline-strength").value = Math.round(view.getOutlineStrength() * 100);
+        document.getElementById("bonds").checked = view.getBonds();
+        document.getElementById("fxaa").value = view.getFXAA();
+        document.getElementById("resolution").value = view.getResolution();
+        document.getElementById("dof-strength").value = Math.round(view.getDofStrength() * 100);
+        document.getElementById("dof-position").value = Math.round(view.getDofPosition() * 100);
+    }
+
+    updateControls();
 
     function loop() {
         document.getElementById("atom-radius-text").innerHTML = Math.round(view.getAtomScale() * 100) + "%";
