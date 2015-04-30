@@ -14,7 +14,20 @@ var elements = require("./elements");
 var presets = require("./presets");
 
 window._speck_debug_getView = function() {
-    console.log(View.serialize(view));
+    console.log(JSON.stringify({
+        atomScale: view.atomScale,
+        relativeAtomScale: view.relativeAtomScale,
+        bondScale: view.bondScale,
+        ao: view.ao,
+        brightness: view.brightness,
+        outline: view.outline,
+        bonds: view.bonds,
+        bondThreshold: view.bondThreshold,
+        bondShade: view.bondShade,
+        dofStrength: view.dofStrength,
+        dofPosition: view.dofPosition,
+        fxaa: view.fxaa
+    }));
 }
 
 window.onerror = function(e, url, line) {
@@ -350,8 +363,7 @@ window.onload = function() {
 
     document.getElementById("view-preset").addEventListener("change", function(e) {
         var preset = document.getElementById("view-preset").value;
-        view = View.deserialize(presets[preset]);
-        View.resolve(view);
+        View.override(view, presets[preset]);
         updateControls();
         renderer.setAtoms(atoms, view);
         needReset = true;

@@ -15323,7 +15323,20 @@ var elements = require("./elements");
 var presets = require("./presets");
 
 window._speck_debug_getView = function() {
-    console.log(View.serialize(view));
+    console.log(JSON.stringify({
+        atomScale: view.atomScale,
+        relativeAtomScale: view.relativeAtomScale,
+        bondScale: view.bondScale,
+        ao: view.ao,
+        brightness: view.brightness,
+        outline: view.outline,
+        bonds: view.bonds,
+        bondThreshold: view.bondThreshold,
+        bondShade: view.bondShade,
+        dofStrength: view.dofStrength,
+        dofPosition: view.dofPosition,
+        fxaa: view.fxaa
+    }));
 }
 
 window.onerror = function(e, url, line) {
@@ -15659,8 +15672,7 @@ window.onload = function() {
 
     document.getElementById("view-preset").addEventListener("change", function(e) {
         var preset = document.getElementById("view-preset").value;
-        view = View.deserialize(presets[preset]);
-        View.resolve(view);
+        View.override(view, presets[preset]);
         updateControls();
         renderer.setAtoms(atoms, view);
         needReset = true;
@@ -15746,10 +15758,41 @@ window.onload = function() {
 
 },{"./atoms":"/home/rye/Dropbox/src/speck/src/atoms.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./presets":"/home/rye/Dropbox/src/speck/src/presets.js","./renderer":"/home/rye/Dropbox/src/speck/src/renderer.js","./samples":"/home/rye/Dropbox/src/speck/src/samples.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./xyz":"/home/rye/Dropbox/src/speck/src/xyz.js","jquery":"/home/rye/Dropbox/src/speck/node_modules/jquery/dist/jquery.js","keyboardjs":"/home/rye/Dropbox/src/speck/node_modules/keyboardjs/keyboard.js","lz-string":"/home/rye/Dropbox/src/speck/node_modules/lz-string/libs/lz-string.js"}],"/home/rye/Dropbox/src/speck/src/presets.js":[function(require,module,exports){
 module.exports = {
-    default: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.6,"relativeAtomScale":1,"bondScale":0.5,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0.5,"aoRes":128,"brightness":0.5,"spf":32,"resolution":768,"bonds":false,"bondThreshold":1.2,"bondShade":0,"outline":0,"dofStrength":0,"dofPosition":0.5,"fxaa":1}',
-    stickball: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.24999999999999967,"relativeAtomScale":0.7099999999999997,"bondScale":0.5099999999999996,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0.5,"aoRes":128,"brightness":0.5,"spf":32,"resolution":768,"bonds":true,"bondThreshold":1.2,"bondShade":0,"outline":0,"dofStrength":0,"dofPosition":0.5,"fxaa":1}',
-    toon: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.6,"relativeAtomScale":1,"bondScale":0.5,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0,"aoRes":128,"brightness":0.5,"spf":0,"resolution":768,"bonds":false,"bondThreshold":1.2,"bondShade":0,"outline":1,"dofStrength":0,"dofPosition":0.5,"fxaa":3}',
-    licorice: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.09999999999999958,"relativeAtomScale":0,"bondScale":1,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0.5,"aoRes":128,"brightness":0.5,"spf":32,"resolution":768,"bonds":true,"bondThreshold":1.2,"bondShade":0,"outline":0,"dofStrength":0,"dofPosition":0.5,"fxaa":1}',
+    default:  {
+        atomScale: 0.6,
+        relativeAtomScale: 1,
+        bondScale: 0.5,
+        ao: 0.5,
+        spf: 32,
+        brightness: 0.5,
+        outline: 0,
+        bonds: false,
+        bondThreshold: 1.2,
+        bondShade: 0,
+        dofStrength: 0,
+        dofPosition: 0.5,
+        fxaa: 1
+    },
+    stickball:  {
+        atomScale: 0.24,
+        relativeAtomScale: 0.64,
+        bondScale: 0.5,
+        bonds: true,
+        bondThreshold: 1.2,
+    },
+    toon:  {
+        ao: 0,
+        spf: 0,
+        brightness: 0.5,
+        outline: 1,
+    },
+    licorice:  {
+        atomScale: 0.1,
+        relativeAtomScale: 0,
+        bondScale: 1,
+        bonds: true,
+        bondThreshold: 1.2,
+    },
 };
 },{}],"/home/rye/Dropbox/src/speck/src/renderer.js":[function(require,module,exports){
 "use strict";
@@ -16369,6 +16412,13 @@ var _new = module.exports.new = function() {
         fxaa: 1
     };
 };
+
+var _override = module.exports.override = function(v, data) {
+    for (var key in data) {
+        v[key] = data[key];
+    }
+    _resolve(v);
+}
 
 var _clone = module.exports.clone = function(v) {
     return _deserialize(_serialize(v));

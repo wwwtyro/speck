@@ -1,6 +1,37 @@
 module.exports = {
-    default: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.6,"relativeAtomScale":1,"bondScale":0.5,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0.5,"aoRes":128,"brightness":0.5,"spf":32,"resolution":768,"bonds":false,"bondThreshold":1.2,"bondShade":0,"outline":0,"dofStrength":0,"dofPosition":0.5,"fxaa":1}',
-    stickball: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.24999999999999967,"relativeAtomScale":0.7099999999999997,"bondScale":0.5099999999999996,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0.5,"aoRes":128,"brightness":0.5,"spf":32,"resolution":768,"bonds":true,"bondThreshold":1.2,"bondShade":0,"outline":0,"dofStrength":0,"dofPosition":0.5,"fxaa":1}',
-    toon: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.6,"relativeAtomScale":1,"bondScale":0.5,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0,"aoRes":128,"brightness":0.5,"spf":0,"resolution":768,"bonds":false,"bondThreshold":1.2,"bondShade":0,"outline":1,"dofStrength":0,"dofPosition":0.5,"fxaa":3}',
-    licorice: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.09999999999999958,"relativeAtomScale":0,"bondScale":1,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0.5,"aoRes":128,"brightness":0.5,"spf":32,"resolution":768,"bonds":true,"bondThreshold":1.2,"bondShade":0,"outline":0,"dofStrength":0,"dofPosition":0.5,"fxaa":1}',
+    default:  {
+        atomScale: 0.6,
+        relativeAtomScale: 1,
+        bondScale: 0.5,
+        ao: 0.5,
+        spf: 32,
+        brightness: 0.5,
+        outline: 0,
+        bonds: false,
+        bondThreshold: 1.2,
+        bondShade: 0,
+        dofStrength: 0,
+        dofPosition: 0.5,
+        fxaa: 1
+    },
+    stickball:  {
+        atomScale: 0.24,
+        relativeAtomScale: 0.64,
+        bondScale: 0.5,
+        bonds: true,
+        bondThreshold: 1.2,
+    },
+    toon:  {
+        ao: 0,
+        spf: 0,
+        brightness: 0.5,
+        outline: 1,
+    },
+    licorice:  {
+        atomScale: 0.1,
+        relativeAtomScale: 0,
+        bondScale: 1,
+        bonds: true,
+        bondThreshold: 1.2,
+    },
 };
