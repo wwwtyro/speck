@@ -415,7 +415,7 @@ module.exports = function (canvas, resolution, aoResolution) {
         function sample(view) {
             gl.viewport(0, 0, aoResolution, aoResolution);
             var v = View.clone(view);
-            v.zoom = 2/range;
+            v.zoom = 1/range;
             v.translation.x = 0;
             v.translation.y = 0;
             var rot = glm.mat4.create();
