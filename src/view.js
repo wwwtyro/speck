@@ -12,268 +12,94 @@ for (var i = 0; i <= 118; i++) {
     MAX_ATOM_RADIUS = Math.max(MAX_ATOM_RADIUS, elements[i].radius);
 }
 
-
 function clamp(min, max, value) {
     return Math.min(max, Math.max(min, value));
 }
 
-
-module.exports = function View(serialized) {
-
-    var self = this;
-
-    var aspect = 1.0;
-    var zoom = 0.125;
-    var translation = {x: 0.0, y: 0.0};
-    var atomScale = 0.6;
-    var relativeAtomScale = 1.0;
-    var bondScale = 0.5;
-    var rotation = glm.mat4.create();
-    var ao = 0.5;
-    var aoRes = 128;
-    var brightness = 0.5;
-    var outlineStrength = 0.0;
-    var spf = 32;
-    var bonds = false;
-    var bondThreshold = 1.2;
-    var bondShade = 0.0;
-    var resolution = 768;
-    var dofStrength = 0.0;
-    var dofPosition = 0.5;
-    var fxaa = 1;
-
-    self.initialize = function() {
-        if (serialized !== undefined) {
-            self.deserialize(serialized);
-        }
+var _new = module.exports.new = function() {
+    return {
+        aspect: 1.0,
+        zoom: 0.125,
+        translation: {
+            x: 0.0,
+            y: 0.0
+        },
+        atomScale: 0.6,
+        relativeAtomScale: 1.0,
+        bondScale: 0.5,
+        rotation: glm.mat4.create(),
+        ao: 0.5,
+        aoRes: 128,
+        brightness: 0.5,
+        outline: 0.0,
+        spf: 32,
+        bonds: false,
+        bondThreshold: 1.2,
+        bondShade: 0.0,
+        resolution: 768,
+        dofStrength: 0.0,
+        dofPosition: 0.5,
+        fxaa: 1
     };
+};
 
-    self.serialize = function() {
-        return {
-            aspect: aspect,
-            zoom: zoom,
-            translation: {x: translation.x, y: translation.y},
-            atomScale: atomScale,
-            relativeAtomScale: relativeAtomScale,
-            bondScale: bondScale,
-            rotation: glm.mat4.clone(rotation),
-            ao: ao,
-            aoRes: aoRes,
-            brightness: brightness,
-            spf: spf,
-            resolution: resolution,
-            bonds: bonds,
-            bondThreshold: bondThreshold,
-            bondShade: bondShade,
-            outlineStrength: outlineStrength,
-            dofStrength: dofStrength,
-            dofPosition: dofPosition,
-            fxaa: fxaa
-        }
-    };
+var _clone = module.exports.clone = function(v) {
+    return _deserialize(_serialize(v));
+};
 
-    self.deserialize = function(data) {
-        aspect = data.aspect;
-        zoom = data.zoom;
-        translation = {x: data.translation.x, y: data.translation.y};
-        atomScale = data.atomScale;
-        relativeAtomScale = data.relativeAtomScale;
-        bondScale = data.bondScale;
-        rotation = glm.mat4.clone(data.rotation);
-        ao = data.ao;
-        aoRes = data.aoRes;
-        brightness = data.brightness;
-        spf = data.spf;
-        resolution = data.resolution;
-        bonds = data.bonds;
-        bondThreshold = data.bondThreshold;
-        bondShade = data.bondShade;
-        fxaa = data.fxaa;
-        outlineStrength = data.outlineStrength;
-        dofStrength = data.dofStrength;
-        dofPosition = data.dofPosition;
-    };
+var _serialize = module.exports.serialize = function(v) {
+    return JSON.stringify(v);
+};
 
-    self.clone = function() {
-        return new View(self.serialize());
-    };
-
-    self.setAORes = function(val) {
-        aoRes = val;
-    };
-
-    self.getAORes = function() {
-        return aoRes;
-    }
-
-    self.setDofStrength = function(val) {
-        dofStrength = clamp(0, 1, val);
-    };
-
-    self.getDofStrength = function() {
-        return dofStrength;
-    };
-
-    self.setDofPosition = function(val) {
-        dofPosition = clamp(0, 1, val);
-    };
-
-    self.getDofPosition = function() {
-        return dofPosition;
-    };
-
-    self.setResolution = function(res) {
-        resolution = res;
-    };
-
-    self.getResolution = function() {
-        return resolution;
-    };
-
-    self.setZoom = function(val) {
-        zoom = clamp(0.001, 2.0, val);
-    };
-
-    self.getZoom = function() {
-        return zoom;
-    };
-
-    self.translate = function(dx, dy) {
-        translation.x -= dx/(resolution * zoom);
-        translation.y += dy/(resolution * zoom);
-    };
-
-    self.getTranslation = function() {
-        return {x: translation.x, y: translation.y};
-    };
-
-    self.setTranslation = function(x, y) {
-        translation.x = x;
-        translation.y = y;
-    };
-
-    self.rotate = function(dx, dy) {
-        var m = glm.mat4.create();
-        glm.mat4.rotateY(m, m, dx * 0.005);
-        glm.mat4.rotateX(m, m, dy * 0.005);
-        glm.mat4.multiply(rotation, m, rotation);
-    };
-
-    self.setRotation = function(rot) {
-        rotation = glm.mat4.clone(rot);
-    };
-
-    self.getRotation = function() {
-        return glm.mat4.clone(rotation);
-    };
-
-    self.setAtomScale = function(val) {
-        atomScale = clamp(0, 1, val);
-    };
-
-    self.getAtomScale = function() {
-        return atomScale;
-    };
-
-    self.setRelativeAtomScale = function(val) {
-        relativeAtomScale = clamp(0, 1, val);
-    };
-
-    self.getRelativeAtomScale = function() {
-        return relativeAtomScale;
-    };
-
-    self.setBondScale = function(val) {
-        bondScale = clamp(0, 1, val);
-    };
-
-    self.getBondScale = function() {
-        return bondScale;
-    };
-
-    self.setBondShade = function(val) {
-        bondShade = clamp(0, 1, val);
-    };
-
-    self.getBondShade = function() {
-        return bondShade;
-    };
-
-    self.setAmbientOcclusion = function(val) {
-        ao = clamp(0, 1, val);
-    };
-
-    self.getAmbientOcclusion = function() {
-        return ao;
-    };
-
-    self.setBrightness = function(val) {
-        brightness = clamp(0, 1, val);
-    };
-
-    self.getBrightness = function() {
-        return brightness;
-    };
-
-    self.setSamplesPerFrame = function(val) {
-        spf = val;
-    };
-
-    self.getSamplesPerFrame = function() {
-        return spf;
-    };
-
-    self.setBonds = function(val) {
-        bonds = val;
-    }
-
-    self.getBonds = function() {
-        return bonds;
-    };
-
-    self.setBondThreshold = function(val) {
-        bondThreshold = val;
-    };
-
-    self.getBondThreshold = function() {
-        return bondThreshold;
-    };
-
-    self.setOutlineStrength = function(val) {
-        outlineStrength = clamp(0, 1, val);
-    };
-
-    self.getOutlineStrength = function() {
-        return outlineStrength;
-    };
-
-    self.setFXAA = function(val) {
-        fxaa = val;
-    };
-
-    self.getFXAA = function() {
-        return fxaa;
-    };
-
-    self.getRect = function() {
-        var width = 1.0/zoom;
-        var height = width/aspect;
-        var bottom = -height/2 + translation.y;
-        var top = height/2 + translation.y;
-        var left = -width/2 + translation.x;
-        var right = width/2 + translation.x;
-        return {
-            bottom: bottom,
-            top: top,
-            left: left,
-            right: right
-        }
-    };
-
-    self.getBondRadius = function() {
-        return bondScale * atomScale * (1 + (MIN_ATOM_RADIUS - 1) * relativeAtomScale);
-    };
-
-    self.initialize();
+var _deserialize = module.exports.deserialize = function(v) {
+    v = JSON.parse(v);
+    v.rotation = glm.mat4.clone(v.rotation);
+    return v;
 }
+
+var _resolve = module.exports.resolve = function(v) {
+    v.dofStrength = clamp(0, 1, v.dofStrength);
+    v.dofPosition = clamp(0, 1, v.dofPosition);
+    v.zoom = clamp(0.001, 2.0, v.zoom);
+    v.atomScale = clamp(0, 1, v.atomScale);
+    v.relativeAtomScale = clamp(0, 1, v.relativeAtomScale);
+    v.bondScale = clamp(0, 1, v.bondScale);
+    v.bondShade = clamp(0, 1, v.bondShade);
+    v.ao = clamp(0, 1, v.ao);
+    v.brightness = clamp(0, 1, v.brightness);
+    v.outline = clamp(0, 1, v.outline);
+};
+
+var _translate = module.exports.translate = function(v, dx, dy) {
+    v.translation.x -= dx/(resolution * zoom);
+    v.translation.y += dy/(resolution * zoom);
+};
+
+var _rotate = module.exports.rotate = function(v, dx, dy) {
+    var m = glm.mat4.create();
+    glm.mat4.rotateY(m, m, dx * 0.005);
+    glm.mat4.rotateX(m, m, dy * 0.005);
+    glm.mat4.multiply(v.rotation, m, v.rotation);
+};
+
+var _getRect = module.exports.getRect = function(v) {
+    var width = 1.0/v.zoom;
+    var height = width/v.aspect;
+    var bottom = -height/2 + v.translation.y;
+    var top = height/2 + v.translation.y;
+    var left = -width/2 + v.translation.x;
+    var right = width/2 + v.translation.x;
+    return {
+        bottom: bottom,
+        top: top,
+        left: left,
+        right: right
+    };
+};
+
+var _getBondRadius = module.exports.getBondRadius = function(v) {
+    return v.bondScale * v.atomScale * 
+        (1 + (MIN_ATOM_RADIUS - 1) * v.relativeAtomScale);
+};
+
 

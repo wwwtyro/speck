@@ -15323,7 +15323,7 @@ var elements = require("./elements");
 var presets = require("./presets");
 
 window._speck_debug_getView = function() {
-    console.log(JSON.stringify(view.serialize()));
+    console.log(View.serialize(view));
 }
 
 window.onerror = function(e, url, line) {
@@ -15344,7 +15344,7 @@ kb.active = function(key) {
 }
 
 var atoms = new Atoms();
-var view = new View();
+var view = View.new();
 var renderer = null;
 var needReset = false;
 
@@ -15380,7 +15380,7 @@ window.onload = function() {
 
     var imposterCanvas = document.getElementById("renderer-canvas");
 
-    renderer = new Renderer(imposterCanvas, view.getResolution(), view.getAORes());
+    renderer = new Renderer(imposterCanvas, view.resolution, view.aoRes);
 
     var selector = document.getElementById("controls-sample");
     for (var i = 0; i < samples.length; i++) {
@@ -15401,9 +15401,9 @@ window.onload = function() {
         var data = lz.decompressFromEncodedURIComponent(hash);
         data = JSON.parse(data);
         atoms.deserialize(data.atoms);
-        view.deserialize(data.view);
+        view = data.view;
         renderer.setAtoms(atoms, view);
-        renderer.setResolution(view.getResolution(), view.getAORes());
+        renderer.setResolution(view.resolution, view.aoRes);
         needReset = true;
     } else {
         loadSample();
@@ -15447,9 +15447,9 @@ window.onload = function() {
         lastX = e.clientX;
         lastY = e.clientY;
         if (e.shiftKey) {
-            view.translate(dx, dy);
+            View.translate(view, dx, dy);
         } else {
-            view.rotate(dx, dy);
+            View.rotate(view, dx, dy);
         }
         needReset = true;
     });
@@ -15463,57 +15463,50 @@ window.onload = function() {
             wd = -1;
         }
         if (kb.active("a")) {
-            var scale = view.getAtomScale();
-            scale += wd/100;
-            view.setAtomScale(scale);
-            document.getElementById("atom-radius").value = Math.round(scale * 100);
+            view.atomScale += wd/100;
+            View.resolve(view);
+            document.getElementById("atom-radius").value = Math.round(view.atomScale * 100);
             needReset = true;
         } else if (kb.active("z")) {
-            var scale = view.getRelativeAtomScale();
+            var scale = view.relativeAtomScale;
             scale += wd/100;
-            view.setRelativeAtomScale(scale);
-            document.getElementById("relative-atom-radius").value = Math.round(scale * 100);
+            view.relativeAtomScale += wd/100;
+            View.resolve(view);
+            document.getElementById("relative-atom-radius").value = Math.round(view.relativeAtomScale * 100);
             needReset = true;
         } else if (kb.active("d")) {
-            var scale = view.getDofStrength();
-            scale += wd/100;
-            view.setDofStrength(scale);
-            document.getElementById("dof-strength").value = Math.round(scale * 100);
+            view.dofStrength += wd/100;
+            View.resolve(view);
+            document.getElementById("dof-strength").value = Math.round(view.dofStrength * 100);
         } else if (kb.active("p")) {
-            var scale = view.getDofPosition();
-            scale += wd/100;
-            view.setDofPosition(scale);
-            document.getElementById("dof-position").value = Math.round(scale * 100);
+            view.dofPosition += wd/100;
+            View.resolve(view);
+            document.getElementById("dof-position").value = Math.round(view.dofPosition * 100);
         } else if (kb.active("b")) {
-            var scale = view.getBondScale();
-            scale += wd/100;
-            view.setBondScale(scale);
-            document.getElementById("bond-radius").value = Math.round(scale * 100);
+            view.bondScale += wd/100;
+            View.resolve(view);
+            document.getElementById("bond-radius").value = Math.round(view.bondScale * 100);
             needReset = true;
         } else if (kb.active("s")) {
-            var scale = view.getBondShade();
-            scale += wd/100;
-            view.setBondShade(scale);
-            document.getElementById("bond-shade").value = Math.round(scale * 100);
+            view.bondShade += wd/100;
+            View.resolve(view);
+            document.getElementById("bond-shade").value = Math.round(view.bondShade * 100);
             needReset = true;
         } else if (kb.active("o")) {
-            var ao = view.getAmbientOcclusion();
-            ao += wd/100;
-            view.setAmbientOcclusion(ao);
-            document.getElementById("ambient-occlusion").value = Math.round(ao * 100);
+            view.ao += wd/100;
+            View.resolve(view);
+            document.getElementById("ambient-occlusion").value = Math.round(view.ao * 100);
         } else if (kb.active("l")) {
-            var bright = view.getBrightness();
-            bright += wd/100;
-            view.setBrightness(bright);
-            document.getElementById("brightness").value = Math.round(bright * 100);
+            view.brightness += wd/100;
+            View.resolve(view);
+            document.getElementById("brightness").value = Math.round(view.brightness * 100);
         } else if (kb.active("q")) {
-            var outline = view.getOutlineStrength();
-            outline += wd/100;
-            view.setOutlineStrength(outline);
-            document.getElementById("outline-strength").value = Math.round(outline * 100);
+            view.outline += wd/100;
+            View.resolve(view);
+            document.getElementById("outline-strength").value = Math.round(view.outline * 100);
         } else {
-            var zoom = view.getZoom() * (wd === 1 ? 1/0.9 : 0.9);
-            view.setZoom(zoom);
+            view.zoom = view.zoom * (wd === 1 ? 1/0.9 : 0.9);
+            View.resolve(view);
             needReset = true;
         }
         e.preventDefault();
@@ -15587,99 +15580,114 @@ window.onload = function() {
 
     document.getElementById("atom-radius").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("atom-radius").value);
-        view.setAtomScale(scale/100);
+        view.atomScale = scale/100;
+        View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("relative-atom-radius").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("relative-atom-radius").value);
-        view.setRelativeAtomScale(scale/100);
+        view.relativeAtomScale = scale/100;
+        View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("dof-strength").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("dof-strength").value);
-        view.setDofStrength(scale/100);
+        view.dofStrength = scale/100;
+        View.resolve(view);
     });
 
     document.getElementById("dof-position").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("dof-position").value);
-        view.setDofPosition(scale/100);
+        view.dofPosition = scale/100;
+        View.resolve(view);
     });
 
     document.getElementById("bond-radius").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("bond-radius").value);
-        view.setBondScale(scale/100);
+        view.bondScale = scale/100;
+        View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("bond-shade").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("bond-shade").value);
-        view.setBondShade(scale/100);
+        view.bondShade = scale/100;
+        View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("ambient-occlusion").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("ambient-occlusion").value);
-        view.setAmbientOcclusion(scale/100);
+        view.ao = scale/100;
+        View.resolve(view);
     });
 
     document.getElementById("brightness").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("brightness").value);
-        view.setBrightness(scale/100);
+        view.brightness = scale/100;
+        View.resolve(view);
     });
 
     document.getElementById("ao-resolution").addEventListener("change", function(e) {
         var resolution = parseInt(document.getElementById("ao-resolution").value);
-        view.setAORes(resolution);
-        renderer.setResolution(view.getResolution(), resolution);
+        view.aoRes = resolution;
+        View.resolve(view);
+        renderer.setResolution(view.resolution, view.aoRes);
         needReset = true;
     });
 
     document.getElementById("outline-strength").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("outline-strength").value);
-        view.setOutlineStrength(scale/100);
+        view.outline = scale/100;
+        View.resolve(view);
     });
 
     document.getElementById("samples-per-frame").addEventListener("change", function(e) {
         var spf = parseInt(document.getElementById("samples-per-frame").value);
-        view.setSamplesPerFrame(spf);
+        view.spf = spf;
     });
 
     document.getElementById("resolution").addEventListener("change", function(e) {
         var resolution = parseInt(document.getElementById("resolution").value);
-        view.setResolution(resolution);
-        renderer.setResolution(resolution, view.getAORes());
+        view.resolution = resolution;
+        View.resolve(view);
+        renderer.setResolution(resolution, view.aoRes);
         needReset = true;
     });
 
     document.getElementById("view-preset").addEventListener("change", function(e) {
         var preset = document.getElementById("view-preset").value;
-        view.deserialize(JSON.parse(presets[preset]));
+        view = View.deserialize(presets[preset]);
+        View.resolve(view);
         updateControls();
         renderer.setAtoms(atoms, view);
         needReset = true;
     });
 
     document.getElementById("bonds").addEventListener("click", function(e) {
-        view.setBonds(document.getElementById("bonds").checked)
+        view.bonds = document.getElementById("bonds").checked;
+        View.resolve(view);
         renderer.setAtoms(atoms, view);
         needReset = true;
     });
 
     document.getElementById("bond-threshold").addEventListener("change", function(e) {
-        view.setBondThreshold(parseFloat(document.getElementById("bond-threshold").value));
+        view.bondThreshold = parseFloat(document.getElementById("bond-threshold").value);
+        View.resolve(view);
         renderer.setAtoms(atoms, view);
         needReset = true;
     });
 
     document.getElementById("fxaa").addEventListener("change", function(e) {
-        view.setFXAA(parseInt(document.getElementById("fxaa").value))
+        view.fxaa = parseInt(document.getElementById("fxaa").value);
+        View.resolve(view);
     });
 
     document.getElementById("share-url-button").addEventListener("click", function(e) {
         var data = {
-            view: view.serialize(),
+            view: view,
             atoms: atoms.serialize()
         }
         data = lz.compressToEncodedURIComponent(JSON.stringify(data));
@@ -15692,35 +15700,35 @@ window.onload = function() {
 
 
     function updateControls() {
-        document.getElementById("atom-radius").value = Math.round(view.getAtomScale() * 100);
-        document.getElementById("relative-atom-radius").value = Math.round(view.getRelativeAtomScale() * 100);
-        document.getElementById("bond-radius").value = Math.round(view.getBondScale() * 100);
-        document.getElementById("bond-shade").value = Math.round(view.getBondShade() * 100);
-        document.getElementById("bond-threshold").value = view.getBondThreshold();
-        document.getElementById("ambient-occlusion").value = Math.round(view.getAmbientOcclusion() * 100);
-        document.getElementById("brightness").value = Math.round(view.getBrightness() * 100);
-        document.getElementById("ao-resolution").value = view.getAORes();
-        document.getElementById("samples-per-frame").value = view.getSamplesPerFrame();
-        document.getElementById("outline-strength").value = Math.round(view.getOutlineStrength() * 100);
-        document.getElementById("bonds").checked = view.getBonds();
-        document.getElementById("fxaa").value = view.getFXAA();
-        document.getElementById("resolution").value = view.getResolution();
-        document.getElementById("dof-strength").value = Math.round(view.getDofStrength() * 100);
-        document.getElementById("dof-position").value = Math.round(view.getDofPosition() * 100);
+        document.getElementById("atom-radius").value = Math.round(view.atomScale * 100);
+        document.getElementById("relative-atom-radius").value = Math.round(view.relativeAtomScale * 100);
+        document.getElementById("bond-radius").value = Math.round(view.bondScale * 100);
+        document.getElementById("bond-shade").value = Math.round(view.bondShade * 100);
+        document.getElementById("bond-threshold").value = view.bondThreshold;
+        document.getElementById("ambient-occlusion").value = Math.round(view.ao * 100);
+        document.getElementById("brightness").value = Math.round(view.brightness * 100);
+        document.getElementById("ao-resolution").value = view.aoRes;
+        document.getElementById("samples-per-frame").value = view.spf;
+        document.getElementById("outline-strength").value = Math.round(view.outline * 100);
+        document.getElementById("bonds").checked = view.bonds;
+        document.getElementById("fxaa").value = view.fxaa;
+        document.getElementById("resolution").value = view.resolution;
+        document.getElementById("dof-strength").value = Math.round(view.dofStrength * 100);
+        document.getElementById("dof-position").value = Math.round(view.dofPosition * 100);
     }
 
     updateControls();
 
     function loop() {
-        document.getElementById("atom-radius-text").innerHTML = Math.round(view.getAtomScale() * 100) + "%";
-        document.getElementById("relative-atom-radius-text").innerHTML = Math.round(view.getRelativeAtomScale() * 100) + "%";
-        document.getElementById("bond-radius-text").innerHTML = Math.round(view.getBondScale() * 100) + "%";
-        document.getElementById("bond-shade-text").innerHTML = Math.round(view.getBondShade() * 100) + "%";
-        document.getElementById("ambient-occlusion-text").innerHTML = Math.round(view.getAmbientOcclusion() * 100) + "%";
-        document.getElementById("brightness-text").innerHTML = Math.round(view.getBrightness() * 100) + "%";
-        document.getElementById("outline-strength-text").innerHTML = Math.round(view.getOutlineStrength() * 100) + "%";
-        document.getElementById("dof-strength-text").innerHTML = Math.round(view.getDofStrength() * 100) + "%";
-        document.getElementById("dof-position-text").innerHTML = Math.round(view.getDofPosition() * 100) + "%";
+        document.getElementById("atom-radius-text").innerHTML = Math.round(view.atomScale * 100) + "%";
+        document.getElementById("relative-atom-radius-text").innerHTML = Math.round(view.relativeAtomScale * 100) + "%";
+        document.getElementById("bond-radius-text").innerHTML = Math.round(view.bondScale * 100) + "%";
+        document.getElementById("bond-shade-text").innerHTML = Math.round(view.bondShade * 100) + "%";
+        document.getElementById("ambient-occlusion-text").innerHTML = Math.round(view.ao * 100) + "%";
+        document.getElementById("brightness-text").innerHTML = Math.round(view.brightness * 100) + "%";
+        document.getElementById("outline-strength-text").innerHTML = Math.round(view.outline * 100) + "%";
+        document.getElementById("dof-strength-text").innerHTML = Math.round(view.dofStrength * 100) + "%";
+        document.getElementById("dof-position-text").innerHTML = Math.round(view.dofPosition * 100) + "%";
 
         document.getElementById("ao-indicator").style.width = Math.min(100, (renderer.getAOProgress() * 100)) + "%";
 
@@ -15738,10 +15746,10 @@ window.onload = function() {
 
 },{"./atoms":"/home/rye/Dropbox/src/speck/src/atoms.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./presets":"/home/rye/Dropbox/src/speck/src/presets.js","./renderer":"/home/rye/Dropbox/src/speck/src/renderer.js","./samples":"/home/rye/Dropbox/src/speck/src/samples.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./xyz":"/home/rye/Dropbox/src/speck/src/xyz.js","jquery":"/home/rye/Dropbox/src/speck/node_modules/jquery/dist/jquery.js","keyboardjs":"/home/rye/Dropbox/src/speck/node_modules/keyboardjs/keyboard.js","lz-string":"/home/rye/Dropbox/src/speck/node_modules/lz-string/libs/lz-string.js"}],"/home/rye/Dropbox/src/speck/src/presets.js":[function(require,module,exports){
 module.exports = {
-    default: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.6,"relativeAtomScale":1,"bondScale":0.5,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0.5,"aoRes":128,"brightness":0.5,"spf":32,"resolution":768,"bonds":false,"bondThreshold":1.2,"bondShade":0,"outlineStrength":0,"dofStrength":0,"dofPosition":0.5,"fxaa":1}',
-    stickball: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.24999999999999967,"relativeAtomScale":0.7099999999999997,"bondScale":0.5099999999999996,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0.5,"aoRes":128,"brightness":0.5,"spf":32,"resolution":768,"bonds":true,"bondThreshold":1.2,"bondShade":0,"outlineStrength":0,"dofStrength":0,"dofPosition":0.5,"fxaa":1}',
-    toon: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.6,"relativeAtomScale":1,"bondScale":0.5,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0,"aoRes":128,"brightness":0.5,"spf":0,"resolution":768,"bonds":false,"bondThreshold":1.2,"bondShade":0,"outlineStrength":1,"dofStrength":0,"dofPosition":0.5,"fxaa":3}',
-    licorice: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.09999999999999958,"relativeAtomScale":0,"bondScale":1,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0.5,"aoRes":128,"brightness":0.5,"spf":32,"resolution":768,"bonds":true,"bondThreshold":1.2,"bondShade":0,"outlineStrength":0,"dofStrength":0,"dofPosition":0.5,"fxaa":1}',
+    default: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.6,"relativeAtomScale":1,"bondScale":0.5,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0.5,"aoRes":128,"brightness":0.5,"spf":32,"resolution":768,"bonds":false,"bondThreshold":1.2,"bondShade":0,"outline":0,"dofStrength":0,"dofPosition":0.5,"fxaa":1}',
+    stickball: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.24999999999999967,"relativeAtomScale":0.7099999999999997,"bondScale":0.5099999999999996,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0.5,"aoRes":128,"brightness":0.5,"spf":32,"resolution":768,"bonds":true,"bondThreshold":1.2,"bondShade":0,"outline":0,"dofStrength":0,"dofPosition":0.5,"fxaa":1}',
+    toon: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.6,"relativeAtomScale":1,"bondScale":0.5,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0,"aoRes":128,"brightness":0.5,"spf":0,"resolution":768,"bonds":false,"bondThreshold":1.2,"bondShade":0,"outline":1,"dofStrength":0,"dofPosition":0.5,"fxaa":3}',
+    licorice: '{"aspect":1,"zoom":0.125,"translation":{"x":0,"y":0},"atomScale":0.09999999999999958,"relativeAtomScale":0,"bondScale":1,"rotation":{"0":1,"1":0,"2":0,"3":0,"4":0,"5":1,"6":0,"7":0,"8":0,"9":0,"10":1,"11":0,"12":0,"13":0,"14":0,"15":1},"ao":0.5,"aoRes":128,"brightness":0.5,"spf":32,"resolution":768,"bonds":true,"bondThreshold":1.2,"bondShade":0,"outline":0,"dofStrength":0,"dofPosition":0.5,"fxaa":1}',
 };
 },{}],"/home/rye/Dropbox/src/speck/src/renderer.js":[function(require,module,exports){
 "use strict";
@@ -15954,7 +15962,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
             // Bonds
 
-            if (view.getBonds()) {
+            if (view.bonds) {
 
                 var bonds = [];
 
@@ -15965,7 +15973,7 @@ module.exports = function (canvas, resolution, aoResolution) {
                         var l = glm.vec3.fromValues(a.x, a.y, a.z);
                         var m = glm.vec3.fromValues(b.x, b.y, b.z);
                         var cutoff = elements[a.symbol].radius + elements[b.symbol].radius;
-                        if (glm.vec3.distance(l,m) > cutoff * view.getBondThreshold()) {
+                        if (glm.vec3.distance(l,m) > cutoff * view.bondThreshold) {
                             continue;
                         }
                         var ca = elements[a.symbol].color;
@@ -16057,7 +16065,7 @@ module.exports = function (canvas, resolution, aoResolution) {
             } else if (!normalRendered){
                 normal(view);
             } else {
-                for (var i = 0; i < view.getSamplesPerFrame(); i++) {
+                for (var i = 0; i < view.spf; i++) {
                     if (sampleCount > 1024) {
                         break;
                     }
@@ -16073,40 +16081,40 @@ module.exports = function (canvas, resolution, aoResolution) {
             gl.viewport(0, 0, resolution, resolution);
             fbSceneColor.bind();
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            var rect = view.getRect();
+            var rect = View.getRect(view);
             var projection = glm.mat4.create();
             glm.mat4.ortho(projection, rect.left, rect.right, rect.bottom, rect.top, 0, range);
             var viewMat = glm.mat4.create();
             glm.mat4.lookAt(viewMat, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
             var model = glm.mat4.create();
             glm.mat4.translate(model, model, [0, 0, -range/2]);
-            glm.mat4.multiply(model, model, view.getRotation());
+            glm.mat4.multiply(model, model, view.rotation);
             progAtoms.setUniform("uProjection", "Matrix4fv", false, projection);
             progAtoms.setUniform("uView", "Matrix4fv", false, viewMat);
             progAtoms.setUniform("uModel", "Matrix4fv", false, model);
             progAtoms.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
             progAtoms.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
-            progAtoms.setUniform("uAtomScale", "1f", 2.5 * view.getAtomScale());
-            progAtoms.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
+            progAtoms.setUniform("uAtomScale", "1f", 2.5 * view.atomScale);
+            progAtoms.setUniform("uRelativeAtomScale", "1f", view.relativeAtomScale);
             progAtoms.setUniform("uRes", "1f", resolution);
             progAtoms.setUniform("uDepth", "1f", range);
             progAtoms.setUniform("uMode", "1i", 0);
             rAtoms.render();
 
-            if (view.getBonds() && rBonds != null) {
+            if (view.bonds && rBonds != null) {
                 fbSceneColor.bind();
                 progBonds.setUniform("uProjection", "Matrix4fv", false, projection);
                 progBonds.setUniform("uView", "Matrix4fv", false, viewMat);
                 progBonds.setUniform("uModel", "Matrix4fv", false, model);
-                progBonds.setUniform("uRotation", "Matrix4fv", false, view.getRotation());
+                progBonds.setUniform("uRotation", "Matrix4fv", false, view.rotation);
                 progBonds.setUniform("uDepth", "1f", range);
                 progBonds.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
                 progBonds.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
                 progBonds.setUniform("uRes", "1f", resolution);
-                progBonds.setUniform("uBondRadius", "1f", 2.5 * view.getBondRadius());
-                progBonds.setUniform("uBondShade", "1f", view.getBondShade());
-                progBonds.setUniform("uAtomScale", "1f", 2.5 * view.getAtomScale());
-                progBonds.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
+                progBonds.setUniform("uBondRadius", "1f", 2.5 * View.getBondRadius(view));
+                progBonds.setUniform("uBondShade", "1f", view.bondShade);
+                progBonds.setUniform("uAtomScale", "1f", 2.5 * view.atomScale);
+                progBonds.setUniform("uRelativeAtomScale", "1f", view.relativeAtomScale);
                 progBonds.setUniform("uMode", "1i", 0);
                 rBonds.render();
             }
@@ -16118,40 +16126,40 @@ module.exports = function (canvas, resolution, aoResolution) {
             gl.viewport(0, 0, resolution, resolution);
             fbSceneNormal.bind();
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            var rect = view.getRect();
+            var rect = View.getRect(view);
             var projection = glm.mat4.create();
             glm.mat4.ortho(projection, rect.left, rect.right, rect.bottom, rect.top, 0, range);
             var viewMat = glm.mat4.create();
             glm.mat4.lookAt(viewMat, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
             var model = glm.mat4.create();
             glm.mat4.translate(model, model, [0, 0, -range/2]);
-            glm.mat4.multiply(model, model, view.getRotation());
+            glm.mat4.multiply(model, model, view.rotation);
             progAtoms.setUniform("uProjection", "Matrix4fv", false, projection);
             progAtoms.setUniform("uView", "Matrix4fv", false, viewMat);
             progAtoms.setUniform("uModel", "Matrix4fv", false, model);
             progAtoms.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
             progAtoms.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
-            progAtoms.setUniform("uAtomScale", "1f", 2.5 * view.getAtomScale());
-            progAtoms.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
+            progAtoms.setUniform("uAtomScale", "1f", 2.5 * view.atomScale);
+            progAtoms.setUniform("uRelativeAtomScale", "1f", view.relativeAtomScale);
             progAtoms.setUniform("uRes", "1f", resolution);
             progAtoms.setUniform("uDepth", "1f", range);
             progAtoms.setUniform("uMode", "1i", 1);
             rAtoms.render();
 
-            if (view.getBonds() && rBonds != null) {
+            if (view.bonds && rBonds != null) {
                 fbSceneNormal.bind();
                 progBonds.setUniform("uProjection", "Matrix4fv", false, projection);
                 progBonds.setUniform("uView", "Matrix4fv", false, viewMat);
                 progBonds.setUniform("uModel", "Matrix4fv", false, model);
-                progBonds.setUniform("uRotation", "Matrix4fv", false, view.getRotation());
+                progBonds.setUniform("uRotation", "Matrix4fv", false, view.rotation);
                 progBonds.setUniform("uDepth", "1f", range);
                 progBonds.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
                 progBonds.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
                 progBonds.setUniform("uRes", "1f", resolution);
-                progBonds.setUniform("uBondRadius", "1f", 2.5 * view.getBondRadius());
-                progBonds.setUniform("uBondShade", "1f", view.getBondShade());
-                progBonds.setUniform("uAtomScale", "1f", 2.5 * view.getAtomScale());
-                progBonds.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
+                progBonds.setUniform("uBondRadius", "1f", 2.5 * View.getBondRadius(view));
+                progBonds.setUniform("uBondShade", "1f", view.bondShade);
+                progBonds.setUniform("uAtomScale", "1f", 2.5 * view.atomScale);
+                progBonds.setUniform("uRelativeAtomScale", "1f", view.relativeAtomScale);
                 progBonds.setUniform("uMode", "1i", 1);
                 rBonds.render();
             }
@@ -16160,57 +16168,58 @@ module.exports = function (canvas, resolution, aoResolution) {
 
         function sample(view) {
             gl.viewport(0, 0, aoResolution, aoResolution);
-            var v = view.clone();
-            v.setZoom(2/range);
-            v.setTranslation(0, 0);
+            var v = View.clone(view);
+            v.zoom = 2/range;
+            v.translation.x = 0;
+            v.translation.y = 0;
             var rot = glm.mat4.create();
             for (var i = 0; i < 3; i++) {
                 var axis = glm.vec3.random(glm.vec3.create(), 1.0);
                 glm.mat4.rotate(rot, rot, Math.random() * 10, axis);
             }
-            v.setRotation(glm.mat4.multiply(glm.mat4.create(), rot, v.getRotation()));
+            v.rotation = glm.mat4.multiply(glm.mat4.create(), rot, v.rotation);
             fbRandRot.bind()
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            var rect = v.getRect();
+            var rect = View.getRect(v);
             var projection = glm.mat4.create();
             glm.mat4.ortho(projection, rect.left, rect.right, rect.bottom, rect.top, 0, range);
             var viewMat = glm.mat4.create();
             glm.mat4.lookAt(viewMat, [0, 0, 0], [0, 0, -1], [0, 1, 0]);
             var model = glm.mat4.create();
             glm.mat4.translate(model, model, [0, 0, -range/2]);
-            glm.mat4.multiply(model, model, v.getRotation());
+            glm.mat4.multiply(model, model, v.rotation);
             progAtoms.setUniform("uProjection", "Matrix4fv", false, projection);
             progAtoms.setUniform("uView", "Matrix4fv", false, viewMat);
             progAtoms.setUniform("uModel", "Matrix4fv", false, model);
             progAtoms.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
             progAtoms.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
-            progAtoms.setUniform("uAtomScale", "1f", 2.5 * v.getAtomScale());
-            progAtoms.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
+            progAtoms.setUniform("uAtomScale", "1f", 2.5 * v.atomScale);
+            progAtoms.setUniform("uRelativeAtomScale", "1f", view.relativeAtomScale);
             progAtoms.setUniform("uRes", "1f", aoResolution);
             progAtoms.setUniform("uDepth", "1f", range);
             progAtoms.setUniform("uMode", "1i", 0);
             rAtoms.render();
 
-            if (view.getBonds() && rBonds != null) {
+            if (view.bonds && rBonds != null) {
                 progBonds.setUniform("uProjection", "Matrix4fv", false, projection);
                 progBonds.setUniform("uView", "Matrix4fv", false, viewMat);
                 progBonds.setUniform("uModel", "Matrix4fv", false, model);
-                progBonds.setUniform("uRotation", "Matrix4fv", false, v.getRotation());
+                progBonds.setUniform("uRotation", "Matrix4fv", false, v.rotation);
                 progBonds.setUniform("uDepth", "1f", range);
                 progBonds.setUniform("uBottomLeft", "2fv", [rect.left, rect.bottom]);
                 progBonds.setUniform("uTopRight", "2fv", [rect.right, rect.top]);
                 progBonds.setUniform("uRes", "1f", aoResolution);
-                progBonds.setUniform("uBondRadius", "1f", 2.5 * view.getBondRadius());
-                progBonds.setUniform("uBondShade", "1f", view.getBondShade());
-                progBonds.setUniform("uAtomScale", "1f", 2.5 * view.getAtomScale());
-                progBonds.setUniform("uRelativeAtomScale", "1f", view.getRelativeAtomScale());
+                progBonds.setUniform("uBondRadius", "1f", 2.5 * View.getBondRadius(view));
+                progBonds.setUniform("uBondShade", "1f", view.bondShade);
+                progBonds.setUniform("uAtomScale", "1f", 2.5 * view.atomScale);
+                progBonds.setUniform("uRelativeAtomScale", "1f", view.relativeAtomScale);
                 progBonds.setUniform("uMode", "1i", 0);
                 rBonds.render();
             }
 
             gl.viewport(0, 0, resolution, resolution);
-            var sceneRect = view.getRect();
-            var rotRect = v.getRect();
+            var sceneRect = View.getRect(view);
+            var rotRect = View.getRect(v);
             var invRot = glm.mat4.invert(glm.mat4.create(), rot);
             fbAccumulator.bind();
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -16235,7 +16244,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
         function display(view) {
             gl.viewport(0, 0, resolution, resolution);
-            if (view.getFXAA() > 0 || view.getDofStrength() > 0) {
+            if (view.fxaa > 0 || view.dofStrength > 0) {
                 fbAO.bind();
             } else {
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -16245,18 +16254,18 @@ module.exports = function (canvas, resolution, aoResolution) {
             progAO.setUniform("uSceneDepth", "1i", tSceneDepth.index);
             progAO.setUniform("uAccumulatorOut", "1i", tAccumulatorOut.index);
             progAO.setUniform("uRes", "1f", resolution);
-            progAO.setUniform("uAO", "1f", 2.0 * view.getAmbientOcclusion());
-            progAO.setUniform("uBrightness", "1f", 2.0 * view.getBrightness());
-            progAO.setUniform("uOutlineStrength", "1f", view.getOutlineStrength());
+            progAO.setUniform("uAO", "1f", 2.0 * view.ao);
+            progAO.setUniform("uBrightness", "1f", 2.0 * view.brightness);
+            progAO.setUniform("uOutlineStrength", "1f", view.outline);
             rAO.render();
 
-            if (view.getFXAA() > 0) {
-                if (view.getDofStrength() > 0) {
+            if (view.fxaa > 0) {
+                if (view.dofStrength > 0) {
                     fbFXAA.bind();
                 } else {
                     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                 }
-                for (var i = 0; i < view.getFXAA(); i++) {
+                for (var i = 0; i < view.fxaa; i++) {
                     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                     if (i == 0) {
                         progFXAA.setUniform("uTexture", "1i", tAO.index);
@@ -16271,17 +16280,17 @@ module.exports = function (canvas, resolution, aoResolution) {
                 }
             }
 
-            if (view.getDofStrength() > 0) {
+            if (view.dofStrength > 0) {
                 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                if (view.getFXAA() > 0) {
+                if (view.fxaa > 0) {
                     progDOF.setUniform("uColor", "1i", tFXAA.index);
                 } else {
                     progDOF.setUniform("uColor", "1i", tAO.index);
                 }
                 progDOF.setUniform("uDepth", "1i", tSceneDepth.index);
-                progDOF.setUniform("uDOFPosition", "1f", view.getDofPosition());
-                progDOF.setUniform("uDOFStrength", "1f", view.getDofStrength());
+                progDOF.setUniform("uDOFPosition", "1f", view.dofPosition);
+                progDOF.setUniform("uDOFStrength", "1f", view.dofStrength);
                 progDOF.setUniform("uRes", "1f", resolution);
                 rDOF.render();
             }
@@ -16330,270 +16339,96 @@ for (var i = 0; i <= 118; i++) {
     MAX_ATOM_RADIUS = Math.max(MAX_ATOM_RADIUS, elements[i].radius);
 }
 
-
 function clamp(min, max, value) {
     return Math.min(max, Math.max(min, value));
 }
 
-
-module.exports = function View(serialized) {
-
-    var self = this;
-
-    var aspect = 1.0;
-    var zoom = 0.125;
-    var translation = {x: 0.0, y: 0.0};
-    var atomScale = 0.6;
-    var relativeAtomScale = 1.0;
-    var bondScale = 0.5;
-    var rotation = glm.mat4.create();
-    var ao = 0.5;
-    var aoRes = 128;
-    var brightness = 0.5;
-    var outlineStrength = 0.0;
-    var spf = 32;
-    var bonds = false;
-    var bondThreshold = 1.2;
-    var bondShade = 0.0;
-    var resolution = 768;
-    var dofStrength = 0.0;
-    var dofPosition = 0.5;
-    var fxaa = 1;
-
-    self.initialize = function() {
-        if (serialized !== undefined) {
-            self.deserialize(serialized);
-        }
+var _new = module.exports.new = function() {
+    return {
+        aspect: 1.0,
+        zoom: 0.125,
+        translation: {
+            x: 0.0,
+            y: 0.0
+        },
+        atomScale: 0.6,
+        relativeAtomScale: 1.0,
+        bondScale: 0.5,
+        rotation: glm.mat4.create(),
+        ao: 0.5,
+        aoRes: 128,
+        brightness: 0.5,
+        outline: 0.0,
+        spf: 32,
+        bonds: false,
+        bondThreshold: 1.2,
+        bondShade: 0.0,
+        resolution: 768,
+        dofStrength: 0.0,
+        dofPosition: 0.5,
+        fxaa: 1
     };
+};
 
-    self.serialize = function() {
-        return {
-            aspect: aspect,
-            zoom: zoom,
-            translation: {x: translation.x, y: translation.y},
-            atomScale: atomScale,
-            relativeAtomScale: relativeAtomScale,
-            bondScale: bondScale,
-            rotation: glm.mat4.clone(rotation),
-            ao: ao,
-            aoRes: aoRes,
-            brightness: brightness,
-            spf: spf,
-            resolution: resolution,
-            bonds: bonds,
-            bondThreshold: bondThreshold,
-            bondShade: bondShade,
-            outlineStrength: outlineStrength,
-            dofStrength: dofStrength,
-            dofPosition: dofPosition,
-            fxaa: fxaa
-        }
-    };
+var _clone = module.exports.clone = function(v) {
+    return _deserialize(_serialize(v));
+};
 
-    self.deserialize = function(data) {
-        aspect = data.aspect;
-        zoom = data.zoom;
-        translation = {x: data.translation.x, y: data.translation.y};
-        atomScale = data.atomScale;
-        relativeAtomScale = data.relativeAtomScale;
-        bondScale = data.bondScale;
-        rotation = glm.mat4.clone(data.rotation);
-        ao = data.ao;
-        aoRes = data.aoRes;
-        brightness = data.brightness;
-        spf = data.spf;
-        resolution = data.resolution;
-        bonds = data.bonds;
-        bondThreshold = data.bondThreshold;
-        bondShade = data.bondShade;
-        fxaa = data.fxaa;
-        outlineStrength = data.outlineStrength;
-        dofStrength = data.dofStrength;
-        dofPosition = data.dofPosition;
-    };
+var _serialize = module.exports.serialize = function(v) {
+    return JSON.stringify(v);
+};
 
-    self.clone = function() {
-        return new View(self.serialize());
-    };
-
-    self.setAORes = function(val) {
-        aoRes = val;
-    };
-
-    self.getAORes = function() {
-        return aoRes;
-    }
-
-    self.setDofStrength = function(val) {
-        dofStrength = clamp(0, 1, val);
-    };
-
-    self.getDofStrength = function() {
-        return dofStrength;
-    };
-
-    self.setDofPosition = function(val) {
-        dofPosition = clamp(0, 1, val);
-    };
-
-    self.getDofPosition = function() {
-        return dofPosition;
-    };
-
-    self.setResolution = function(res) {
-        resolution = res;
-    };
-
-    self.getResolution = function() {
-        return resolution;
-    };
-
-    self.setZoom = function(val) {
-        zoom = clamp(0.001, 2.0, val);
-    };
-
-    self.getZoom = function() {
-        return zoom;
-    };
-
-    self.translate = function(dx, dy) {
-        translation.x -= dx/(resolution * zoom);
-        translation.y += dy/(resolution * zoom);
-    };
-
-    self.getTranslation = function() {
-        return {x: translation.x, y: translation.y};
-    };
-
-    self.setTranslation = function(x, y) {
-        translation.x = x;
-        translation.y = y;
-    };
-
-    self.rotate = function(dx, dy) {
-        var m = glm.mat4.create();
-        glm.mat4.rotateY(m, m, dx * 0.005);
-        glm.mat4.rotateX(m, m, dy * 0.005);
-        glm.mat4.multiply(rotation, m, rotation);
-    };
-
-    self.setRotation = function(rot) {
-        rotation = glm.mat4.clone(rot);
-    };
-
-    self.getRotation = function() {
-        return glm.mat4.clone(rotation);
-    };
-
-    self.setAtomScale = function(val) {
-        atomScale = clamp(0, 1, val);
-    };
-
-    self.getAtomScale = function() {
-        return atomScale;
-    };
-
-    self.setRelativeAtomScale = function(val) {
-        relativeAtomScale = clamp(0, 1, val);
-    };
-
-    self.getRelativeAtomScale = function() {
-        return relativeAtomScale;
-    };
-
-    self.setBondScale = function(val) {
-        bondScale = clamp(0, 1, val);
-    };
-
-    self.getBondScale = function() {
-        return bondScale;
-    };
-
-    self.setBondShade = function(val) {
-        bondShade = clamp(0, 1, val);
-    };
-
-    self.getBondShade = function() {
-        return bondShade;
-    };
-
-    self.setAmbientOcclusion = function(val) {
-        ao = clamp(0, 1, val);
-    };
-
-    self.getAmbientOcclusion = function() {
-        return ao;
-    };
-
-    self.setBrightness = function(val) {
-        brightness = clamp(0, 1, val);
-    };
-
-    self.getBrightness = function() {
-        return brightness;
-    };
-
-    self.setSamplesPerFrame = function(val) {
-        spf = val;
-    };
-
-    self.getSamplesPerFrame = function() {
-        return spf;
-    };
-
-    self.setBonds = function(val) {
-        bonds = val;
-    }
-
-    self.getBonds = function() {
-        return bonds;
-    };
-
-    self.setBondThreshold = function(val) {
-        bondThreshold = val;
-    };
-
-    self.getBondThreshold = function() {
-        return bondThreshold;
-    };
-
-    self.setOutlineStrength = function(val) {
-        outlineStrength = clamp(0, 1, val);
-    };
-
-    self.getOutlineStrength = function() {
-        return outlineStrength;
-    };
-
-    self.setFXAA = function(val) {
-        fxaa = val;
-    };
-
-    self.getFXAA = function() {
-        return fxaa;
-    };
-
-    self.getRect = function() {
-        var width = 1.0/zoom;
-        var height = width/aspect;
-        var bottom = -height/2 + translation.y;
-        var top = height/2 + translation.y;
-        var left = -width/2 + translation.x;
-        var right = width/2 + translation.x;
-        return {
-            bottom: bottom,
-            top: top,
-            left: left,
-            right: right
-        }
-    };
-
-    self.getBondRadius = function() {
-        return bondScale * atomScale * (1 + (MIN_ATOM_RADIUS - 1) * relativeAtomScale);
-    };
-
-    self.initialize();
+var _deserialize = module.exports.deserialize = function(v) {
+    v = JSON.parse(v);
+    v.rotation = glm.mat4.clone(v.rotation);
+    return v;
 }
+
+var _resolve = module.exports.resolve = function(v) {
+    v.dofStrength = clamp(0, 1, v.dofStrength);
+    v.dofPosition = clamp(0, 1, v.dofPosition);
+    v.zoom = clamp(0.001, 2.0, v.zoom);
+    v.atomScale = clamp(0, 1, v.atomScale);
+    v.relativeAtomScale = clamp(0, 1, v.relativeAtomScale);
+    v.bondScale = clamp(0, 1, v.bondScale);
+    v.bondShade = clamp(0, 1, v.bondShade);
+    v.ao = clamp(0, 1, v.ao);
+    v.brightness = clamp(0, 1, v.brightness);
+    v.outline = clamp(0, 1, v.outline);
+};
+
+var _translate = module.exports.translate = function(v, dx, dy) {
+    v.translation.x -= dx/(resolution * zoom);
+    v.translation.y += dy/(resolution * zoom);
+};
+
+var _rotate = module.exports.rotate = function(v, dx, dy) {
+    var m = glm.mat4.create();
+    glm.mat4.rotateY(m, m, dx * 0.005);
+    glm.mat4.rotateX(m, m, dy * 0.005);
+    glm.mat4.multiply(v.rotation, m, v.rotation);
+};
+
+var _getRect = module.exports.getRect = function(v) {
+    var width = 1.0/v.zoom;
+    var height = width/v.aspect;
+    var bottom = -height/2 + v.translation.y;
+    var top = height/2 + v.translation.y;
+    var left = -width/2 + v.translation.x;
+    var right = width/2 + v.translation.x;
+    return {
+        bottom: bottom,
+        top: top,
+        left: left,
+        right: right
+    };
+};
+
+var _getBondRadius = module.exports.getBondRadius = function(v) {
+    return v.bondScale * v.atomScale * 
+        (1 + (MIN_ATOM_RADIUS - 1) * v.relativeAtomScale);
+};
+
 
 
 },{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./gl-matrix":"/home/rye/Dropbox/src/speck/src/gl-matrix.js"}],"/home/rye/Dropbox/src/speck/src/webgl.js":[function(require,module,exports){
