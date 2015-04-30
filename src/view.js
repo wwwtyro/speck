@@ -43,6 +43,13 @@ var _new = module.exports.new = function() {
     };
 };
 
+var _override = module.exports.override = function(v, data) {
+    for (var key in data) {
+        v[key] = data[key];
+    }
+    _resolve(v);
+}
+
 var _clone = module.exports.clone = function(v) {
     return _deserialize(_serialize(v));
 };
