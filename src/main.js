@@ -65,6 +65,7 @@ function loadStructure(data) {
     }
     atoms.center();
     renderer.setAtoms(atoms, view);
+    View.autoZoom(view, atoms);
     needReset = true;
 }
 
