@@ -16462,8 +16462,8 @@ var _resolve = module.exports.resolve = function(v) {
 
 
 var _translate = module.exports.translate = function(v, dx, dy) {
-    v.translation.x -= dx/(resolution * zoom);
-    v.translation.y += dy/(resolution * zoom);
+    v.translation.x -= dx/(v.resolution * v.zoom);
+    v.translation.y += dy/(v.resolution * v.zoom);
 };
 
 
