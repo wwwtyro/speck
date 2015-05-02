@@ -403,7 +403,48 @@ window.onload = function() {
     });
 
     document.getElementById("download-image-button").addEventListener("click", function(e) {
-        var imgURL = document.getElementById("renderer-canvas").toDataURL('image/png');
+        var imageFormatBox = document.getElementById("download-image-format-selector");
+        var mimetype = "";
+        var filename = "";
+        // Are there dictionaries/hashes/associative-arrays in Javascript?
+        //
+        // Also, support for these formats varies by browser. But because 
+        // javascript has aggressive defaults, PNG is output if a browser
+        // doesn't support the requested format. So, perhaps we should 
+        // only show options supported by a given browser?
+        //
+        // Web stuff is frustrating.
+        if(imageFormatBox.value == "png")
+        {
+            mimetype = 'image/png';
+            filename = 'render.png';
+        }
+        else if(imageFormatBox.value == "jpg")
+        {
+            mimetype = 'image/jpeg';
+            filename = 'render.jpg';
+        }
+        else if(imageFormatBox.value == "gif")
+        {
+            mimetype = 'image/gif';
+            filename = 'render.gif';
+        }
+        else if(imageFormatBox.value == "bmp")
+        {
+            mimetype = 'image/bmp';
+            filename = 'render.bmp';
+        }
+        else if(imageFormatBox.value == "webp")
+        {
+            mimetype = 'image/webp';
+            filename = 'render.webp';
+        }
+        else
+        {
+            //How do I throw errors??
+        }
+        var imgURL = document.getElementById("renderer-canvas").toDataURL(mimetype);
+        document.getElementById("download-image-button").download = filename;
         document.getElementById("download-image-button").href = imgURL;
     });
 
