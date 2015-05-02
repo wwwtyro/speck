@@ -402,6 +402,11 @@ window.onload = function() {
         this.select();
     });
 
+    document.getElementById("download-image-button").addEventListener("click", function(e) {
+        var imgURL = document.getElementById("renderer-canvas").toDataURL('image/png');
+        document.getElementById("download-image-button").href = imgURL;
+    });
+
 
     function updateControls() {
         document.getElementById("atom-radius").value = Math.round(view.atomScale * 100);
