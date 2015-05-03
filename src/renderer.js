@@ -62,7 +62,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
             // Initialize canvas/gl.
             canvas.width = canvas.height = resolution;
-            gl = canvas.getContext('webgl');
+            gl = canvas.getContext('webgl', {preserveDrawingBuffer:true}); //toDataURL requires this option
             gl.enable(gl.DEPTH_TEST);
             gl.enable(gl.CULL_FACE);
             gl.clearColor(0,0,0,0);

@@ -1,6 +1,6 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({"/home/rye/Dropbox/src/speck/node_modules/jquery/dist/jquery.js":[function(require,module,exports){
+(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /*!
- * jQuery JavaScript Library v2.1.3
+ * jQuery JavaScript Library v2.1.4
  * http://jquery.com/
  *
  * Includes Sizzle.js
@@ -10,7 +10,7 @@
  * Released under the MIT license
  * http://jquery.org/license
  *
- * Date: 2014-12-18T15:11Z
+ * Date: 2015-04-28T16:01Z
  */
 
 (function( global, factory ) {
@@ -68,7 +68,7 @@ var
 	// Use the correct document accordingly with window argument (sandbox)
 	document = window.document,
 
-	version = "2.1.3",
+	version = "2.1.4",
 
 	// Define a local copy of jQuery
 	jQuery = function( selector, context ) {
@@ -532,7 +532,12 @@ jQuery.each("Boolean Number String Function Array Date RegExp Object Error".spli
 });
 
 function isArraylike( obj ) {
-	var length = obj.length,
+
+	// Support: iOS 8.2 (not reproducible in simulator)
+	// `in` check used to prevent JIT error (gh-2145)
+	// hasOwn isn't used here due to false negatives
+	// regarding Nodelist length in IE
+	var length = "length" in obj && obj.length,
 		type = jQuery.type( obj );
 
 	if ( type === "function" || jQuery.isWindow( obj ) ) {
@@ -9205,7 +9210,7 @@ return jQuery;
 
 }));
 
-},{}],"/home/rye/Dropbox/src/speck/node_modules/keyboardjs/keyboard.js":[function(require,module,exports){
+},{}],2:[function(require,module,exports){
 /**
  * Title: KeyboardJS
  * Version: v0.4.1
@@ -10166,7 +10171,7 @@ return jQuery;
 	}
 });
 
-},{}],"/home/rye/Dropbox/src/speck/node_modules/lz-string/libs/lz-string.js":[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 // Copyright (c) 2013 Pieroxy <pieroxy@pieroxy.net>
 // This work is free. You can redistribute it and/or modify it
 // under the terms of the WTFPL, Version 2
@@ -10175,27 +10180,29 @@ return jQuery;
 // For more information, the home page:
 // http://pieroxy.net/blog/pages/lz-string/testing.html
 //
-// LZ-based compression algorithm, version 1.4.1
-var LZString = {
+// LZ-based compression algorithm, version 1.4.3
+var LZString = (function() {
 
-  // private property
-  _f : String.fromCharCode,
-  _keyStrBase64 : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
-  _keyStrUriSafe : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$",
-  _getBaseValue : function(alphabet, character) {
-    if (!LZString._baseReverseDic) LZString._baseReverseDic = {};
-    if (!LZString._baseReverseDic[alphabet]) {
-      LZString._baseReverseDic[alphabet] = {};
-      for (var i=0 ; i<alphabet.length ; i++) {
-        LZString._baseReverseDic[alphabet][alphabet[i]] = i;
-      }
+// private property
+var f = String.fromCharCode;
+var keyStrBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+var keyStrUriSafe = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$";
+var baseReverseDic = {};
+
+function getBaseValue(alphabet, character) {
+  if (!baseReverseDic[alphabet]) {
+    baseReverseDic[alphabet] = {};
+    for (var i=0 ; i<alphabet.length ; i++) {
+      baseReverseDic[alphabet][alphabet[i]] = i;
     }
-    return LZString._baseReverseDic[alphabet][character];
-  },
+  }
+  return baseReverseDic[alphabet][character];
+}
 
+var LZString = {
   compressToBase64 : function (input) {
     if (input == null) return "";
-    var res = LZString._compress(input, 6, function(a){return LZString._keyStrBase64.charAt(a);});
+    var res = LZString._compress(input, 6, function(a){return keyStrBase64.charAt(a);});
     switch (res.length % 4) { // To produce valid Base64
     default: // When could this happen ?
     case 0 : return res;
@@ -10208,12 +10215,12 @@ var LZString = {
   decompressFromBase64 : function (input) {
     if (input == null) return "";
     if (input == "") return null;
-    return LZString._decompress(input.length, 32, function(index) { return LZString._getBaseValue(LZString._keyStrBase64, input.charAt(index)); });
+    return LZString._decompress(input.length, 32, function(index) { return getBaseValue(keyStrBase64, input.charAt(index)); });
   },
 
   compressToUTF16 : function (input) {
     if (input == null) return "";
-    return LZString._compress(input, 15, function(a){return String.fromCharCode(a+32);}) + " ";
+    return LZString._compress(input, 15, function(a){return f(a+32);}) + " ";
   },
 
   decompressFromUTF16: function (compressed) {
@@ -10247,8 +10254,8 @@ var LZString = {
 
         var result = [];
         buf.forEach(function (c) {
-	  result.push(String.fromCharCode(c));
-	});
+          result.push(f(c));
+        });
         return LZString.decompress(result.join(''));
 
     }
@@ -10259,18 +10266,19 @@ var LZString = {
   //compress into a string that is already URI encoded
   compressToEncodedURIComponent: function (input) {
     if (input == null) return "";
-    return LZString._compress(input, 6, function(a){return LZString._keyStrUriSafe.charAt(a);});
+    return LZString._compress(input, 6, function(a){return keyStrUriSafe.charAt(a);});
   },
 
   //decompress from an output of compressToEncodedURIComponent
   decompressFromEncodedURIComponent:function (input) {
     if (input == null) return "";
     if (input == "") return null;
-    return LZString._decompress(input.length, 32, function(index) { return LZString._getBaseValue(LZString._keyStrUriSafe, input.charAt(index)); });
+    input = input.replace(/ /g, "+");
+    return LZString._decompress(input.length, 32, function(index) { return getBaseValue(keyStrUriSafe, input.charAt(index)); });
   },
 
   compress: function (uncompressed) {
-    return LZString._compress(uncompressed, 16, function(a){return String.fromCharCode(a);});
+    return LZString._compress(uncompressed, 16, function(a){return f(a);});
   },
   _compress: function (uncompressed, bitsPerChar, getCharFromInt) {
     if (uncompressed == null) return "";
@@ -10286,8 +10294,7 @@ var LZString = {
         context_data=[],
         context_data_val=0,
         context_data_position=0,
-        ii,
-        f=LZString._f;
+        ii;
 
     for (ii = 0; ii < uncompressed.length; ii += 1) {
       context_c = uncompressed[ii];
@@ -10508,7 +10515,6 @@ var LZString = {
         w,
         bits, resb, maxpower, power,
         c,
-        f = LZString._f,
         data = {val:getNextValue(0), position:resetValue, index:1};
 
     for (i = 0; i < 3; i += 1) {
@@ -10659,12 +10665,16 @@ var LZString = {
     }
   }
 };
+  return LZString;
+})();
 
-if( typeof module !== 'undefined' && module != null ) {
+if (typeof define === 'function' && define.amd) {
+  define(function () { return LZString; });
+} else if( typeof module !== 'undefined' && module != null ) {
   module.exports = LZString
 }
 
-},{}],"/home/rye/Dropbox/src/speck/src/atoms.js":[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 "use strict";
 
 var elements = require("./elements");
@@ -10755,7 +10765,7 @@ module.exports = function() {
 
     self.initialize();
 }
-},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js"}],"/home/rye/Dropbox/src/speck/src/cube.js":[function(require,module,exports){
+},{"./elements":6}],5:[function(require,module,exports){
 
 var n = -1;
 var p = 1;
@@ -10867,7 +10877,7 @@ module.exports = {
 	]
 
 };
-},{}],"/home/rye/Dropbox/src/speck/src/elements.js":[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 module.exports = {};
 module.exports[  0] = module.exports[ 'Xx'] = {'symbol':  'Xx', 'name':       'unknown', 'mass':   1.00000000, 'radius':  1.0000, 'color': [1.000, 0.078, 0.576], 'number': 0};
 module.exports[  1] = module.exports[  'H'] = {'symbol':   'H', 'name':      'hydrogen', 'mass':   1.00794000, 'radius':  0.3100, 'color': [1.000, 1.000, 1.000], 'number': 1};
@@ -10989,7 +10999,7 @@ module.exports[116] = module.exports['Uuh'] = {'symbol': 'Uuh', 'name':         
 module.exports[117] = module.exports['Uus'] = {'symbol': 'Uus', 'name':           'Uus', 'mass': 294.00000000, 'radius':  1.6500, 'color': [0.922, 0.000, 0.149], 'number': 117};
 module.exports[118] = module.exports['Uuo'] = {'symbol': 'Uuo', 'name':           'Uuo', 'mass': 296.00000000, 'radius':  1.5700, 'color': [0.922, 0.000, 0.149], 'number': 118};
 
-},{}],"/home/rye/Dropbox/src/speck/src/gl-matrix.js":[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 /**
  * @fileoverview gl-matrix - High performance matrix and vector operations
  * @author Brandon Jones
@@ -15306,7 +15316,7 @@ if(typeof(exports) !== 'undefined') {
   })(shim.exports);
 })(this);
 
-},{}],"/home/rye/Dropbox/src/speck/src/main.js":[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 "use strict";
 
 
@@ -15723,6 +15733,52 @@ window.onload = function() {
         this.select();
     });
 
+    document.getElementById("download-image-button").addEventListener("click", function(e) {
+        var imageFormatBox = document.getElementById("download-image-format-selector");
+        var mimetype = "";
+        var filename = "";
+        // Are there dictionaries/hashes/associative-arrays in Javascript?
+        //
+        // Also, support for these formats varies by browser. But because 
+        // javascript has aggressive defaults, PNG is output if a browser
+        // doesn't support the requested format. So, perhaps we should 
+        // only show options supported by a given browser?
+        //
+        // Web stuff is frustrating.
+        if(imageFormatBox.value == "png")
+        {
+            mimetype = 'image/png';
+            filename = 'render.png';
+        }
+        else if(imageFormatBox.value == "jpg")
+        {
+            mimetype = 'image/jpeg';
+            filename = 'render.jpg';
+        }
+        else if(imageFormatBox.value == "gif")
+        {
+            mimetype = 'image/gif';
+            filename = 'render.gif';
+        }
+        else if(imageFormatBox.value == "bmp")
+        {
+            mimetype = 'image/bmp';
+            filename = 'render.bmp';
+        }
+        else if(imageFormatBox.value == "webp")
+        {
+            mimetype = 'image/webp';
+            filename = 'render.webp';
+        }
+        else
+        {
+            //How do I throw errors??
+        }
+        var imgURL = document.getElementById("renderer-canvas").toDataURL(mimetype);
+        document.getElementById("download-image-button").download = filename;
+        document.getElementById("download-image-button").href = imgURL;
+    });
+
 
     function updateControls() {
         document.getElementById("atom-radius").value = Math.round(view.atomScale * 100);
@@ -15771,7 +15827,7 @@ window.onload = function() {
 
 }
 
-},{"./atoms":"/home/rye/Dropbox/src/speck/src/atoms.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./presets":"/home/rye/Dropbox/src/speck/src/presets.js","./renderer":"/home/rye/Dropbox/src/speck/src/renderer.js","./samples":"/home/rye/Dropbox/src/speck/src/samples.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./xyz":"/home/rye/Dropbox/src/speck/src/xyz.js","jquery":"/home/rye/Dropbox/src/speck/node_modules/jquery/dist/jquery.js","keyboardjs":"/home/rye/Dropbox/src/speck/node_modules/keyboardjs/keyboard.js","lz-string":"/home/rye/Dropbox/src/speck/node_modules/lz-string/libs/lz-string.js"}],"/home/rye/Dropbox/src/speck/src/presets.js":[function(require,module,exports){
+},{"./atoms":4,"./elements":6,"./presets":9,"./renderer":10,"./samples":11,"./view":12,"./xyz":14,"jquery":1,"keyboardjs":2,"lz-string":3}],9:[function(require,module,exports){
 module.exports = {
     default:  {
         atomScale: 0.6,
@@ -15809,7 +15865,7 @@ module.exports = {
         bondThreshold: 1.2,
     },
 };
-},{}],"/home/rye/Dropbox/src/speck/src/renderer.js":[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 "use strict";
 
 var glm = require('./gl-matrix');
@@ -15874,7 +15930,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
             // Initialize canvas/gl.
             canvas.width = canvas.height = resolution;
-            gl = canvas.getContext('webgl');
+            gl = canvas.getContext('webgl', {preserveDrawingBuffer:true}); //toDataURL requires this option
             gl.enable(gl.DEPTH_TEST);
             gl.enable(gl.CULL_FACE);
             gl.clearColor(0,0,0,0);
@@ -16372,7 +16428,8 @@ function loadProgram(gl, src) {
     src = src.split('// __split__');
     return new core.Program(gl, src[0], src[1]);
 }
-},{"./cube":"/home/rye/Dropbox/src/speck/src/cube.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./gl-matrix":"/home/rye/Dropbox/src/speck/src/gl-matrix.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./webgl.js":"/home/rye/Dropbox/src/speck/src/webgl.js"}],"/home/rye/Dropbox/src/speck/src/samples.js":[function(require,module,exports){
+
+},{"./cube":5,"./elements":6,"./gl-matrix":7,"./view":12,"./webgl.js":13}],11:[function(require,module,exports){
 module.exports = [
     {name: "Testosterone", file: "testosterone.xyz"},
     {name: "Caffeine", file: "caffeine.xyz"},
@@ -16385,7 +16442,7 @@ module.exports = [
     {name: "Methane", file: "methane.xyz"},
 ];
 
-},{}],"/home/rye/Dropbox/src/speck/src/view.js":[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 "use strict";
 
 
@@ -16519,7 +16576,7 @@ var _getBondRadius = module.exports.getBondRadius = function(v) {
 
 
 
-},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./gl-matrix":"/home/rye/Dropbox/src/speck/src/gl-matrix.js"}],"/home/rye/Dropbox/src/speck/src/webgl.js":[function(require,module,exports){
+},{"./elements":6,"./gl-matrix":7}],13:[function(require,module,exports){
 
 //|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 function buildAttribs(gl, layout) {
@@ -16835,7 +16892,7 @@ function Program(gl, vertexSource, fragmentSource) {
 //|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 module.exports.Program = Program;
 
-},{}],"/home/rye/Dropbox/src/speck/src/xyz.js":[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 module.exports = function(data) {
     var lines = data.split('\n');
     var natoms = parseInt(lines[0]);
@@ -16857,4 +16914,4 @@ module.exports = function(data) {
     return trajectory;
 }
 
-},{}]},{},["/home/rye/Dropbox/src/speck/src/main.js"]);
+},{}]},{},[8]);
