@@ -345,6 +345,7 @@ module.exports = function (canvas, resolution, aoResolution) {
             progAtoms.setUniform("uRes", "1f", resolution);
             progAtoms.setUniform("uDepth", "1f", range);
             progAtoms.setUniform("uMode", "1i", 0);
+            progAtoms.setUniform("uAtomShade", "1f", view.atomShade);
             rAtoms.render();
 
             if (view.bonds && rBonds != null) {
@@ -390,6 +391,7 @@ module.exports = function (canvas, resolution, aoResolution) {
             progAtoms.setUniform("uRes", "1f", resolution);
             progAtoms.setUniform("uDepth", "1f", range);
             progAtoms.setUniform("uMode", "1i", 1);
+            progAtoms.setUniform("uAtomShade", "1f", view.atomShade);
             rAtoms.render();
 
             if (view.bonds && rBonds != null) {
@@ -444,6 +446,7 @@ module.exports = function (canvas, resolution, aoResolution) {
             progAtoms.setUniform("uRes", "1f", aoResolution);
             progAtoms.setUniform("uDepth", "1f", range);
             progAtoms.setUniform("uMode", "1i", 0);
+            progAtoms.setUniform("uAtomShade", "1f", view.atomShade);
             rAtoms.render();
 
             if (view.bonds && rBonds != null) {

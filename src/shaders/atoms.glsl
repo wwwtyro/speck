@@ -11,6 +11,7 @@ uniform mat4 uProjection;
 uniform mat4 uModel;
 uniform float uAtomScale;
 uniform float uRelativeAtomScale;
+uniform float uAtomShade;
 
 varying vec3 vColor;
 varying vec3 vPosition;
@@ -19,7 +20,7 @@ varying float vRadius;
 void main() {
     vRadius = uAtomScale * (1.0 + (aRadius - 1.0) * uRelativeAtomScale);
     gl_Position = uProjection * uView * uModel * vec4(vRadius * aImposter + aPosition, 1.0);
-    vColor = aColor;
+    vColor = mix(aColor, vec3(1,1,1), uAtomShade);
     vPosition = vec3(uModel * vec4(aPosition, 1));
 }
 

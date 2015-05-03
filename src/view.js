@@ -38,6 +38,7 @@ var _new = module.exports.new = function() {
         bonds: false,
         bondThreshold: 1.2,
         bondShade: 0.0,
+        atomShade: 0.0,
         resolution: 768,
         dofStrength: 0.0,
         dofPosition: 0.5,
@@ -84,6 +85,7 @@ var _resolve = module.exports.resolve = function(v) {
     v.relativeAtomScale = clamp(0, 1, v.relativeAtomScale);
     v.bondScale = clamp(0, 1, v.bondScale);
     v.bondShade = clamp(0, 1, v.bondShade);
+    v.atomShade = clamp(0, 1, v.atomShade);
     v.ao = clamp(0, 1, v.ao);
     v.brightness = clamp(0, 1, v.brightness);
     v.outline = clamp(0, 1, v.outline);
@@ -93,6 +95,7 @@ var _resolve = module.exports.resolve = function(v) {
 var _translate = module.exports.translate = function(v, dx, dy) {
     v.translation.x -= dx/(v.resolution * v.zoom);
     v.translation.y += dy/(v.resolution * v.zoom);
+    _resolve(v);
 };
 
 
@@ -101,6 +104,7 @@ var _rotate = module.exports.rotate = function(v, dx, dy) {
     glm.mat4.rotateY(m, m, dx * 0.005);
     glm.mat4.rotateX(m, m, dy * 0.005);
     glm.mat4.multiply(v.rotation, m, v.rotation);
+    _resolve(v);
 };
 
 
