@@ -47,8 +47,28 @@ var _new = module.exports.new = function() {
 };
 
 
-var _autoZoom = module.exports.autoZoom = function(v, atoms) {
-    v.zoom = 1/atoms.getRadius(v);
+var _center = module.exports.center = function(v, atoms) {
+    var maxX = -Infinity;
+    var minX = Infinity;
+    var maxY = -Infinity;
+    var minY = Infinity;
+    for(var i = 0; i < atoms.atoms.length; i++) {
+        var a = atoms.atoms[i];
+        var r = elements[a.symbol].radius;
+        r = 2.5 * v.atomScale * (1 + (r - 1) * v.relativeAtomScale);
+        var p = glm.vec4.fromValues(a.x, a.y, a.z, 0);
+        glm.vec4.transformMat4(p, p, v.rotation);
+        maxX = Math.max(maxX, p[0] + r);
+        minX = Math.min(minX, p[0] - r);
+        maxY = Math.max(maxY, p[1] + r);
+        minY = Math.min(minY, p[1] - r);
+    }
+    var cx = minX + (maxX - minX) / 2.0;
+    var cy = minY + (maxY - minY) / 2.0;
+    v.translation.x = cx;
+    v.translation.y = cy;
+    var scale = Math.max(maxX - minX, maxY - minY);
+    v.zoom = 1/(scale * 1.01);
 };
 
 

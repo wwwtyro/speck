@@ -65,7 +65,7 @@ function loadStructure(data) {
     }
     atoms.center();
     renderer.setAtoms(atoms, view);
-    View.autoZoom(view, atoms);
+    View.center(view, atoms);
     needReset = true;
 }
 
@@ -410,6 +410,11 @@ window.onload = function() {
         document.getElementById("share-url").value = location.href.split("#")[0] + "#" + data;
     });
 
+    document.getElementById("center-button").addEventListener("click", function(e) {
+        View.center(view, atoms);
+        needReset = true;
+    });
+
     document.getElementById("share-url").addEventListener("click", function(e) {
         this.select();
     });
@@ -483,6 +488,7 @@ window.onload = function() {
     updateControls();
 
     function loop() {
+
         document.getElementById("atom-radius-text").innerHTML = Math.round(view.atomScale * 100) + "%";
         document.getElementById("relative-atom-radius-text").innerHTML = Math.round(view.relativeAtomScale * 100) + "%";
         document.getElementById("bond-radius-text").innerHTML = Math.round(view.bondScale * 100) + "%";
