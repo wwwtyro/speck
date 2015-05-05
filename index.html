@@ -8,9 +8,11 @@
     </head>
 
     <body>
+        
         <div id="render-container">
             <canvas id="renderer-canvas"></canvas>
         </div>
+
         <div id="controls-container">
 
             <div id="controls-menu">
@@ -21,7 +23,7 @@
                 <button id="menu-button-about">About</button>
             </div>
 
-            <div id="controls-structure">
+            <div id="controls-structure" class="controls-pane">
 
                 <h2>Samples</h2>
 
@@ -37,7 +39,7 @@
 
             </div>
 
-            <div id="controls-render">
+            <div id="controls-render" class="controls-pane">
 
                 <table>
                     <tr>
@@ -179,7 +181,7 @@
                 
             </div>
 
-            <div id="controls-share">
+            <div id="controls-share" class="controls-pane">
 
                 <button id="share-url-button">Click this</button>then share the url below.<br><br>
                 <textarea id="share-url" cols="48" rows="8"></textarea><br><br>
@@ -198,7 +200,7 @@
 
             </div>
 
-            <div id="controls-help">
+            <div id="controls-help" class="controls-pane">
 
                 <p>
                     Speck has been tested against recent Firefox and Chrome browsers. Performance
@@ -210,7 +212,7 @@
 
             </div>
 
-            <div id="controls-about">
+            <div id="controls-about" class="controls-pane">
 
                 <h2>Speck</h2>
                 High quality atomistic system rendering.<br><br>

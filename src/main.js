@@ -273,7 +273,8 @@ window.onload = function() {
         renderContainer.style.left = rcm + "px";
         renderContainer.style.top = rcm + "px";
         menu.style.left = 48 + rcw + rcm * 2 + "px";
-        menu.style.top = 48 + rcm + "px";
+        menu.style.top = rcm + "px";
+        menu.style.height = rcw + "px";
     }
 
     reflow();
