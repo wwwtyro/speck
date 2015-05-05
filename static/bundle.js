@@ -15468,9 +15468,9 @@ window.onload = function() {
         needReset = true;
     });
 
-    renderContainer.addEventListener("mousewheel", function(e) {
+    renderContainer.addEventListener("wheel", function(e) {
         var wd = 0;
-        if (e.wheelDelta > 0) {
+        if (e.deltaY < 0) {
             wd = 1;
         }
         else {
