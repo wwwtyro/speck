@@ -1,4 +1,4 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({"/home/rye/Dropbox/src/speck/node_modules/jquery/dist/jquery.js":[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.1.3
  * http://jquery.com/
@@ -9205,7 +9205,7 @@ return jQuery;
 
 }));
 
-},{}],2:[function(require,module,exports){
+},{}],"/home/rye/Dropbox/src/speck/node_modules/keyboardjs/keyboard.js":[function(require,module,exports){
 /**
  * Title: KeyboardJS
  * Version: v0.4.1
@@ -10166,7 +10166,7 @@ return jQuery;
 	}
 });
 
-},{}],3:[function(require,module,exports){
+},{}],"/home/rye/Dropbox/src/speck/node_modules/lz-string/libs/lz-string.js":[function(require,module,exports){
 // Copyright (c) 2013 Pieroxy <pieroxy@pieroxy.net>
 // This work is free. You can redistribute it and/or modify it
 // under the terms of the WTFPL, Version 2
@@ -10664,7 +10664,7 @@ if( typeof module !== 'undefined' && module != null ) {
   module.exports = LZString
 }
 
-},{}],4:[function(require,module,exports){
+},{}],"/home/rye/Dropbox/src/speck/src/atoms.js":[function(require,module,exports){
 "use strict";
 
 var elements = require("./elements");
@@ -10755,7 +10755,7 @@ module.exports = function() {
 
     self.initialize();
 }
-},{"./elements":6}],5:[function(require,module,exports){
+},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js"}],"/home/rye/Dropbox/src/speck/src/cube.js":[function(require,module,exports){
 
 var n = -1;
 var p = 1;
@@ -10867,7 +10867,7 @@ module.exports = {
 	]
 
 };
-},{}],6:[function(require,module,exports){
+},{}],"/home/rye/Dropbox/src/speck/src/elements.js":[function(require,module,exports){
 module.exports = {};
 module.exports[  0] = module.exports[ 'Xx'] = {'symbol':  'Xx', 'name':       'unknown', 'mass':   1.00000000, 'radius':  1.0000, 'color': [1.000, 0.078, 0.576], 'number': 0};
 module.exports[  1] = module.exports[  'H'] = {'symbol':   'H', 'name':      'hydrogen', 'mass':   1.00794000, 'radius':  0.3100, 'color': [1.000, 1.000, 1.000], 'number': 1};
@@ -10989,7 +10989,7 @@ module.exports[116] = module.exports['Uuh'] = {'symbol': 'Uuh', 'name':         
 module.exports[117] = module.exports['Uus'] = {'symbol': 'Uus', 'name':           'Uus', 'mass': 294.00000000, 'radius':  1.6500, 'color': [0.922, 0.000, 0.149], 'number': 117};
 module.exports[118] = module.exports['Uuo'] = {'symbol': 'Uuo', 'name':           'Uuo', 'mass': 296.00000000, 'radius':  1.5700, 'color': [0.922, 0.000, 0.149], 'number': 118};
 
-},{}],7:[function(require,module,exports){
+},{}],"/home/rye/Dropbox/src/speck/src/gl-matrix.js":[function(require,module,exports){
 /**
  * @fileoverview gl-matrix - High performance matrix and vector operations
  * @author Brandon Jones
@@ -15306,7 +15306,7 @@ if(typeof(exports) !== 'undefined') {
   })(shim.exports);
 })(this);
 
-},{}],8:[function(require,module,exports){
+},{}],"/home/rye/Dropbox/src/speck/src/main.js":[function(require,module,exports){
 "use strict";
 
 
@@ -15374,7 +15374,7 @@ function loadStructure(data) {
     }
     atoms.center();
     renderer.setAtoms(atoms, view);
-    View.center(view, atoms);
+    view = View.center(view, atoms);
     needReset = true;
 }
 
@@ -15461,9 +15461,9 @@ window.onload = function() {
         lastX = e.clientX;
         lastY = e.clientY;
         if (e.shiftKey) {
-            View.translate(view, dx, dy);
+            view = View.translate(view, dx, dy);
         } else {
-            View.rotate(view, dx, dy);
+            view = View.rotate(view, dx, dy);
         }
         needReset = true;
     });
@@ -15478,54 +15478,54 @@ window.onload = function() {
         }
         if (kb.active("a")) {
             view.atomScale += wd/100;
-            View.resolve(view);
+            view = View.resolve(view);
             document.getElementById("atom-radius").value = Math.round(view.atomScale * 100);
             needReset = true;
         } else if (kb.active("z")) {
             var scale = view.relativeAtomScale;
             scale += wd/100;
             view.relativeAtomScale += wd/100;
-            View.resolve(view);
+            view = View.resolve(view);
             document.getElementById("relative-atom-radius").value = Math.round(view.relativeAtomScale * 100);
             needReset = true;
         } else if (kb.active("d")) {
             view.dofStrength += wd/100;
-            View.resolve(view);
+            view = View.resolve(view);
             document.getElementById("dof-strength").value = Math.round(view.dofStrength * 100);
         } else if (kb.active("p")) {
             view.dofPosition += wd/100;
-            View.resolve(view);
+            view = View.resolve(view);
             document.getElementById("dof-position").value = Math.round(view.dofPosition * 100);
         } else if (kb.active("b")) {
             view.bondScale += wd/100;
-            View.resolve(view);
+            view = View.resolve(view);
             document.getElementById("bond-radius").value = Math.round(view.bondScale * 100);
             needReset = true;
         } else if (kb.active("s")) {
             view.bondShade += wd/100;
-            View.resolve(view);
+            view = View.resolve(view);
             document.getElementById("bond-shade").value = Math.round(view.bondShade * 100);
             needReset = true;
         } else if (kb.active("w")) {
             view.atomShade += wd/100;
-            View.resolve(view);
+            view = View.resolve(view);
             document.getElementById("atom-shade").value = Math.round(view.atomShade * 100);
             needReset = true;
         } else if (kb.active("o")) {
             view.ao += wd/100;
-            View.resolve(view);
+            view = View.resolve(view);
             document.getElementById("ambient-occlusion").value = Math.round(view.ao * 100);
         } else if (kb.active("l")) {
             view.brightness += wd/100;
-            View.resolve(view);
+            view = View.resolve(view);
             document.getElementById("brightness").value = Math.round(view.brightness * 100);
         } else if (kb.active("q")) {
             view.outline += wd/100;
-            View.resolve(view);
+            view = View.resolve(view);
             document.getElementById("outline-strength").value = Math.round(view.outline * 100);
         } else {
             view.zoom = view.zoom * (wd === 1 ? 1/0.9 : 0.9);
-            View.resolve(view);
+            view = View.resolve(view);
             needReset = true;
         }
         e.preventDefault();
@@ -15601,66 +15601,66 @@ window.onload = function() {
     document.getElementById("atom-radius").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("atom-radius").value);
         view.atomScale = scale/100;
-        View.resolve(view);
+        view = View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("relative-atom-radius").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("relative-atom-radius").value);
         view.relativeAtomScale = scale/100;
-        View.resolve(view);
+        view = View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("dof-strength").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("dof-strength").value);
         view.dofStrength = scale/100;
-        View.resolve(view);
+        view = View.resolve(view);
     });
 
     document.getElementById("dof-position").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("dof-position").value);
         view.dofPosition = scale/100;
-        View.resolve(view);
+        view = View.resolve(view);
     });
 
     document.getElementById("bond-radius").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("bond-radius").value);
         view.bondScale = scale/100;
-        View.resolve(view);
+        view = View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("bond-shade").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("bond-shade").value);
         view.bondShade = scale/100;
-        View.resolve(view);
+        view = View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("atom-shade").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("atom-shade").value);
         view.atomShade = scale/100;
-        View.resolve(view);
+        view = View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("ambient-occlusion").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("ambient-occlusion").value);
         view.ao = scale/100;
-        View.resolve(view);
+        view = View.resolve(view);
     });
 
     document.getElementById("brightness").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("brightness").value);
         view.brightness = scale/100;
-        View.resolve(view);
+        view = View.resolve(view);
     });
 
     document.getElementById("ao-resolution").addEventListener("change", function(e) {
         var resolution = parseInt(document.getElementById("ao-resolution").value);
         view.aoRes = resolution;
-        View.resolve(view);
+        view = View.resolve(view);
         renderer.setResolution(view.resolution, view.aoRes);
         needReset = true;
     });
@@ -15668,7 +15668,7 @@ window.onload = function() {
     document.getElementById("outline-strength").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("outline-strength").value);
         view.outline = scale/100;
-        View.resolve(view);
+        view = View.resolve(view);
     });
 
     document.getElementById("samples-per-frame").addEventListener("change", function(e) {
@@ -15679,14 +15679,14 @@ window.onload = function() {
     document.getElementById("resolution").addEventListener("change", function(e) {
         var resolution = parseInt(document.getElementById("resolution").value);
         view.resolution = resolution;
-        View.resolve(view);
+        view = View.resolve(view);
         renderer.setResolution(resolution, view.aoRes);
         needReset = true;
     });
 
     document.getElementById("view-preset").addEventListener("change", function(e) {
         var preset = document.getElementById("view-preset").value;
-        View.override(view, presets[preset]);
+        view = View.override(view, presets[preset]);
         updateControls();
         renderer.setAtoms(atoms, view);
         needReset = true;
@@ -15694,21 +15694,21 @@ window.onload = function() {
 
     document.getElementById("bonds").addEventListener("click", function(e) {
         view.bonds = document.getElementById("bonds").checked;
-        View.resolve(view);
+        view = View.resolve(view);
         renderer.setAtoms(atoms, view);
         needReset = true;
     });
 
     document.getElementById("bond-threshold").addEventListener("change", function(e) {
         view.bondThreshold = parseFloat(document.getElementById("bond-threshold").value);
-        View.resolve(view);
+        view = View.resolve(view);
         renderer.setAtoms(atoms, view);
         needReset = true;
     });
 
     document.getElementById("fxaa").addEventListener("change", function(e) {
         view.fxaa = parseInt(document.getElementById("fxaa").value);
-        View.resolve(view);
+        view = View.resolve(view);
     });
 
     document.getElementById("share-url-button").addEventListener("click", function(e) {
@@ -15721,7 +15721,7 @@ window.onload = function() {
     });
 
     document.getElementById("center-button").addEventListener("click", function(e) {
-        View.center(view, atoms);
+        view = View.center(view, atoms);
         needReset = true;
     });
 
@@ -15824,7 +15824,7 @@ window.onload = function() {
 
 }
 
-},{"./atoms":4,"./elements":6,"./presets":9,"./renderer":10,"./samples":11,"./view":12,"./xyz":14,"jquery":1,"keyboardjs":2,"lz-string":3}],9:[function(require,module,exports){
+},{"./atoms":"/home/rye/Dropbox/src/speck/src/atoms.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./presets":"/home/rye/Dropbox/src/speck/src/presets.js","./renderer":"/home/rye/Dropbox/src/speck/src/renderer.js","./samples":"/home/rye/Dropbox/src/speck/src/samples.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./xyz":"/home/rye/Dropbox/src/speck/src/xyz.js","jquery":"/home/rye/Dropbox/src/speck/node_modules/jquery/dist/jquery.js","keyboardjs":"/home/rye/Dropbox/src/speck/node_modules/keyboardjs/keyboard.js","lz-string":"/home/rye/Dropbox/src/speck/node_modules/lz-string/libs/lz-string.js"}],"/home/rye/Dropbox/src/speck/src/presets.js":[function(require,module,exports){
 module.exports = {
     default:  {
         atomScale: 0.6,
@@ -15862,7 +15862,7 @@ module.exports = {
         bondThreshold: 1.2,
     },
 };
-},{}],10:[function(require,module,exports){
+},{}],"/home/rye/Dropbox/src/speck/src/renderer.js":[function(require,module,exports){
 "use strict";
 
 var glm = require('./gl-matrix');
@@ -16426,7 +16426,7 @@ function loadProgram(gl, src) {
     return new core.Program(gl, src[0], src[1]);
 }
 
-},{"./cube":5,"./elements":6,"./gl-matrix":7,"./view":12,"./webgl.js":13}],11:[function(require,module,exports){
+},{"./cube":"/home/rye/Dropbox/src/speck/src/cube.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./gl-matrix":"/home/rye/Dropbox/src/speck/src/gl-matrix.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./webgl.js":"/home/rye/Dropbox/src/speck/src/webgl.js"}],"/home/rye/Dropbox/src/speck/src/samples.js":[function(require,module,exports){
 module.exports = [
     {name: "Testosterone", file: "testosterone.xyz"},
     {name: "Caffeine", file: "caffeine.xyz"},
@@ -16439,7 +16439,7 @@ module.exports = [
     {name: "Methane", file: "methane.xyz"},
 ];
 
-},{}],12:[function(require,module,exports){
+},{}],"/home/rye/Dropbox/src/speck/src/view.js":[function(require,module,exports){
 "use strict";
 
 
@@ -16490,6 +16490,7 @@ var _new = module.exports.new = function() {
 
 
 var _center = module.exports.center = function(v, atoms) {
+    v = _clone(v);
     var maxX = -Infinity;
     var minX = Infinity;
     var maxY = -Infinity;
@@ -16511,14 +16512,17 @@ var _center = module.exports.center = function(v, atoms) {
     v.translation.y = cy;
     var scale = Math.max(maxX - minX, maxY - minY);
     v.zoom = 1/(scale * 1.01);
+    return v;
 };
 
 
 var _override = module.exports.override = function(v, data) {
+    v = _clone(v);
     for (var key in data) {
         v[key] = data[key];
     }
     _resolve(v);
+    return v;
 };
 
 
@@ -16540,6 +16544,7 @@ var _deserialize = module.exports.deserialize = function(v) {
 
 
 var _resolve = module.exports.resolve = function(v) {
+    v = _clone(v);
     v.dofStrength = clamp(0, 1, v.dofStrength);
     v.dofPosition = clamp(0, 1, v.dofPosition);
     v.zoom = clamp(0.001, 2.0, v.zoom);
@@ -16551,22 +16556,27 @@ var _resolve = module.exports.resolve = function(v) {
     v.ao = clamp(0, 1, v.ao);
     v.brightness = clamp(0, 1, v.brightness);
     v.outline = clamp(0, 1, v.outline);
+    return v;
 };
 
 
 var _translate = module.exports.translate = function(v, dx, dy) {
+    v = _clone(v);
     v.translation.x -= dx/(v.resolution * v.zoom);
     v.translation.y += dy/(v.resolution * v.zoom);
     _resolve(v);
+    return v;
 };
 
 
 var _rotate = module.exports.rotate = function(v, dx, dy) {
+    v = _clone(v);
     var m = glm.mat4.create();
     glm.mat4.rotateY(m, m, dx * 0.005);
     glm.mat4.rotateX(m, m, dy * 0.005);
     glm.mat4.multiply(v.rotation, m, v.rotation);
     _resolve(v);
+    return v;
 };
 
 
@@ -16593,7 +16603,7 @@ var _getBondRadius = module.exports.getBondRadius = function(v) {
 
 
 
-},{"./elements":6,"./gl-matrix":7}],13:[function(require,module,exports){
+},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./gl-matrix":"/home/rye/Dropbox/src/speck/src/gl-matrix.js"}],"/home/rye/Dropbox/src/speck/src/webgl.js":[function(require,module,exports){
 
 //|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 function buildAttribs(gl, layout) {
@@ -16909,7 +16919,7 @@ function Program(gl, vertexSource, fragmentSource) {
 //|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 module.exports.Program = Program;
 
-},{}],14:[function(require,module,exports){
+},{}],"/home/rye/Dropbox/src/speck/src/xyz.js":[function(require,module,exports){
 module.exports = function(data) {
     var lines = data.split('\n');
     var natoms = parseInt(lines[0]);
@@ -16931,4 +16941,4 @@ module.exports = function(data) {
     return trajectory;
 }
 
-},{}]},{},[8]);
+},{}]},{},["/home/rye/Dropbox/src/speck/src/main.js"]);
