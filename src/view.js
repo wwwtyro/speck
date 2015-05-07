@@ -48,6 +48,7 @@ var _new = module.exports.new = function() {
 
 
 var _center = module.exports.center = function(v, atoms) {
+    v = _clone(v);
     var maxX = -Infinity;
     var minX = Infinity;
     var maxY = -Infinity;
@@ -69,14 +70,17 @@ var _center = module.exports.center = function(v, atoms) {
     v.translation.y = cy;
     var scale = Math.max(maxX - minX, maxY - minY);
     v.zoom = 1/(scale * 1.01);
+    return v;
 };
 
 
 var _override = module.exports.override = function(v, data) {
+    v = _clone(v);
     for (var key in data) {
         v[key] = data[key];
     }
     _resolve(v);
+    return v;
 };
 
 
@@ -98,6 +102,7 @@ var _deserialize = module.exports.deserialize = function(v) {
 
 
 var _resolve = module.exports.resolve = function(v) {
+    v = _clone(v);
     v.dofStrength = clamp(0, 1, v.dofStrength);
     v.dofPosition = clamp(0, 1, v.dofPosition);
     v.zoom = clamp(0.001, 2.0, v.zoom);
@@ -109,22 +114,27 @@ var _resolve = module.exports.resolve = function(v) {
     v.ao = clamp(0, 1, v.ao);
     v.brightness = clamp(0, 1, v.brightness);
     v.outline = clamp(0, 1, v.outline);
+    return v;
 };
 
 
 var _translate = module.exports.translate = function(v, dx, dy) {
+    v = _clone(v);
     v.translation.x -= dx/(v.resolution * v.zoom);
     v.translation.y += dy/(v.resolution * v.zoom);
     _resolve(v);
+    return v;
 };
 
 
 var _rotate = module.exports.rotate = function(v, dx, dy) {
+    v = _clone(v);
     var m = glm.mat4.create();
     glm.mat4.rotateY(m, m, dx * 0.005);
     glm.mat4.rotateX(m, m, dy * 0.005);
     glm.mat4.multiply(v.rotation, m, v.rotation);
     _resolve(v);
+    return v;
 };
 
 
