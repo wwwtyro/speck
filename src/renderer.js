@@ -6,6 +6,7 @@ var fs = require('fs');
 var cube = require("./cube");
 var elements = require("./elements");
 var View = require("./view");
+var System = require("./system");
 
 module.exports = function (canvas, resolution, aoResolution) {
 
@@ -13,7 +14,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
         var range,
             samples,
-            atoms;
+            system;
 
         var gl, 
             canvas;
@@ -168,7 +169,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
         self.setAtoms = function(newAtoms, view) {
 
-            atoms = newAtoms;
+            system = newAtoms;
 
             function make36(arr) {
                 var out = [];
@@ -188,9 +189,9 @@ module.exports = function (canvas, resolution, aoResolution) {
             var radius = [];
             var color = [];
 
-            for (var i = 0; i < atoms.atoms.length; i++) {
+            for (var i = 0; i < system.atoms.length; i++) {
                 imposter.push.apply(imposter, cube.position);
-                var a = atoms.atoms[i];
+                var a = system.atoms[i];
                 position.push.apply(position, make36([a.x, a.y, a.z]));
                 radius.push.apply(radius, make36([elements[a.symbol].radius]));
                 var c = elements[a.symbol].color;
@@ -212,10 +213,10 @@ module.exports = function (canvas, resolution, aoResolution) {
 
                 var bonds = [];
 
-                for (var i = 0; i < atoms.atoms.length - 1; i++) {
-                    for (var j = i + 1; j < atoms.atoms.length; j++) {
-                        var a = atoms.atoms[i];
-                        var b = atoms.atoms[j];
+                for (var i = 0; i < system.atoms.length - 1; i++) {
+                    for (var j = i + 1; j < system.atoms.length; j++) {
+                        var a = system.atoms[i];
+                        var b = system.atoms[j];
                         var l = glm.vec3.fromValues(a.x, a.y, a.z);
                         var m = glm.vec3.fromValues(b.x, b.y, b.z);
                         var cutoff = elements[a.symbol].radius + elements[b.symbol].radius;
@@ -297,14 +298,14 @@ module.exports = function (canvas, resolution, aoResolution) {
         }
 
         self.render = function(view) {
-            if (atoms === undefined) {
+            if (system === undefined) {
                 return;
             }
             if (rAtoms == null) {
                 return;
             }
 
-            range = atoms.getRadius(view) * 2.0;
+            range = System.getRadius(system) * 2.0;
 
             if (!colorRendered) {
                 color(view);

@@ -18,7 +18,7 @@ function clamp(min, max, value) {
 }
 
 
-var _new = module.exports.new = function() {
+var newView = module.exports.new = function() {
     return {
         aspect: 1.0,
         zoom: 0.125,
@@ -31,14 +31,14 @@ var _new = module.exports.new = function() {
         bondScale: 0.5,
         rotation: glm.mat4.create(),
         ao: 0.5,
-        aoRes: 128,
+        aoRes: 256,
         brightness: 0.5,
         outline: 0.0,
         spf: 32,
         bonds: false,
         bondThreshold: 1.2,
         bondShade: 0.0,
-        atomShade: 0.0,
+        atomShade: 0.5,
         resolution: 768,
         dofStrength: 0.0,
         dofPosition: 0.5,
@@ -47,14 +47,13 @@ var _new = module.exports.new = function() {
 };
 
 
-var _center = module.exports.center = function(v, atoms) {
-    v = _clone(v);
+var center = module.exports.center = function(v, system) {
     var maxX = -Infinity;
     var minX = Infinity;
     var maxY = -Infinity;
     var minY = Infinity;
-    for(var i = 0; i < atoms.atoms.length; i++) {
-        var a = atoms.atoms[i];
+    for(var i = 0; i < system.atoms.length; i++) {
+        var a = system.atoms[i];
         var r = elements[a.symbol].radius;
         r = 2.5 * v.atomScale * (1 + (r - 1) * v.relativeAtomScale);
         var p = glm.vec4.fromValues(a.x, a.y, a.z, 0);
@@ -70,39 +69,35 @@ var _center = module.exports.center = function(v, atoms) {
     v.translation.y = cy;
     var scale = Math.max(maxX - minX, maxY - minY);
     v.zoom = 1/(scale * 1.01);
-    return v;
 };
 
 
-var _override = module.exports.override = function(v, data) {
-    v = _clone(v);
+var override = module.exports.override = function(v, data) {
     for (var key in data) {
         v[key] = data[key];
     }
-    _resolve(v);
-    return v;
+    resolve(v);
 };
 
 
-var _clone = module.exports.clone = function(v) {
-    return _deserialize(_serialize(v));
+var clone = module.exports.clone = function(v) {
+    return deserialize(serialize(v));
 };
 
 
-var _serialize = module.exports.serialize = function(v) {
+var serialize = module.exports.serialize = function(v) {
     return JSON.stringify(v);
 };
 
 
-var _deserialize = module.exports.deserialize = function(v) {
+var deserialize = module.exports.deserialize = function(v) {
     v = JSON.parse(v);
     v.rotation = glm.mat4.clone(v.rotation);
     return v;
 };
 
 
-var _resolve = module.exports.resolve = function(v) {
-    v = _clone(v);
+var resolve = module.exports.resolve = function(v) {
     v.dofStrength = clamp(0, 1, v.dofStrength);
     v.dofPosition = clamp(0, 1, v.dofPosition);
     v.zoom = clamp(0.001, 2.0, v.zoom);
@@ -114,31 +109,26 @@ var _resolve = module.exports.resolve = function(v) {
     v.ao = clamp(0, 1, v.ao);
     v.brightness = clamp(0, 1, v.brightness);
     v.outline = clamp(0, 1, v.outline);
-    return v;
 };
 
 
-var _translate = module.exports.translate = function(v, dx, dy) {
-    v = _clone(v);
+var translate = module.exports.translate = function(v, dx, dy) {
     v.translation.x -= dx/(v.resolution * v.zoom);
     v.translation.y += dy/(v.resolution * v.zoom);
-    _resolve(v);
-    return v;
+    resolve(v);
 };
 
 
-var _rotate = module.exports.rotate = function(v, dx, dy) {
-    v = _clone(v);
+var rotate = module.exports.rotate = function(v, dx, dy) {
     var m = glm.mat4.create();
     glm.mat4.rotateY(m, m, dx * 0.005);
     glm.mat4.rotateX(m, m, dy * 0.005);
     glm.mat4.multiply(v.rotation, m, v.rotation);
-    _resolve(v);
-    return v;
+    resolve(v);
 };
 
 
-var _getRect = module.exports.getRect = function(v) {
+var getRect = module.exports.getRect = function(v) {
     var width = 1.0/v.zoom;
     var height = width/v.aspect;
     var bottom = -height/2 + v.translation.y;
@@ -154,7 +144,7 @@ var _getRect = module.exports.getRect = function(v) {
 };
 
 
-var _getBondRadius = module.exports.getBondRadius = function(v) {
+var getBondRadius = module.exports.getBondRadius = function(v) {
     return v.bondScale * v.atomScale * 
         (1 + (MIN_ATOM_RADIUS - 1) * v.relativeAtomScale);
 };

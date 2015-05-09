@@ -7,7 +7,7 @@ var $ = require("jquery");
 
 var Renderer = require("./renderer");
 var View = require("./view");
-var Atoms = require("./atoms");
+var System = require("./system");
 var xyz = require("./xyz");
 var samples = require("./samples");
 var elements = require("./elements");
@@ -47,7 +47,7 @@ kb.active = function(key) {
     return false;
 }
 
-var atoms = new Atoms();
+var system = System.new();
 var view = View.new();
 var renderer = null;
 var needReset = false;
@@ -55,17 +55,17 @@ var needReset = false;
 var renderContainer;
 
 function loadStructure(data) {
-    atoms = new Atoms();
+    system = System.new();
     for (var i = 0; i < data.length; i++) {
         var a = data[i];
         var x = a.position[0];
         var y = a.position[1];
         var z = a.position[2];
-        atoms.addAtom(a.symbol, x,y,z);
+        System.addAtom(system, a.symbol, x,y,z);
     }
-    atoms.center();
-    renderer.setAtoms(atoms, view);
-    view = View.center(view, atoms);
+    System.center(system);
+    renderer.setAtoms(system, view);
+    View.center(view, system);
     needReset = true;
 }
 
@@ -105,9 +105,9 @@ window.onload = function() {
         var hash = location.hash.slice(1, location.hash.length);
         var data = lz.decompressFromEncodedURIComponent(hash);
         data = JSON.parse(data);
-        atoms.deserialize(data.atoms);
+        system = data.system;
         view = data.view;
-        renderer.setAtoms(atoms, view);
+        renderer.setAtoms(system, view);
         renderer.setResolution(view.resolution, view.aoRes);
         needReset = true;
     } else {
@@ -152,9 +152,9 @@ window.onload = function() {
         lastX = e.clientX;
         lastY = e.clientY;
         if (e.shiftKey) {
-            view = View.translate(view, dx, dy);
+            View.translate(view, dx, dy);
         } else {
-            view = View.rotate(view, dx, dy);
+            View.rotate(view, dx, dy);
         }
         needReset = true;
     });
@@ -169,54 +169,54 @@ window.onload = function() {
         }
         if (kb.active("a")) {
             view.atomScale += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("atom-radius").value = Math.round(view.atomScale * 100);
             needReset = true;
         } else if (kb.active("z")) {
             var scale = view.relativeAtomScale;
             scale += wd/100;
             view.relativeAtomScale += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("relative-atom-radius").value = Math.round(view.relativeAtomScale * 100);
             needReset = true;
         } else if (kb.active("d")) {
             view.dofStrength += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("dof-strength").value = Math.round(view.dofStrength * 100);
         } else if (kb.active("p")) {
             view.dofPosition += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("dof-position").value = Math.round(view.dofPosition * 100);
         } else if (kb.active("b")) {
             view.bondScale += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("bond-radius").value = Math.round(view.bondScale * 100);
             needReset = true;
         } else if (kb.active("s")) {
             view.bondShade += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("bond-shade").value = Math.round(view.bondShade * 100);
             needReset = true;
         } else if (kb.active("w")) {
             view.atomShade += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("atom-shade").value = Math.round(view.atomShade * 100);
             needReset = true;
         } else if (kb.active("o")) {
             view.ao += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("ambient-occlusion").value = Math.round(view.ao * 100);
         } else if (kb.active("l")) {
             view.brightness += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("brightness").value = Math.round(view.brightness * 100);
         } else if (kb.active("q")) {
             view.outline += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("outline-strength").value = Math.round(view.outline * 100);
         } else {
             view.zoom = view.zoom * (wd === 1 ? 1/0.9 : 0.9);
-            view = View.resolve(view);
+            View.resolve(view);
             needReset = true;
         }
         e.preventDefault();
@@ -292,66 +292,66 @@ window.onload = function() {
     document.getElementById("atom-radius").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("atom-radius").value);
         view.atomScale = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("relative-atom-radius").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("relative-atom-radius").value);
         view.relativeAtomScale = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("dof-strength").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("dof-strength").value);
         view.dofStrength = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
     });
 
     document.getElementById("dof-position").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("dof-position").value);
         view.dofPosition = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
     });
 
     document.getElementById("bond-radius").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("bond-radius").value);
         view.bondScale = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("bond-shade").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("bond-shade").value);
         view.bondShade = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("atom-shade").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("atom-shade").value);
         view.atomShade = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("ambient-occlusion").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("ambient-occlusion").value);
         view.ao = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
     });
 
     document.getElementById("brightness").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("brightness").value);
         view.brightness = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
     });
 
     document.getElementById("ao-resolution").addEventListener("change", function(e) {
         var resolution = parseInt(document.getElementById("ao-resolution").value);
         view.aoRes = resolution;
-        view = View.resolve(view);
+        View.resolve(view);
         renderer.setResolution(view.resolution, view.aoRes);
         needReset = true;
     });
@@ -359,7 +359,7 @@ window.onload = function() {
     document.getElementById("outline-strength").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("outline-strength").value);
         view.outline = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
     });
 
     document.getElementById("samples-per-frame").addEventListener("change", function(e) {
@@ -370,49 +370,49 @@ window.onload = function() {
     document.getElementById("resolution").addEventListener("change", function(e) {
         var resolution = parseInt(document.getElementById("resolution").value);
         view.resolution = resolution;
-        view = View.resolve(view);
+        View.resolve(view);
         renderer.setResolution(resolution, view.aoRes);
         needReset = true;
     });
 
     document.getElementById("view-preset").addEventListener("change", function(e) {
         var preset = document.getElementById("view-preset").value;
-        view = View.override(view, presets[preset]);
+        View.override(view, presets[preset]);
         updateControls();
-        renderer.setAtoms(atoms, view);
+        renderer.setAtoms(system, view);
         needReset = true;
     });
 
     document.getElementById("bonds").addEventListener("click", function(e) {
         view.bonds = document.getElementById("bonds").checked;
-        view = View.resolve(view);
-        renderer.setAtoms(atoms, view);
+        View.resolve(view);
+        renderer.setAtoms(system, view);
         needReset = true;
     });
 
     document.getElementById("bond-threshold").addEventListener("change", function(e) {
         view.bondThreshold = parseFloat(document.getElementById("bond-threshold").value);
-        view = View.resolve(view);
-        renderer.setAtoms(atoms, view);
+        View.resolve(view);
+        renderer.setAtoms(system, view);
         needReset = true;
     });
 
     document.getElementById("fxaa").addEventListener("change", function(e) {
         view.fxaa = parseInt(document.getElementById("fxaa").value);
-        view = View.resolve(view);
+        View.resolve(view);
     });
 
     document.getElementById("share-url-button").addEventListener("click", function(e) {
         var data = {
             view: view,
-            atoms: atoms.serialize()
+            system: system
         }
         data = lz.compressToEncodedURIComponent(JSON.stringify(data));
         document.getElementById("share-url").value = location.href.split("#")[0] + "#" + data;
     });
 
     document.getElementById("center-button").addEventListener("click", function(e) {
-        view = View.center(view, atoms);
+        View.center(view, system);
         needReset = true;
     });
 

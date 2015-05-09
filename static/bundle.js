@@ -10664,98 +10664,7 @@ if( typeof module !== 'undefined' && module != null ) {
   module.exports = LZString
 }
 
-},{}],"/home/rye/Dropbox/src/speck/src/atoms.js":[function(require,module,exports){
-"use strict";
-
-var elements = require("./elements");
-
-var MIN_ATOM_RADIUS = Infinity;
-var MAX_ATOM_RADIUS = -Infinity;
-for (var i = 0; i <= 118; i++) {
-    MIN_ATOM_RADIUS = Math.min(MIN_ATOM_RADIUS, elements[i].radius);
-    MAX_ATOM_RADIUS = Math.max(MAX_ATOM_RADIUS, elements[i].radius);
-}
-
-module.exports = function() {
-
-    var self = this;
-
-    self.initialize = function() {
-        self.atoms = [];
-    };
-
-    self.serialize = function() {
-        return self.atoms;
-    };
-
-    self.deserialize = function(data) {
-        self.atoms = data;
-    }
-
-    self.addAtom = function(symbol, x, y, z) {
-        self.atoms.push({
-            symbol: symbol,
-            x: x,
-            y: y,
-            z: z,
-        });
-    };
-
-    self.getCentroid = function() {
-        var xsum = 0;
-        var ysum = 0;
-        var zsum = 0;
-        for (var i = 0; i < self.atoms.length; i++) {
-            xsum += self.atoms[i].x;
-            ysum += self.atoms[i].y;
-            zsum += self.atoms[i].z;
-        }
-        return {
-            x: xsum/self.atoms.length,
-            y: ysum/self.atoms.length,
-            z: zsum/self.atoms.length
-        };
-    }
-
-    self.center = function() {
-        var shift = self.getCentroid();
-        for (var i = 0; i < self.atoms.length; i++) {
-            var a = self.atoms[i];
-            a.x -= shift.x;
-            a.y -= shift.y;
-            a.z -= shift.z;
-        }
-    }
-
-    self.getFarAtom = function() {
-        if (self.farAtom !== undefined) {
-            return self.farAtom;
-        }
-        self.farAtom = self.atoms[0];
-        var maxd = 0.0;
-        for (var i = 0; i < self.atoms.length; i++) {
-            var a = self.atoms[i];
-            var r = elements[a.symbol].radius;
-            var rd = Math.sqrt(r*r + r*r + r*r) * 2.5;
-            var d = Math.sqrt(a.x*a.x + a.y*a.y + a.z*a.z) + rd;
-            if (d > maxd) {
-                maxd = d;
-                self.farAtom = a;
-            }
-        }
-        return self.farAtom;
-    }
-
-    self.getRadius = function() {
-        var a = self.getFarAtom();
-        var r = MAX_ATOM_RADIUS;
-        var rd = Math.sqrt(r*r + r*r + r*r) * 2.5;
-        return Math.sqrt(a.x*a.x + a.y*a.y + a.z*a.z) + rd;
-    }
-
-    self.initialize();
-}
-},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js"}],"/home/rye/Dropbox/src/speck/src/cube.js":[function(require,module,exports){
+},{}],"/home/rye/Dropbox/src/speck/src/cube.js":[function(require,module,exports){
 
 var n = -1;
 var p = 1;
@@ -15316,7 +15225,7 @@ var $ = require("jquery");
 
 var Renderer = require("./renderer");
 var View = require("./view");
-var Atoms = require("./atoms");
+var System = require("./system");
 var xyz = require("./xyz");
 var samples = require("./samples");
 var elements = require("./elements");
@@ -15356,7 +15265,7 @@ kb.active = function(key) {
     return false;
 }
 
-var atoms = new Atoms();
+var system = System.new();
 var view = View.new();
 var renderer = null;
 var needReset = false;
@@ -15364,17 +15273,17 @@ var needReset = false;
 var renderContainer;
 
 function loadStructure(data) {
-    atoms = new Atoms();
+    system = System.new();
     for (var i = 0; i < data.length; i++) {
         var a = data[i];
         var x = a.position[0];
         var y = a.position[1];
         var z = a.position[2];
-        atoms.addAtom(a.symbol, x,y,z);
+        System.addAtom(system, a.symbol, x,y,z);
     }
-    atoms.center();
-    renderer.setAtoms(atoms, view);
-    view = View.center(view, atoms);
+    System.center(system);
+    renderer.setAtoms(system, view);
+    View.center(view, system);
     needReset = true;
 }
 
@@ -15414,9 +15323,9 @@ window.onload = function() {
         var hash = location.hash.slice(1, location.hash.length);
         var data = lz.decompressFromEncodedURIComponent(hash);
         data = JSON.parse(data);
-        atoms.deserialize(data.atoms);
+        system = data.system;
         view = data.view;
-        renderer.setAtoms(atoms, view);
+        renderer.setAtoms(system, view);
         renderer.setResolution(view.resolution, view.aoRes);
         needReset = true;
     } else {
@@ -15461,9 +15370,9 @@ window.onload = function() {
         lastX = e.clientX;
         lastY = e.clientY;
         if (e.shiftKey) {
-            view = View.translate(view, dx, dy);
+            View.translate(view, dx, dy);
         } else {
-            view = View.rotate(view, dx, dy);
+            View.rotate(view, dx, dy);
         }
         needReset = true;
     });
@@ -15478,54 +15387,54 @@ window.onload = function() {
         }
         if (kb.active("a")) {
             view.atomScale += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("atom-radius").value = Math.round(view.atomScale * 100);
             needReset = true;
         } else if (kb.active("z")) {
             var scale = view.relativeAtomScale;
             scale += wd/100;
             view.relativeAtomScale += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("relative-atom-radius").value = Math.round(view.relativeAtomScale * 100);
             needReset = true;
         } else if (kb.active("d")) {
             view.dofStrength += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("dof-strength").value = Math.round(view.dofStrength * 100);
         } else if (kb.active("p")) {
             view.dofPosition += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("dof-position").value = Math.round(view.dofPosition * 100);
         } else if (kb.active("b")) {
             view.bondScale += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("bond-radius").value = Math.round(view.bondScale * 100);
             needReset = true;
         } else if (kb.active("s")) {
             view.bondShade += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("bond-shade").value = Math.round(view.bondShade * 100);
             needReset = true;
         } else if (kb.active("w")) {
             view.atomShade += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("atom-shade").value = Math.round(view.atomShade * 100);
             needReset = true;
         } else if (kb.active("o")) {
             view.ao += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("ambient-occlusion").value = Math.round(view.ao * 100);
         } else if (kb.active("l")) {
             view.brightness += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("brightness").value = Math.round(view.brightness * 100);
         } else if (kb.active("q")) {
             view.outline += wd/100;
-            view = View.resolve(view);
+            View.resolve(view);
             document.getElementById("outline-strength").value = Math.round(view.outline * 100);
         } else {
             view.zoom = view.zoom * (wd === 1 ? 1/0.9 : 0.9);
-            view = View.resolve(view);
+            View.resolve(view);
             needReset = true;
         }
         e.preventDefault();
@@ -15601,66 +15510,66 @@ window.onload = function() {
     document.getElementById("atom-radius").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("atom-radius").value);
         view.atomScale = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("relative-atom-radius").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("relative-atom-radius").value);
         view.relativeAtomScale = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("dof-strength").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("dof-strength").value);
         view.dofStrength = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
     });
 
     document.getElementById("dof-position").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("dof-position").value);
         view.dofPosition = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
     });
 
     document.getElementById("bond-radius").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("bond-radius").value);
         view.bondScale = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("bond-shade").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("bond-shade").value);
         view.bondShade = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("atom-shade").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("atom-shade").value);
         view.atomShade = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
         needReset = true;
     });
 
     document.getElementById("ambient-occlusion").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("ambient-occlusion").value);
         view.ao = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
     });
 
     document.getElementById("brightness").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("brightness").value);
         view.brightness = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
     });
 
     document.getElementById("ao-resolution").addEventListener("change", function(e) {
         var resolution = parseInt(document.getElementById("ao-resolution").value);
         view.aoRes = resolution;
-        view = View.resolve(view);
+        View.resolve(view);
         renderer.setResolution(view.resolution, view.aoRes);
         needReset = true;
     });
@@ -15668,7 +15577,7 @@ window.onload = function() {
     document.getElementById("outline-strength").addEventListener("input", function(e) {
         var scale = parseInt(document.getElementById("outline-strength").value);
         view.outline = scale/100;
-        view = View.resolve(view);
+        View.resolve(view);
     });
 
     document.getElementById("samples-per-frame").addEventListener("change", function(e) {
@@ -15679,49 +15588,49 @@ window.onload = function() {
     document.getElementById("resolution").addEventListener("change", function(e) {
         var resolution = parseInt(document.getElementById("resolution").value);
         view.resolution = resolution;
-        view = View.resolve(view);
+        View.resolve(view);
         renderer.setResolution(resolution, view.aoRes);
         needReset = true;
     });
 
     document.getElementById("view-preset").addEventListener("change", function(e) {
         var preset = document.getElementById("view-preset").value;
-        view = View.override(view, presets[preset]);
+        View.override(view, presets[preset]);
         updateControls();
-        renderer.setAtoms(atoms, view);
+        renderer.setAtoms(system, view);
         needReset = true;
     });
 
     document.getElementById("bonds").addEventListener("click", function(e) {
         view.bonds = document.getElementById("bonds").checked;
-        view = View.resolve(view);
-        renderer.setAtoms(atoms, view);
+        View.resolve(view);
+        renderer.setAtoms(system, view);
         needReset = true;
     });
 
     document.getElementById("bond-threshold").addEventListener("change", function(e) {
         view.bondThreshold = parseFloat(document.getElementById("bond-threshold").value);
-        view = View.resolve(view);
-        renderer.setAtoms(atoms, view);
+        View.resolve(view);
+        renderer.setAtoms(system, view);
         needReset = true;
     });
 
     document.getElementById("fxaa").addEventListener("change", function(e) {
         view.fxaa = parseInt(document.getElementById("fxaa").value);
-        view = View.resolve(view);
+        View.resolve(view);
     });
 
     document.getElementById("share-url-button").addEventListener("click", function(e) {
         var data = {
             view: view,
-            atoms: atoms.serialize()
+            system: system
         }
         data = lz.compressToEncodedURIComponent(JSON.stringify(data));
         document.getElementById("share-url").value = location.href.split("#")[0] + "#" + data;
     });
 
     document.getElementById("center-button").addEventListener("click", function(e) {
-        view = View.center(view, atoms);
+        View.center(view, system);
         needReset = true;
     });
 
@@ -15824,20 +15733,22 @@ window.onload = function() {
 
 }
 
-},{"./atoms":"/home/rye/Dropbox/src/speck/src/atoms.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./presets":"/home/rye/Dropbox/src/speck/src/presets.js","./renderer":"/home/rye/Dropbox/src/speck/src/renderer.js","./samples":"/home/rye/Dropbox/src/speck/src/samples.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./xyz":"/home/rye/Dropbox/src/speck/src/xyz.js","jquery":"/home/rye/Dropbox/src/speck/node_modules/jquery/dist/jquery.js","keyboardjs":"/home/rye/Dropbox/src/speck/node_modules/keyboardjs/keyboard.js","lz-string":"/home/rye/Dropbox/src/speck/node_modules/lz-string/libs/lz-string.js"}],"/home/rye/Dropbox/src/speck/src/presets.js":[function(require,module,exports){
+},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./presets":"/home/rye/Dropbox/src/speck/src/presets.js","./renderer":"/home/rye/Dropbox/src/speck/src/renderer.js","./samples":"/home/rye/Dropbox/src/speck/src/samples.js","./system":"/home/rye/Dropbox/src/speck/src/system.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./xyz":"/home/rye/Dropbox/src/speck/src/xyz.js","jquery":"/home/rye/Dropbox/src/speck/node_modules/jquery/dist/jquery.js","keyboardjs":"/home/rye/Dropbox/src/speck/node_modules/keyboardjs/keyboard.js","lz-string":"/home/rye/Dropbox/src/speck/node_modules/lz-string/libs/lz-string.js"}],"/home/rye/Dropbox/src/speck/src/presets.js":[function(require,module,exports){
 module.exports = {
-    default:  {
+    default: {
         atomScale: 0.6,
-        relativeAtomScale: 1,
+        relativeAtomScale: 1.0,
         bondScale: 0.5,
         ao: 0.5,
-        spf: 32,
+        aoRes: 256,
         brightness: 0.5,
-        outline: 0,
+        outline: 0.0,
+        spf: 32,
         bonds: false,
         bondThreshold: 1.2,
-        bondShade: 0,
-        dofStrength: 0,
+        bondShade: 0.0,
+        atomShade: 0.5,
+        dofStrength: 0.0,
         dofPosition: 0.5,
         fxaa: 1
     },
@@ -15871,6 +15782,7 @@ var core = require('./webgl.js');
 var cube = require("./cube");
 var elements = require("./elements");
 var View = require("./view");
+var System = require("./system");
 
 module.exports = function (canvas, resolution, aoResolution) {
 
@@ -15878,7 +15790,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
         var range,
             samples,
-            atoms;
+            system;
 
         var gl, 
             canvas;
@@ -16033,7 +15945,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
         self.setAtoms = function(newAtoms, view) {
 
-            atoms = newAtoms;
+            system = newAtoms;
 
             function make36(arr) {
                 var out = [];
@@ -16053,9 +15965,9 @@ module.exports = function (canvas, resolution, aoResolution) {
             var radius = [];
             var color = [];
 
-            for (var i = 0; i < atoms.atoms.length; i++) {
+            for (var i = 0; i < system.atoms.length; i++) {
                 imposter.push.apply(imposter, cube.position);
-                var a = atoms.atoms[i];
+                var a = system.atoms[i];
                 position.push.apply(position, make36([a.x, a.y, a.z]));
                 radius.push.apply(radius, make36([elements[a.symbol].radius]));
                 var c = elements[a.symbol].color;
@@ -16077,10 +15989,10 @@ module.exports = function (canvas, resolution, aoResolution) {
 
                 var bonds = [];
 
-                for (var i = 0; i < atoms.atoms.length - 1; i++) {
-                    for (var j = i + 1; j < atoms.atoms.length; j++) {
-                        var a = atoms.atoms[i];
-                        var b = atoms.atoms[j];
+                for (var i = 0; i < system.atoms.length - 1; i++) {
+                    for (var j = i + 1; j < system.atoms.length; j++) {
+                        var a = system.atoms[i];
+                        var b = system.atoms[j];
                         var l = glm.vec3.fromValues(a.x, a.y, a.z);
                         var m = glm.vec3.fromValues(b.x, b.y, b.z);
                         var cutoff = elements[a.symbol].radius + elements[b.symbol].radius;
@@ -16162,14 +16074,14 @@ module.exports = function (canvas, resolution, aoResolution) {
         }
 
         self.render = function(view) {
-            if (atoms === undefined) {
+            if (system === undefined) {
                 return;
             }
             if (rAtoms == null) {
                 return;
             }
 
-            range = atoms.getRadius(view) * 2.0;
+            range = System.getRadius(system) * 2.0;
 
             if (!colorRendered) {
                 color(view);
@@ -16426,7 +16338,7 @@ function loadProgram(gl, src) {
     return new core.Program(gl, src[0], src[1]);
 }
 
-},{"./cube":"/home/rye/Dropbox/src/speck/src/cube.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./gl-matrix":"/home/rye/Dropbox/src/speck/src/gl-matrix.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./webgl.js":"/home/rye/Dropbox/src/speck/src/webgl.js"}],"/home/rye/Dropbox/src/speck/src/samples.js":[function(require,module,exports){
+},{"./cube":"/home/rye/Dropbox/src/speck/src/cube.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./gl-matrix":"/home/rye/Dropbox/src/speck/src/gl-matrix.js","./system":"/home/rye/Dropbox/src/speck/src/system.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./webgl.js":"/home/rye/Dropbox/src/speck/src/webgl.js"}],"/home/rye/Dropbox/src/speck/src/samples.js":[function(require,module,exports){
 module.exports = [
     {name: "Testosterone", file: "testosterone.xyz"},
     {name: "Caffeine", file: "caffeine.xyz"},
@@ -16439,7 +16351,87 @@ module.exports = [
     {name: "Methane", file: "methane.xyz"},
 ];
 
-},{}],"/home/rye/Dropbox/src/speck/src/view.js":[function(require,module,exports){
+},{}],"/home/rye/Dropbox/src/speck/src/system.js":[function(require,module,exports){
+"use strict";
+
+var elements = require("./elements");
+
+var MIN_ATOM_RADIUS = Infinity;
+var MAX_ATOM_RADIUS = -Infinity;
+for (var i = 0; i <= 118; i++) {
+    MIN_ATOM_RADIUS = Math.min(MIN_ATOM_RADIUS, elements[i].radius);
+    MAX_ATOM_RADIUS = Math.max(MAX_ATOM_RADIUS, elements[i].radius);
+}
+
+var newAtoms = module.exports.new = function() {
+    return {
+        atoms: [],
+        farAtom: undefined
+    }
+};
+
+var addAtom = module.exports.addAtom = function(s, symbol, x, y, z) {
+    s.atoms.push({
+        symbol: symbol,
+        x: x,
+        y: y,
+        z: z,
+    });
+};
+
+var getCentroid = module.exports.getCentroid = function(s) {
+    var xsum = 0;
+    var ysum = 0;
+    var zsum = 0;
+    for (var i = 0; i < s.atoms.length; i++) {
+        xsum += s.atoms[i].x;
+        ysum += s.atoms[i].y;
+        zsum += s.atoms[i].z;
+    }
+    return {
+        x: xsum/s.atoms.length,
+        y: ysum/s.atoms.length,
+        z: zsum/s.atoms.length
+    };
+};
+
+var center = module.exports.center = function(s) {
+    var shift = getCentroid(s);
+    for (var i = 0; i < s.atoms.length; i++) {
+        var atom = s.atoms[i];
+        atom.x -= shift.x;
+        atom.y -= shift.y;
+        atom.z -= shift.z;
+    }
+}
+
+var getFarAtom = module.exports.getFarAtom = function(s) {
+    if (s.farAtom !== undefined) {
+        return s.farAtom;
+    }
+    s.farAtom = s.atoms[0];
+    var maxd = 0.0;
+    for (var i = 0; i < s.atoms.length; i++) {
+        var atom = s.atoms[i];
+        var r = elements[atom.symbol].radius;
+        var rd = Math.sqrt(r*r + r*r + r*r) * 2.5;
+        var d = Math.sqrt(atom.x*atom.x + atom.y*atom.y + atom.z*atom.z) + rd;
+        if (d > maxd) {
+            maxd = d;
+            s.farAtom = atom;
+        }
+    }
+    return s.farAtom;
+}
+
+var getRadius = module.exports.getRadius = function(s) {
+    var atom = getFarAtom(s);
+    var r = MAX_ATOM_RADIUS;
+    var rd = Math.sqrt(r*r + r*r + r*r) * 2.5;
+    return Math.sqrt(atom.x*atom.x + atom.y*atom.y + atom.z*atom.z) + rd;
+}
+
+},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js"}],"/home/rye/Dropbox/src/speck/src/view.js":[function(require,module,exports){
 "use strict";
 
 
@@ -16460,7 +16452,7 @@ function clamp(min, max, value) {
 }
 
 
-var _new = module.exports.new = function() {
+var newView = module.exports.new = function() {
     return {
         aspect: 1.0,
         zoom: 0.125,
@@ -16473,14 +16465,14 @@ var _new = module.exports.new = function() {
         bondScale: 0.5,
         rotation: glm.mat4.create(),
         ao: 0.5,
-        aoRes: 128,
+        aoRes: 256,
         brightness: 0.5,
         outline: 0.0,
         spf: 32,
         bonds: false,
         bondThreshold: 1.2,
         bondShade: 0.0,
-        atomShade: 0.0,
+        atomShade: 0.5,
         resolution: 768,
         dofStrength: 0.0,
         dofPosition: 0.5,
@@ -16489,14 +16481,13 @@ var _new = module.exports.new = function() {
 };
 
 
-var _center = module.exports.center = function(v, atoms) {
-    v = _clone(v);
+var center = module.exports.center = function(v, system) {
     var maxX = -Infinity;
     var minX = Infinity;
     var maxY = -Infinity;
     var minY = Infinity;
-    for(var i = 0; i < atoms.atoms.length; i++) {
-        var a = atoms.atoms[i];
+    for(var i = 0; i < system.atoms.length; i++) {
+        var a = system.atoms[i];
         var r = elements[a.symbol].radius;
         r = 2.5 * v.atomScale * (1 + (r - 1) * v.relativeAtomScale);
         var p = glm.vec4.fromValues(a.x, a.y, a.z, 0);
@@ -16512,39 +16503,35 @@ var _center = module.exports.center = function(v, atoms) {
     v.translation.y = cy;
     var scale = Math.max(maxX - minX, maxY - minY);
     v.zoom = 1/(scale * 1.01);
-    return v;
 };
 
 
-var _override = module.exports.override = function(v, data) {
-    v = _clone(v);
+var override = module.exports.override = function(v, data) {
     for (var key in data) {
         v[key] = data[key];
     }
-    _resolve(v);
-    return v;
+    resolve(v);
 };
 
 
-var _clone = module.exports.clone = function(v) {
-    return _deserialize(_serialize(v));
+var clone = module.exports.clone = function(v) {
+    return deserialize(serialize(v));
 };
 
 
-var _serialize = module.exports.serialize = function(v) {
+var serialize = module.exports.serialize = function(v) {
     return JSON.stringify(v);
 };
 
 
-var _deserialize = module.exports.deserialize = function(v) {
+var deserialize = module.exports.deserialize = function(v) {
     v = JSON.parse(v);
     v.rotation = glm.mat4.clone(v.rotation);
     return v;
 };
 
 
-var _resolve = module.exports.resolve = function(v) {
-    v = _clone(v);
+var resolve = module.exports.resolve = function(v) {
     v.dofStrength = clamp(0, 1, v.dofStrength);
     v.dofPosition = clamp(0, 1, v.dofPosition);
     v.zoom = clamp(0.001, 2.0, v.zoom);
@@ -16556,31 +16543,26 @@ var _resolve = module.exports.resolve = function(v) {
     v.ao = clamp(0, 1, v.ao);
     v.brightness = clamp(0, 1, v.brightness);
     v.outline = clamp(0, 1, v.outline);
-    return v;
 };
 
 
-var _translate = module.exports.translate = function(v, dx, dy) {
-    v = _clone(v);
+var translate = module.exports.translate = function(v, dx, dy) {
     v.translation.x -= dx/(v.resolution * v.zoom);
     v.translation.y += dy/(v.resolution * v.zoom);
-    _resolve(v);
-    return v;
+    resolve(v);
 };
 
 
-var _rotate = module.exports.rotate = function(v, dx, dy) {
-    v = _clone(v);
+var rotate = module.exports.rotate = function(v, dx, dy) {
     var m = glm.mat4.create();
     glm.mat4.rotateY(m, m, dx * 0.005);
     glm.mat4.rotateX(m, m, dy * 0.005);
     glm.mat4.multiply(v.rotation, m, v.rotation);
-    _resolve(v);
-    return v;
+    resolve(v);
 };
 
 
-var _getRect = module.exports.getRect = function(v) {
+var getRect = module.exports.getRect = function(v) {
     var width = 1.0/v.zoom;
     var height = width/v.aspect;
     var bottom = -height/2 + v.translation.y;
@@ -16596,7 +16578,7 @@ var _getRect = module.exports.getRect = function(v) {
 };
 
 
-var _getBondRadius = module.exports.getBondRadius = function(v) {
+var getBondRadius = module.exports.getBondRadius = function(v) {
     return v.bondScale * v.atomScale * 
         (1 + (MIN_ATOM_RADIUS - 1) * v.relativeAtomScale);
 };
