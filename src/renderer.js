@@ -167,9 +167,9 @@ module.exports = function (canvas, resolution, aoResolution) {
         }
 
 
-        self.setAtoms = function(newAtoms, view) {
+        self.setAtoms = function(newSystem, view) {
 
-            system = newAtoms;
+            system = newSystem;
 
             function make36(arr) {
                 var out = [];
@@ -211,36 +211,38 @@ module.exports = function (canvas, resolution, aoResolution) {
 
             if (view.bonds) {
 
-                var bonds = [];
+                // var bonds = [];
 
-                for (var i = 0; i < system.atoms.length - 1; i++) {
-                    for (var j = i + 1; j < system.atoms.length; j++) {
-                        var a = system.atoms[i];
-                        var b = system.atoms[j];
-                        var l = glm.vec3.fromValues(a.x, a.y, a.z);
-                        var m = glm.vec3.fromValues(b.x, b.y, b.z);
-                        var cutoff = elements[a.symbol].radius + elements[b.symbol].radius;
-                        if (glm.vec3.distance(l,m) > cutoff * view.bondThreshold) {
-                            continue;
-                        }
-                        var ca = elements[a.symbol].color;
-                        var cb = elements[b.symbol].color;
-                        var ra = elements[a.symbol].radius;
-                        var rb = elements[b.symbol].radius;
-                        bonds.push({
-                            a: a,
-                            b: b,
-                            ra: ra,
-                            rb: rb,
-                            ca: ca,
-                            cb: cb
-                        });
-                    }
-                }
+                // for (var i = 0; i < system.atoms.length - 1; i++) {
+                //     for (var j = i + 1; j < system.atoms.length; j++) {
+                //         var a = system.atoms[i];
+                //         var b = system.atoms[j];
+                //         var l = glm.vec3.fromValues(a.x, a.y, a.z);
+                //         var m = glm.vec3.fromValues(b.x, b.y, b.z);
+                //         var cutoff = elements[a.symbol].radius + elements[b.symbol].radius;
+                //         if (glm.vec3.distance(l,m) > cutoff * view.bondThreshold) {
+                //             continue;
+                //         }
+                //         var ca = elements[a.symbol].color;
+                //         var cb = elements[b.symbol].color;
+                //         var ra = elements[a.symbol].radius;
+                //         var rb = elements[b.symbol].radius;
+                //         bonds.push({
+                //             a: a,
+                //             b: b,
+                //             ra: ra,
+                //             rb: rb,
+                //             ca: ca,
+                //             cb: cb
+                //         });
+                //     }
+                // }
+
+
 
                 rBonds = null;
 
-                if (bonds.length > 0) {
+                if (system.bonds.length > 0) {
 
                     var attribs = core.buildAttribs(gl, {
                         aImposter: 3,
@@ -260,15 +262,16 @@ module.exports = function (canvas, resolution, aoResolution) {
                     var cola = [];
                     var colb = [];
 
-                    for (var i = 0; i < bonds.length; i++) {
-                        var b = bonds[i];
+                    for (var i = 0; i < system.bonds.length; i++) {
+                        var b = system.bonds[i];
+                        if (b.cutoff > view.bondThreshold) break;
                         imposter.push.apply(imposter, cube.position);
-                        posa.push.apply(posa, make36([b.a.x, b.a.y, b.a.z]));
-                        posb.push.apply(posb, make36([b.b.x, b.b.y, b.b.z]));
-                        rada.push.apply(rada, make36([b.ra]));
-                        radb.push.apply(radb, make36([b.rb]));
-                        cola.push.apply(cola, make36([b.ca[0], b.ca[1], b.ca[2]]));
-                        colb.push.apply(colb, make36([b.cb[0], b.cb[1], b.cb[2]]));
+                        posa.push.apply(posa, make36([b.posA.x, b.posA.y, b.posA.z]));
+                        posb.push.apply(posb, make36([b.posB.x, b.posB.y, b.posB.z]));
+                        rada.push.apply(rada, make36([b.radA]));
+                        radb.push.apply(radb, make36([b.radB]));
+                        cola.push.apply(cola, make36([b.colA.r, b.colA.g, b.colA.b]));
+                        colb.push.apply(colb, make36([b.colB.r, b.colB.g, b.colB.b]));
                     }
 
                     attribs.aImposter.buffer.set(new Float32Array(imposter));
