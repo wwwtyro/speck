@@ -15244,6 +15244,7 @@ var xyz = require("./xyz");
 var samples = require("./samples");
 var elements = require("./elements");
 var presets = require("./presets");
+var mimetypes = require("./mimetypes");
 
 window.onerror = function(e, url, line) {
     var error = document.getElementById("error");
@@ -15636,47 +15637,20 @@ window.onload = function() {
         this.select();
     });
 
+    var selector = document.getElementById("download-image-format-selector");
+    for (var i = 0; i < mimetypes.length; i++) {
+        var m = mimetypes[i];
+        var opt = document.createElement("option");
+        opt.value = m;
+        opt.innerHTML = m.toUpperCase();
+        selector.appendChild(opt);
+    }
+
     document.getElementById("download-image-button").addEventListener("click", function(e) {
         var imageFormatBox = document.getElementById("download-image-format-selector");
-        var mimetype = "";
-        var filename = "";
-        // Are there dictionaries/hashes/associative-arrays in Javascript?
-        //
-        // Also, support for these formats varies by browser. But because 
-        // javascript has aggressive defaults, PNG is output if a browser
-        // doesn't support the requested format. So, perhaps we should 
-        // only show options supported by a given browser?
-        //
-        // Web stuff is frustrating.
-        if(imageFormatBox.value == "png")
-        {
-            mimetype = 'image/png';
-            filename = 'render.png';
-        }
-        else if(imageFormatBox.value == "jpg")
-        {
-            mimetype = 'image/jpeg';
-            filename = 'render.jpg';
-        }
-        else if(imageFormatBox.value == "gif")
-        {
-            mimetype = 'image/gif';
-            filename = 'render.gif';
-        }
-        else if(imageFormatBox.value == "bmp")
-        {
-            mimetype = 'image/bmp';
-            filename = 'render.bmp';
-        }
-        else if(imageFormatBox.value == "webp")
-        {
-            mimetype = 'image/webp';
-            filename = 'render.webp';
-        }
-        else
-        {
-            //How do I throw errors??
-        }
+        var mimetype = "image/" + imageFormatBox.value;
+        var filename = "render." + imageFormatBox.value;
+        renderer.render(view);
         var imgURL = document.getElementById("renderer-canvas").toDataURL(mimetype);
         document.getElementById("download-image-button").download = filename;
         document.getElementById("download-image-button").href = imgURL;
@@ -15731,7 +15705,27 @@ window.onload = function() {
 
 }
 
-},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./presets":"/home/rye/Dropbox/src/speck/src/presets.js","./renderer":"/home/rye/Dropbox/src/speck/src/renderer.js","./samples":"/home/rye/Dropbox/src/speck/src/samples.js","./system":"/home/rye/Dropbox/src/speck/src/system.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./xyz":"/home/rye/Dropbox/src/speck/src/xyz.js","jquery":"/home/rye/Dropbox/src/speck/node_modules/jquery/dist/jquery.js","keyboardjs":"/home/rye/Dropbox/src/speck/node_modules/keyboardjs/keyboard.js","lz-string":"/home/rye/Dropbox/src/speck/node_modules/lz-string/libs/lz-string.js"}],"/home/rye/Dropbox/src/speck/src/presets.js":[function(require,module,exports){
+},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./mimetypes":"/home/rye/Dropbox/src/speck/src/mimetypes.js","./presets":"/home/rye/Dropbox/src/speck/src/presets.js","./renderer":"/home/rye/Dropbox/src/speck/src/renderer.js","./samples":"/home/rye/Dropbox/src/speck/src/samples.js","./system":"/home/rye/Dropbox/src/speck/src/system.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./xyz":"/home/rye/Dropbox/src/speck/src/xyz.js","jquery":"/home/rye/Dropbox/src/speck/node_modules/jquery/dist/jquery.js","keyboardjs":"/home/rye/Dropbox/src/speck/node_modules/keyboardjs/keyboard.js","lz-string":"/home/rye/Dropbox/src/speck/node_modules/lz-string/libs/lz-string.js"}],"/home/rye/Dropbox/src/speck/src/mimetypes.js":[function(require,module,exports){
+
+"use strict";
+
+var canvas = document.createElement("canvas");
+canvas.width = canvas.height = 1;
+
+var formats = ["png", "jpeg", "gif", "bmp", "webp"];
+
+var mimetypes = module.exports = [];
+
+for (var i = 0; i < formats.length; i++) {
+    var f = formats[i];
+    var imgurl = canvas.toDataURL("image/" + f);
+    if (imgurl.indexOf("image/" + f) > -1) {
+        mimetypes.push(f);
+    }
+}
+
+
+},{}],"/home/rye/Dropbox/src/speck/src/presets.js":[function(require,module,exports){
 module.exports = {
     default: {
         atomScale: 0.6,
@@ -15837,7 +15831,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
             // Initialize canvas/gl.
             canvas.width = canvas.height = resolution;
-            gl = canvas.getContext('webgl', {preserveDrawingBuffer:true}); //toDataURL requires this option
+            gl = canvas.getContext('webgl');
             gl.enable(gl.DEPTH_TEST);
             gl.enable(gl.CULL_FACE);
             gl.clearColor(0,0,0,0);
