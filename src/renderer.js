@@ -1,7 +1,7 @@
 "use strict";
 
 var glm = require('./gl-matrix');
-var core = require('./webgl.js');
+var webgl = require('./webgl.js');
 var fs = require('fs');
 var cube = require("./cube");
 var elements = require("./elements");
@@ -72,7 +72,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
             window.gl = gl; //debug
 
-            ext = core.getExtensions(gl, [
+            ext = webgl.getExtensions(gl, [
                 "EXT_frag_depth", 
                 "WEBGL_depth_texture", 
             ]);
@@ -98,15 +98,15 @@ module.exports = function (canvas, resolution, aoResolution) {
             ];
 
             // Initialize geometry.
-            var attribs = core.buildAttribs(gl, {aPosition: 3});
+            var attribs = webgl.buildAttribs(gl, {aPosition: 3});
             attribs.aPosition.buffer.set(new Float32Array(position));
             var count = position.length / 9;
 
-            rDispQuad = new core.Renderable(gl, progDisplayQuad, attribs, count);
-            rAccumulator = new core.Renderable(gl, progAccumulator, attribs, count);
-            rAO = new core.Renderable(gl, progAO, attribs, count);
-            rFXAA = new core.Renderable(gl, progFXAA, attribs, count);
-            rDOF = new core.Renderable(gl, progDOF, attribs, count);
+            rDispQuad = new webgl.Renderable(gl, progDisplayQuad, attribs, count);
+            rAccumulator = new webgl.Renderable(gl, progAccumulator, attribs, count);
+            rAO = new webgl.Renderable(gl, progAO, attribs, count);
+            rFXAA = new webgl.Renderable(gl, progFXAA, attribs, count);
+            rDOF = new webgl.Renderable(gl, progDOF, attribs, count);
 
             samples = 0;
 
@@ -114,48 +114,48 @@ module.exports = function (canvas, resolution, aoResolution) {
 
         self.createTextures = function() {
             // fbRandRot
-            tRandRotColor = new core.Texture(gl, 0, null, aoResolution, aoResolution);
+            tRandRotColor = new webgl.Texture(gl, 0, null, aoResolution, aoResolution);
 
-            tRandRotDepth = new core.Texture(gl, 1, null, aoResolution, aoResolution, {
+            tRandRotDepth = new webgl.Texture(gl, 1, null, aoResolution, aoResolution, {
                 internalFormat: gl.DEPTH_COMPONENT,
                 format: gl.DEPTH_COMPONENT,
                 type: gl.UNSIGNED_SHORT
             });
 
-            fbRandRot = new core.Framebuffer(gl, [tRandRotColor], tRandRotDepth);
+            fbRandRot = new webgl.Framebuffer(gl, [tRandRotColor], tRandRotDepth);
 
             // fbScene
-            tSceneColor = new core.Texture(gl, 2, null, resolution, resolution);
+            tSceneColor = new webgl.Texture(gl, 2, null, resolution, resolution);
 
-            tSceneNormal = new core.Texture(gl, 3, null, resolution, resolution);
+            tSceneNormal = new webgl.Texture(gl, 3, null, resolution, resolution);
 
-            tSceneDepth = new core.Texture(gl, 4, null, resolution, resolution, {
+            tSceneDepth = new webgl.Texture(gl, 4, null, resolution, resolution, {
                 internalFormat: gl.DEPTH_COMPONENT,
                 format: gl.DEPTH_COMPONENT,
                 type: gl.UNSIGNED_SHORT
             });
 
-            fbSceneColor = new core.Framebuffer(gl, [tSceneColor], tSceneDepth);
+            fbSceneColor = new webgl.Framebuffer(gl, [tSceneColor], tSceneDepth);
 
-            fbSceneNormal = new core.Framebuffer(gl, [tSceneNormal], tSceneDepth);
+            fbSceneNormal = new webgl.Framebuffer(gl, [tSceneNormal], tSceneDepth);
 
             // fbAccumulator
-            tAccumulator = new core.Texture(gl, 5, null, resolution, resolution);
-            tAccumulatorOut = new core.Texture(gl, 6, null, resolution, resolution);
-            fbAccumulator = new core.Framebuffer(gl, [tAccumulatorOut]);
+            tAccumulator = new webgl.Texture(gl, 5, null, resolution, resolution);
+            tAccumulatorOut = new webgl.Texture(gl, 6, null, resolution, resolution);
+            fbAccumulator = new webgl.Framebuffer(gl, [tAccumulatorOut]);
 
             // fbAO
-            tAO = new core.Texture(gl, 7, null, resolution, resolution);
-            fbAO = new core.Framebuffer(gl, [tAO]);
+            tAO = new webgl.Texture(gl, 7, null, resolution, resolution);
+            fbAO = new webgl.Framebuffer(gl, [tAO]);
 
             // fbFXAA
-            tFXAA = new core.Texture(gl, 8, null, resolution, resolution);
-            tFXAAOut = new core.Texture(gl, 9, null, resolution, resolution);
-            fbFXAA = new core.Framebuffer(gl, [tFXAAOut]);
+            tFXAA = new webgl.Texture(gl, 8, null, resolution, resolution);
+            tFXAAOut = new webgl.Texture(gl, 9, null, resolution, resolution);
+            fbFXAA = new webgl.Framebuffer(gl, [tFXAAOut]);
 
             // fbDOF
-            tDOF = new core.Texture(gl, 10, null, resolution, resolution);
-            fbDOF = new core.Framebuffer(gl, [tDOF]);
+            tDOF = new webgl.Texture(gl, 10, null, resolution, resolution);
+            fbDOF = new webgl.Framebuffer(gl, [tDOF]);
         }
 
         self.setResolution = function(res, aoRes) {
@@ -180,7 +180,7 @@ module.exports = function (canvas, resolution, aoResolution) {
             }
 
             // Atoms
-            var attribs = core.buildAttribs(gl, {
+            var attribs = webgl.buildAttribs(gl, {
                 aImposter: 3, aPosition: 3, aRadius: 1, aColor: 3
             });
 
@@ -205,46 +205,17 @@ module.exports = function (canvas, resolution, aoResolution) {
 
             var count = imposter.length / 9;
 
-            rAtoms = new core.Renderable(gl, progAtoms, attribs, count);
+            rAtoms = new webgl.Renderable(gl, progAtoms, attribs, count);
 
             // Bonds
 
             if (view.bonds) {
 
-                // var bonds = [];
-
-                // for (var i = 0; i < system.atoms.length - 1; i++) {
-                //     for (var j = i + 1; j < system.atoms.length; j++) {
-                //         var a = system.atoms[i];
-                //         var b = system.atoms[j];
-                //         var l = glm.vec3.fromValues(a.x, a.y, a.z);
-                //         var m = glm.vec3.fromValues(b.x, b.y, b.z);
-                //         var cutoff = elements[a.symbol].radius + elements[b.symbol].radius;
-                //         if (glm.vec3.distance(l,m) > cutoff * view.bondThreshold) {
-                //             continue;
-                //         }
-                //         var ca = elements[a.symbol].color;
-                //         var cb = elements[b.symbol].color;
-                //         var ra = elements[a.symbol].radius;
-                //         var rb = elements[b.symbol].radius;
-                //         bonds.push({
-                //             a: a,
-                //             b: b,
-                //             ra: ra,
-                //             rb: rb,
-                //             ca: ca,
-                //             cb: cb
-                //         });
-                //     }
-                // }
-
-
-
                 rBonds = null;
 
                 if (system.bonds.length > 0) {
 
-                    var attribs = core.buildAttribs(gl, {
+                    var attribs = webgl.buildAttribs(gl, {
                         aImposter: 3,
                         aPosA: 3,
                         aPosB: 3,
@@ -284,7 +255,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
                     var count = imposter.length / 9;
 
-                    rBonds = new core.Renderable(gl, progBonds, attribs, count);
+                    rBonds = new webgl.Renderable(gl, progBonds, attribs, count);
 
                 }
 
@@ -562,5 +533,5 @@ module.exports = function (canvas, resolution, aoResolution) {
 
 function loadProgram(gl, src) {
     src = src.split('// __split__');
-    return new core.Program(gl, src[0], src[1]);
+    return new webgl.Program(gl, src[0], src[1]);
 }

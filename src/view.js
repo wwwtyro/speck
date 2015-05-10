@@ -2,16 +2,8 @@
 
 
 var glm = require("./gl-matrix");
-var elements = require("./elements")
-
-
-var MIN_ATOM_RADIUS = Infinity;
-var MAX_ATOM_RADIUS = -Infinity;
-for (var i = 0; i <= 118; i++) {
-    MIN_ATOM_RADIUS = Math.min(MIN_ATOM_RADIUS, elements[i].radius);
-    MAX_ATOM_RADIUS = Math.max(MAX_ATOM_RADIUS, elements[i].radius);
-}
-
+var elements = require("./elements");
+var consts = require("./const");
 
 function clamp(min, max, value) {
     return Math.min(max, Math.max(min, value));
@@ -146,7 +138,7 @@ var getRect = module.exports.getRect = function(v) {
 
 var getBondRadius = module.exports.getBondRadius = function(v) {
     return v.bondScale * v.atomScale * 
-        (1 + (MIN_ATOM_RADIUS - 1) * v.relativeAtomScale);
+        (1 + (consts.MIN_ATOM_RADIUS - 1) * v.relativeAtomScale);
 };
 
 

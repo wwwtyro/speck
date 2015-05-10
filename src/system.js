@@ -3,13 +3,7 @@
 var glm = require("./gl-matrix")
 
 var elements = require("./elements");
-
-var MIN_ATOM_RADIUS = Infinity;
-var MAX_ATOM_RADIUS = -Infinity;
-for (var i = 0; i <= 118; i++) {
-    MIN_ATOM_RADIUS = Math.min(MIN_ATOM_RADIUS, elements[i].radius);
-    MAX_ATOM_RADIUS = Math.max(MAX_ATOM_RADIUS, elements[i].radius);
-}
+var consts = require("./const");
 
 var newSystem = module.exports.new = function() {
     return {
@@ -29,7 +23,7 @@ var calculateBonds = module.exports.calculateBonds = function(s) {
     for (var i = 0; i < sorted.length; i++) {
         var a = sorted[i];
         var j = i + 1;
-        while(j < sorted.length && sorted[j].z < sorted[i].z + 2.5 * 2 * MAX_ATOM_RADIUS) {
+        while(j < sorted.length && sorted[j].z < sorted[i].z + 2.5 * 2 * consts.MAX_ATOM_RADIUS) {
             var b = sorted[j];
             var l = glm.vec3.fromValues(a.x, a.y, a.z);
             var m = glm.vec3.fromValues(b.x, b.y, b.z);
@@ -129,7 +123,7 @@ var getFarAtom = module.exports.getFarAtom = function(s) {
 
 var getRadius = module.exports.getRadius = function(s) {
     var atom = getFarAtom(s);
-    var r = MAX_ATOM_RADIUS;
+    var r = consts.MAX_ATOM_RADIUS;
     var rd = Math.sqrt(r*r + r*r + r*r) * 2.5;
     return Math.sqrt(atom.x*atom.x + atom.y*atom.y + atom.z*atom.z) + rd;
 }
