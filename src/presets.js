@@ -3,7 +3,7 @@ module.exports = {
         atomScale: 0.6,
         relativeAtomScale: 1.0,
         bondScale: 0.5,
-        ao: 0.5,
+        ao: 0.75,
         aoRes: 256,
         brightness: 0.5,
         outline: 0.0,

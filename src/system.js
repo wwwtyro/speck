@@ -1,5 +1,7 @@
 "use strict";
 
+var glm = require("./gl-matrix")
+
 var elements = require("./elements");
 
 var MIN_ATOM_RADIUS = Infinity;
@@ -9,12 +11,67 @@ for (var i = 0; i <= 118; i++) {
     MAX_ATOM_RADIUS = Math.max(MAX_ATOM_RADIUS, elements[i].radius);
 }
 
-var newAtoms = module.exports.new = function() {
+var newSystem = module.exports.new = function() {
     return {
         atoms: [],
-        farAtom: undefined
+        farAtom: undefined,
+        bonds: []
     }
 };
+
+
+var calculateBonds = module.exports.calculateBonds = function(s) {
+    var bonds = [];
+    var sorted = s.atoms.slice();
+    sorted.sort(function(a, b) {
+        return a.z - b.z;
+    });
+    for (var i = 0; i < sorted.length; i++) {
+        var a = sorted[i];
+        var j = i + 1;
+        while(j < sorted.length && sorted[j].z < sorted[i].z + 2.5 * 2 * MAX_ATOM_RADIUS) {
+            var b = sorted[j];
+            var l = glm.vec3.fromValues(a.x, a.y, a.z);
+            var m = glm.vec3.fromValues(b.x, b.y, b.z);
+            var d = glm.vec3.distance(l, m);
+            var ea = elements[a.symbol];
+            var eb = elements[b.symbol];
+            if (d < 2.5*(ea.radius+eb.radius)) {
+                bonds.push({
+                    posA: {
+                        x: a.x,
+                        y: a.y,
+                        z: a.z
+                    },
+                    posB: {
+                        x: b.x,
+                        y: b.y,
+                        z: b.z
+                    },
+                    radA: ea.radius,
+                    radB: eb.radius,
+                    colA: {
+                        r: ea.color[0],
+                        g: ea.color[1],
+                        b: ea.color[2]
+                    },
+                    colB: {
+                        r: eb.color[0],
+                        g: eb.color[1],
+                        b: eb.color[2]
+                    },
+                    cutoff: d/(ea.radius+eb.radius)
+                });
+            }
+            j++;
+        }
+    }
+    bonds.sort(function(a, b) {
+        return a.cutoff - b.cutoff;
+    });
+    s.bonds = bonds;
+}
+
 
 var addAtom = module.exports.addAtom = function(s, symbol, x, y, z) {
     s.atoms.push({

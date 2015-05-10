@@ -15231,23 +15231,6 @@ var samples = require("./samples");
 var elements = require("./elements");
 var presets = require("./presets");
 
-window._speck_debug_getView = function() {
-    console.log(JSON.stringify({
-        atomScale: view.atomScale,
-        relativeAtomScale: view.relativeAtomScale,
-        bondScale: view.bondScale,
-        ao: view.ao,
-        brightness: view.brightness,
-        outline: view.outline,
-        bonds: view.bonds,
-        bondThreshold: view.bondThreshold,
-        bondShade: view.bondShade,
-        dofStrength: view.dofStrength,
-        dofPosition: view.dofPosition,
-        fxaa: view.fxaa
-    }));
-}
-
 window.onerror = function(e, url, line) {
     var error = document.getElementById("error");
     error.style.display = "block";
@@ -15282,6 +15265,7 @@ function loadStructure(data) {
         System.addAtom(system, a.symbol, x,y,z);
     }
     System.center(system);
+    System.calculateBonds(system);
     renderer.setAtoms(system, view);
     View.center(view, system);
     needReset = true;
@@ -15739,7 +15723,7 @@ module.exports = {
         atomScale: 0.6,
         relativeAtomScale: 1.0,
         bondScale: 0.5,
-        ao: 0.5,
+        ao: 0.75,
         aoRes: 256,
         brightness: 0.5,
         outline: 0.0,
@@ -15943,9 +15927,9 @@ module.exports = function (canvas, resolution, aoResolution) {
         }
 
 
-        self.setAtoms = function(newAtoms, view) {
+        self.setAtoms = function(newSystem, view) {
 
-            system = newAtoms;
+            system = newSystem;
 
             function make36(arr) {
                 var out = [];
@@ -15987,36 +15971,38 @@ module.exports = function (canvas, resolution, aoResolution) {
 
             if (view.bonds) {
 
-                var bonds = [];
+                // var bonds = [];
 
-                for (var i = 0; i < system.atoms.length - 1; i++) {
-                    for (var j = i + 1; j < system.atoms.length; j++) {
-                        var a = system.atoms[i];
-                        var b = system.atoms[j];
-                        var l = glm.vec3.fromValues(a.x, a.y, a.z);
-                        var m = glm.vec3.fromValues(b.x, b.y, b.z);
-                        var cutoff = elements[a.symbol].radius + elements[b.symbol].radius;
-                        if (glm.vec3.distance(l,m) > cutoff * view.bondThreshold) {
-                            continue;
-                        }
-                        var ca = elements[a.symbol].color;
-                        var cb = elements[b.symbol].color;
-                        var ra = elements[a.symbol].radius;
-                        var rb = elements[b.symbol].radius;
-                        bonds.push({
-                            a: a,
-                            b: b,
-                            ra: ra,
-                            rb: rb,
-                            ca: ca,
-                            cb: cb
-                        });
-                    }
-                }
+                // for (var i = 0; i < system.atoms.length - 1; i++) {
+                //     for (var j = i + 1; j < system.atoms.length; j++) {
+                //         var a = system.atoms[i];
+                //         var b = system.atoms[j];
+                //         var l = glm.vec3.fromValues(a.x, a.y, a.z);
+                //         var m = glm.vec3.fromValues(b.x, b.y, b.z);
+                //         var cutoff = elements[a.symbol].radius + elements[b.symbol].radius;
+                //         if (glm.vec3.distance(l,m) > cutoff * view.bondThreshold) {
+                //             continue;
+                //         }
+                //         var ca = elements[a.symbol].color;
+                //         var cb = elements[b.symbol].color;
+                //         var ra = elements[a.symbol].radius;
+                //         var rb = elements[b.symbol].radius;
+                //         bonds.push({
+                //             a: a,
+                //             b: b,
+                //             ra: ra,
+                //             rb: rb,
+                //             ca: ca,
+                //             cb: cb
+                //         });
+                //     }
+                // }
+
+
 
                 rBonds = null;
 
-                if (bonds.length > 0) {
+                if (system.bonds.length > 0) {
 
                     var attribs = core.buildAttribs(gl, {
                         aImposter: 3,
@@ -16036,15 +16022,16 @@ module.exports = function (canvas, resolution, aoResolution) {
                     var cola = [];
                     var colb = [];
 
-                    for (var i = 0; i < bonds.length; i++) {
-                        var b = bonds[i];
+                    for (var i = 0; i < system.bonds.length; i++) {
+                        var b = system.bonds[i];
+                        if (b.cutoff > view.bondThreshold) break;
                         imposter.push.apply(imposter, cube.position);
-                        posa.push.apply(posa, make36([b.a.x, b.a.y, b.a.z]));
-                        posb.push.apply(posb, make36([b.b.x, b.b.y, b.b.z]));
-                        rada.push.apply(rada, make36([b.ra]));
-                        radb.push.apply(radb, make36([b.rb]));
-                        cola.push.apply(cola, make36([b.ca[0], b.ca[1], b.ca[2]]));
-                        colb.push.apply(colb, make36([b.cb[0], b.cb[1], b.cb[2]]));
+                        posa.push.apply(posa, make36([b.posA.x, b.posA.y, b.posA.z]));
+                        posb.push.apply(posb, make36([b.posB.x, b.posB.y, b.posB.z]));
+                        rada.push.apply(rada, make36([b.radA]));
+                        radb.push.apply(radb, make36([b.radB]));
+                        cola.push.apply(cola, make36([b.colA.r, b.colA.g, b.colA.b]));
+                        colb.push.apply(colb, make36([b.colB.r, b.colB.g, b.colB.b]));
                     }
 
                     attribs.aImposter.buffer.set(new Float32Array(imposter));
@@ -16354,6 +16341,8 @@ module.exports = [
 },{}],"/home/rye/Dropbox/src/speck/src/system.js":[function(require,module,exports){
 "use strict";
 
+var glm = require("./gl-matrix")
+
 var elements = require("./elements");
 
 var MIN_ATOM_RADIUS = Infinity;
@@ -16363,12 +16352,67 @@ for (var i = 0; i <= 118; i++) {
     MAX_ATOM_RADIUS = Math.max(MAX_ATOM_RADIUS, elements[i].radius);
 }
 
-var newAtoms = module.exports.new = function() {
+var newSystem = module.exports.new = function() {
     return {
         atoms: [],
-        farAtom: undefined
+        farAtom: undefined,
+        bonds: []
     }
 };
+
+
+var calculateBonds = module.exports.calculateBonds = function(s) {
+    var bonds = [];
+    var sorted = s.atoms.slice();
+    sorted.sort(function(a, b) {
+        return a.z - b.z;
+    });
+    for (var i = 0; i < sorted.length; i++) {
+        var a = sorted[i];
+        var j = i + 1;
+        while(j < sorted.length && sorted[j].z < sorted[i].z + 2.5 * 2 * MAX_ATOM_RADIUS) {
+            var b = sorted[j];
+            var l = glm.vec3.fromValues(a.x, a.y, a.z);
+            var m = glm.vec3.fromValues(b.x, b.y, b.z);
+            var d = glm.vec3.distance(l, m);
+            var ea = elements[a.symbol];
+            var eb = elements[b.symbol];
+            if (d < 2.5*(ea.radius+eb.radius)) {
+                bonds.push({
+                    posA: {
+                        x: a.x,
+                        y: a.y,
+                        z: a.z
+                    },
+                    posB: {
+                        x: b.x,
+                        y: b.y,
+                        z: b.z
+                    },
+                    radA: ea.radius,
+                    radB: eb.radius,
+                    colA: {
+                        r: ea.color[0],
+                        g: ea.color[1],
+                        b: ea.color[2]
+                    },
+                    colB: {
+                        r: eb.color[0],
+                        g: eb.color[1],
+                        b: eb.color[2]
+                    },
+                    cutoff: d/(ea.radius+eb.radius)
+                });
+            }
+            j++;
+        }
+    }
+    bonds.sort(function(a, b) {
+        return a.cutoff - b.cutoff;
+    });
+    s.bonds = bonds;
+}
+
 
 var addAtom = module.exports.addAtom = function(s, symbol, x, y, z) {
     s.atoms.push({
@@ -16431,7 +16475,7 @@ var getRadius = module.exports.getRadius = function(s) {
     return Math.sqrt(atom.x*atom.x + atom.y*atom.y + atom.z*atom.z) + rd;
 }
 
-},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js"}],"/home/rye/Dropbox/src/speck/src/view.js":[function(require,module,exports){
+},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./gl-matrix":"/home/rye/Dropbox/src/speck/src/gl-matrix.js"}],"/home/rye/Dropbox/src/speck/src/view.js":[function(require,module,exports){
 "use strict";
 
 
@@ -16464,7 +16508,7 @@ var newView = module.exports.new = function() {
         relativeAtomScale: 1.0,
         bondScale: 0.5,
         rotation: glm.mat4.create(),
-        ao: 0.5,
+        ao: 0.75,
         aoRes: 256,
         brightness: 0.5,
         outline: 0.0,

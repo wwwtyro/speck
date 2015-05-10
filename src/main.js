@@ -13,23 +13,6 @@ var samples = require("./samples");
 var elements = require("./elements");
 var presets = require("./presets");
 
-window._speck_debug_getView = function() {
-    console.log(JSON.stringify({
-        atomScale: view.atomScale,
-        relativeAtomScale: view.relativeAtomScale,
-        bondScale: view.bondScale,
-        ao: view.ao,
-        brightness: view.brightness,
-        outline: view.outline,
-        bonds: view.bonds,
-        bondThreshold: view.bondThreshold,
-        bondShade: view.bondShade,
-        dofStrength: view.dofStrength,
-        dofPosition: view.dofPosition,
-        fxaa: view.fxaa
-    }));
-}
-
 window.onerror = function(e, url, line) {
     var error = document.getElementById("error");
     error.style.display = "block";
@@ -64,6 +47,7 @@ function loadStructure(data) {
         System.addAtom(system, a.symbol, x,y,z);
     }
     System.center(system);
+    System.calculateBonds(system);
     renderer.setAtoms(system, view);
     View.center(view, system);
     needReset = true;
