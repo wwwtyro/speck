@@ -15280,7 +15280,7 @@ function loadStructure(data) {
     }
     System.center(system);
     System.calculateBonds(system);
-    renderer.setAtoms(system, view);
+    renderer.setSystem(system, view);
     View.center(view, system);
     needReset = true;
 }
@@ -15323,7 +15323,7 @@ window.onload = function() {
         data = JSON.parse(data);
         system = data.system;
         view = data.view;
-        renderer.setAtoms(system, view);
+        renderer.setSystem(system, view);
         renderer.setResolution(view.resolution, view.aoRes);
         needReset = true;
     } else {
@@ -15595,21 +15595,21 @@ window.onload = function() {
         var preset = document.getElementById("view-preset").value;
         View.override(view, presets[preset]);
         updateControls();
-        renderer.setAtoms(system, view);
+        renderer.setSystem(system, view);
         needReset = true;
     });
 
     document.getElementById("bonds").addEventListener("click", function(e) {
         view.bonds = document.getElementById("bonds").checked;
         View.resolve(view);
-        renderer.setAtoms(system, view);
+        renderer.setSystem(system, view);
         needReset = true;
     });
 
     document.getElementById("bond-threshold").addEventListener("change", function(e) {
         view.bondThreshold = parseFloat(document.getElementById("bond-threshold").value);
         View.resolve(view);
-        renderer.setAtoms(system, view);
+        renderer.setSystem(system, view);
         needReset = true;
     });
 
@@ -15941,7 +15941,7 @@ module.exports = function (canvas, resolution, aoResolution) {
         }
 
 
-        self.setAtoms = function(newSystem, view) {
+        self.setSystem = function(newSystem, view) {
 
             system = newSystem;
 

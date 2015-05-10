@@ -167,7 +167,7 @@ module.exports = function (canvas, resolution, aoResolution) {
         }
 
 
-        self.setAtoms = function(newSystem, view) {
+        self.setSystem = function(newSystem, view) {
 
             system = newSystem;
 
