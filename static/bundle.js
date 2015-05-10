@@ -10664,7 +10664,21 @@ if( typeof module !== 'undefined' && module != null ) {
   module.exports = LZString
 }
 
-},{}],"/home/rye/Dropbox/src/speck/src/cube.js":[function(require,module,exports){
+},{}],"/home/rye/Dropbox/src/speck/src/const.js":[function(require,module,exports){
+"use strict";
+
+var elements = require("./elements");
+
+var MIN_ATOM_RADIUS = Infinity;
+var MAX_ATOM_RADIUS = -Infinity;
+for (var i = 0; i <= 118; i++) {
+    MIN_ATOM_RADIUS = Math.min(MIN_ATOM_RADIUS, elements[i].radius);
+    MAX_ATOM_RADIUS = Math.max(MAX_ATOM_RADIUS, elements[i].radius);
+}
+
+module.exports.MIN_ATOM_RADIUS = MIN_ATOM_RADIUS;
+module.exports.MAX_ATOM_RADIUS = MAX_ATOM_RADIUS;
+},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js"}],"/home/rye/Dropbox/src/speck/src/cube.js":[function(require,module,exports){
 
 var n = -1;
 var p = 1;
@@ -15266,7 +15280,7 @@ function loadStructure(data) {
     }
     System.center(system);
     System.calculateBonds(system);
-    renderer.setAtoms(system, view);
+    renderer.setSystem(system, view);
     View.center(view, system);
     needReset = true;
 }
@@ -15309,7 +15323,7 @@ window.onload = function() {
         data = JSON.parse(data);
         system = data.system;
         view = data.view;
-        renderer.setAtoms(system, view);
+        renderer.setSystem(system, view);
         renderer.setResolution(view.resolution, view.aoRes);
         needReset = true;
     } else {
@@ -15581,21 +15595,21 @@ window.onload = function() {
         var preset = document.getElementById("view-preset").value;
         View.override(view, presets[preset]);
         updateControls();
-        renderer.setAtoms(system, view);
+        renderer.setSystem(system, view);
         needReset = true;
     });
 
     document.getElementById("bonds").addEventListener("click", function(e) {
         view.bonds = document.getElementById("bonds").checked;
         View.resolve(view);
-        renderer.setAtoms(system, view);
+        renderer.setSystem(system, view);
         needReset = true;
     });
 
     document.getElementById("bond-threshold").addEventListener("change", function(e) {
         view.bondThreshold = parseFloat(document.getElementById("bond-threshold").value);
         View.resolve(view);
-        renderer.setAtoms(system, view);
+        renderer.setSystem(system, view);
         needReset = true;
     });
 
@@ -15730,7 +15744,7 @@ module.exports = {
         spf: 32,
         bonds: false,
         bondThreshold: 1.2,
-        bondShade: 0.0,
+        bondShade: 0.5,
         atomShade: 0.5,
         dofStrength: 0.0,
         dofPosition: 0.5,
@@ -15761,7 +15775,7 @@ module.exports = {
 "use strict";
 
 var glm = require('./gl-matrix');
-var core = require('./webgl.js');
+var webgl = require('./webgl.js');
 
 var cube = require("./cube");
 var elements = require("./elements");
@@ -15832,7 +15846,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
             window.gl = gl; //debug
 
-            ext = core.getExtensions(gl, [
+            ext = webgl.getExtensions(gl, [
                 "EXT_frag_depth", 
                 "WEBGL_depth_texture", 
             ]);
@@ -15858,15 +15872,15 @@ module.exports = function (canvas, resolution, aoResolution) {
             ];
 
             // Initialize geometry.
-            var attribs = core.buildAttribs(gl, {aPosition: 3});
+            var attribs = webgl.buildAttribs(gl, {aPosition: 3});
             attribs.aPosition.buffer.set(new Float32Array(position));
             var count = position.length / 9;
 
-            rDispQuad = new core.Renderable(gl, progDisplayQuad, attribs, count);
-            rAccumulator = new core.Renderable(gl, progAccumulator, attribs, count);
-            rAO = new core.Renderable(gl, progAO, attribs, count);
-            rFXAA = new core.Renderable(gl, progFXAA, attribs, count);
-            rDOF = new core.Renderable(gl, progDOF, attribs, count);
+            rDispQuad = new webgl.Renderable(gl, progDisplayQuad, attribs, count);
+            rAccumulator = new webgl.Renderable(gl, progAccumulator, attribs, count);
+            rAO = new webgl.Renderable(gl, progAO, attribs, count);
+            rFXAA = new webgl.Renderable(gl, progFXAA, attribs, count);
+            rDOF = new webgl.Renderable(gl, progDOF, attribs, count);
 
             samples = 0;
 
@@ -15874,48 +15888,48 @@ module.exports = function (canvas, resolution, aoResolution) {
 
         self.createTextures = function() {
             // fbRandRot
-            tRandRotColor = new core.Texture(gl, 0, null, aoResolution, aoResolution);
+            tRandRotColor = new webgl.Texture(gl, 0, null, aoResolution, aoResolution);
 
-            tRandRotDepth = new core.Texture(gl, 1, null, aoResolution, aoResolution, {
+            tRandRotDepth = new webgl.Texture(gl, 1, null, aoResolution, aoResolution, {
                 internalFormat: gl.DEPTH_COMPONENT,
                 format: gl.DEPTH_COMPONENT,
                 type: gl.UNSIGNED_SHORT
             });
 
-            fbRandRot = new core.Framebuffer(gl, [tRandRotColor], tRandRotDepth);
+            fbRandRot = new webgl.Framebuffer(gl, [tRandRotColor], tRandRotDepth);
 
             // fbScene
-            tSceneColor = new core.Texture(gl, 2, null, resolution, resolution);
+            tSceneColor = new webgl.Texture(gl, 2, null, resolution, resolution);
 
-            tSceneNormal = new core.Texture(gl, 3, null, resolution, resolution);
+            tSceneNormal = new webgl.Texture(gl, 3, null, resolution, resolution);
 
-            tSceneDepth = new core.Texture(gl, 4, null, resolution, resolution, {
+            tSceneDepth = new webgl.Texture(gl, 4, null, resolution, resolution, {
                 internalFormat: gl.DEPTH_COMPONENT,
                 format: gl.DEPTH_COMPONENT,
                 type: gl.UNSIGNED_SHORT
             });
 
-            fbSceneColor = new core.Framebuffer(gl, [tSceneColor], tSceneDepth);
+            fbSceneColor = new webgl.Framebuffer(gl, [tSceneColor], tSceneDepth);
 
-            fbSceneNormal = new core.Framebuffer(gl, [tSceneNormal], tSceneDepth);
+            fbSceneNormal = new webgl.Framebuffer(gl, [tSceneNormal], tSceneDepth);
 
             // fbAccumulator
-            tAccumulator = new core.Texture(gl, 5, null, resolution, resolution);
-            tAccumulatorOut = new core.Texture(gl, 6, null, resolution, resolution);
-            fbAccumulator = new core.Framebuffer(gl, [tAccumulatorOut]);
+            tAccumulator = new webgl.Texture(gl, 5, null, resolution, resolution);
+            tAccumulatorOut = new webgl.Texture(gl, 6, null, resolution, resolution);
+            fbAccumulator = new webgl.Framebuffer(gl, [tAccumulatorOut]);
 
             // fbAO
-            tAO = new core.Texture(gl, 7, null, resolution, resolution);
-            fbAO = new core.Framebuffer(gl, [tAO]);
+            tAO = new webgl.Texture(gl, 7, null, resolution, resolution);
+            fbAO = new webgl.Framebuffer(gl, [tAO]);
 
             // fbFXAA
-            tFXAA = new core.Texture(gl, 8, null, resolution, resolution);
-            tFXAAOut = new core.Texture(gl, 9, null, resolution, resolution);
-            fbFXAA = new core.Framebuffer(gl, [tFXAAOut]);
+            tFXAA = new webgl.Texture(gl, 8, null, resolution, resolution);
+            tFXAAOut = new webgl.Texture(gl, 9, null, resolution, resolution);
+            fbFXAA = new webgl.Framebuffer(gl, [tFXAAOut]);
 
             // fbDOF
-            tDOF = new core.Texture(gl, 10, null, resolution, resolution);
-            fbDOF = new core.Framebuffer(gl, [tDOF]);
+            tDOF = new webgl.Texture(gl, 10, null, resolution, resolution);
+            fbDOF = new webgl.Framebuffer(gl, [tDOF]);
         }
 
         self.setResolution = function(res, aoRes) {
@@ -15927,7 +15941,7 @@ module.exports = function (canvas, resolution, aoResolution) {
         }
 
 
-        self.setAtoms = function(newSystem, view) {
+        self.setSystem = function(newSystem, view) {
 
             system = newSystem;
 
@@ -15940,7 +15954,7 @@ module.exports = function (canvas, resolution, aoResolution) {
             }
 
             // Atoms
-            var attribs = core.buildAttribs(gl, {
+            var attribs = webgl.buildAttribs(gl, {
                 aImposter: 3, aPosition: 3, aRadius: 1, aColor: 3
             });
 
@@ -15965,46 +15979,17 @@ module.exports = function (canvas, resolution, aoResolution) {
 
             var count = imposter.length / 9;
 
-            rAtoms = new core.Renderable(gl, progAtoms, attribs, count);
+            rAtoms = new webgl.Renderable(gl, progAtoms, attribs, count);
 
             // Bonds
 
             if (view.bonds) {
 
-                // var bonds = [];
-
-                // for (var i = 0; i < system.atoms.length - 1; i++) {
-                //     for (var j = i + 1; j < system.atoms.length; j++) {
-                //         var a = system.atoms[i];
-                //         var b = system.atoms[j];
-                //         var l = glm.vec3.fromValues(a.x, a.y, a.z);
-                //         var m = glm.vec3.fromValues(b.x, b.y, b.z);
-                //         var cutoff = elements[a.symbol].radius + elements[b.symbol].radius;
-                //         if (glm.vec3.distance(l,m) > cutoff * view.bondThreshold) {
-                //             continue;
-                //         }
-                //         var ca = elements[a.symbol].color;
-                //         var cb = elements[b.symbol].color;
-                //         var ra = elements[a.symbol].radius;
-                //         var rb = elements[b.symbol].radius;
-                //         bonds.push({
-                //             a: a,
-                //             b: b,
-                //             ra: ra,
-                //             rb: rb,
-                //             ca: ca,
-                //             cb: cb
-                //         });
-                //     }
-                // }
-
-
-
                 rBonds = null;
 
                 if (system.bonds.length > 0) {
 
-                    var attribs = core.buildAttribs(gl, {
+                    var attribs = webgl.buildAttribs(gl, {
                         aImposter: 3,
                         aPosA: 3,
                         aPosB: 3,
@@ -16044,7 +16029,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
                     var count = imposter.length / 9;
 
-                    rBonds = new core.Renderable(gl, progBonds, attribs, count);
+                    rBonds = new webgl.Renderable(gl, progBonds, attribs, count);
 
                 }
 
@@ -16322,7 +16307,7 @@ module.exports = function (canvas, resolution, aoResolution) {
 
 function loadProgram(gl, src) {
     src = src.split('// __split__');
-    return new core.Program(gl, src[0], src[1]);
+    return new webgl.Program(gl, src[0], src[1]);
 }
 
 },{"./cube":"/home/rye/Dropbox/src/speck/src/cube.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./gl-matrix":"/home/rye/Dropbox/src/speck/src/gl-matrix.js","./system":"/home/rye/Dropbox/src/speck/src/system.js","./view":"/home/rye/Dropbox/src/speck/src/view.js","./webgl.js":"/home/rye/Dropbox/src/speck/src/webgl.js"}],"/home/rye/Dropbox/src/speck/src/samples.js":[function(require,module,exports){
@@ -16344,13 +16329,7 @@ module.exports = [
 var glm = require("./gl-matrix")
 
 var elements = require("./elements");
-
-var MIN_ATOM_RADIUS = Infinity;
-var MAX_ATOM_RADIUS = -Infinity;
-for (var i = 0; i <= 118; i++) {
-    MIN_ATOM_RADIUS = Math.min(MIN_ATOM_RADIUS, elements[i].radius);
-    MAX_ATOM_RADIUS = Math.max(MAX_ATOM_RADIUS, elements[i].radius);
-}
+var consts = require("./const");
 
 var newSystem = module.exports.new = function() {
     return {
@@ -16370,7 +16349,7 @@ var calculateBonds = module.exports.calculateBonds = function(s) {
     for (var i = 0; i < sorted.length; i++) {
         var a = sorted[i];
         var j = i + 1;
-        while(j < sorted.length && sorted[j].z < sorted[i].z + 2.5 * 2 * MAX_ATOM_RADIUS) {
+        while(j < sorted.length && sorted[j].z < sorted[i].z + 2.5 * 2 * consts.MAX_ATOM_RADIUS) {
             var b = sorted[j];
             var l = glm.vec3.fromValues(a.x, a.y, a.z);
             var m = glm.vec3.fromValues(b.x, b.y, b.z);
@@ -16470,26 +16449,18 @@ var getFarAtom = module.exports.getFarAtom = function(s) {
 
 var getRadius = module.exports.getRadius = function(s) {
     var atom = getFarAtom(s);
-    var r = MAX_ATOM_RADIUS;
+    var r = consts.MAX_ATOM_RADIUS;
     var rd = Math.sqrt(r*r + r*r + r*r) * 2.5;
     return Math.sqrt(atom.x*atom.x + atom.y*atom.y + atom.z*atom.z) + rd;
 }
 
-},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./gl-matrix":"/home/rye/Dropbox/src/speck/src/gl-matrix.js"}],"/home/rye/Dropbox/src/speck/src/view.js":[function(require,module,exports){
+},{"./const":"/home/rye/Dropbox/src/speck/src/const.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./gl-matrix":"/home/rye/Dropbox/src/speck/src/gl-matrix.js"}],"/home/rye/Dropbox/src/speck/src/view.js":[function(require,module,exports){
 "use strict";
 
 
 var glm = require("./gl-matrix");
-var elements = require("./elements")
-
-
-var MIN_ATOM_RADIUS = Infinity;
-var MAX_ATOM_RADIUS = -Infinity;
-for (var i = 0; i <= 118; i++) {
-    MIN_ATOM_RADIUS = Math.min(MIN_ATOM_RADIUS, elements[i].radius);
-    MAX_ATOM_RADIUS = Math.max(MAX_ATOM_RADIUS, elements[i].radius);
-}
-
+var elements = require("./elements");
+var consts = require("./const");
 
 function clamp(min, max, value) {
     return Math.min(max, Math.max(min, value));
@@ -16515,7 +16486,7 @@ var newView = module.exports.new = function() {
         spf: 32,
         bonds: false,
         bondThreshold: 1.2,
-        bondShade: 0.0,
+        bondShade: 0.5,
         atomShade: 0.5,
         resolution: 768,
         dofStrength: 0.0,
@@ -16624,12 +16595,12 @@ var getRect = module.exports.getRect = function(v) {
 
 var getBondRadius = module.exports.getBondRadius = function(v) {
     return v.bondScale * v.atomScale * 
-        (1 + (MIN_ATOM_RADIUS - 1) * v.relativeAtomScale);
+        (1 + (consts.MIN_ATOM_RADIUS - 1) * v.relativeAtomScale);
 };
 
 
 
-},{"./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./gl-matrix":"/home/rye/Dropbox/src/speck/src/gl-matrix.js"}],"/home/rye/Dropbox/src/speck/src/webgl.js":[function(require,module,exports){
+},{"./const":"/home/rye/Dropbox/src/speck/src/const.js","./elements":"/home/rye/Dropbox/src/speck/src/elements.js","./gl-matrix":"/home/rye/Dropbox/src/speck/src/gl-matrix.js"}],"/home/rye/Dropbox/src/speck/src/webgl.js":[function(require,module,exports){
 
 //|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 function buildAttribs(gl, layout) {
