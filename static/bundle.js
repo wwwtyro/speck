@@ -15744,7 +15744,7 @@ module.exports = {
         spf: 32,
         bonds: false,
         bondThreshold: 1.2,
-        bondShade: 0.0,
+        bondShade: 0.5,
         atomShade: 0.5,
         dofStrength: 0.0,
         dofPosition: 0.5,
