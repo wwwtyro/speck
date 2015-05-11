@@ -12,6 +12,7 @@ var xyz = require("./xyz");
 var samples = require("./samples");
 var elements = require("./elements");
 var presets = require("./presets");
+var mimetypes = require("./mimetypes");
 
 window.onerror = function(e, url, line) {
     var error = document.getElementById("error");
@@ -404,47 +405,20 @@ window.onload = function() {
         this.select();
     });
 
+    var selector = document.getElementById("download-image-format-selector");
+    for (var i = 0; i < mimetypes.length; i++) {
+        var m = mimetypes[i];
+        var opt = document.createElement("option");
+        opt.value = m;
+        opt.innerHTML = m.toUpperCase();
+        selector.appendChild(opt);
+    }
+
     document.getElementById("download-image-button").addEventListener("click", function(e) {
         var imageFormatBox = document.getElementById("download-image-format-selector");
-        var mimetype = "";
-        var filename = "";
-        // Are there dictionaries/hashes/associative-arrays in Javascript?
-        //
-        // Also, support for these formats varies by browser. But because 
-        // javascript has aggressive defaults, PNG is output if a browser
-        // doesn't support the requested format. So, perhaps we should 
-        // only show options supported by a given browser?
-        //
-        // Web stuff is frustrating.
-        if(imageFormatBox.value == "png")
-        {
-            mimetype = 'image/png';
-            filename = 'render.png';
-        }
-        else if(imageFormatBox.value == "jpg")
-        {
-            mimetype = 'image/jpeg';
-            filename = 'render.jpg';
-        }
-        else if(imageFormatBox.value == "gif")
-        {
-            mimetype = 'image/gif';
-            filename = 'render.gif';
-        }
-        else if(imageFormatBox.value == "bmp")
-        {
-            mimetype = 'image/bmp';
-            filename = 'render.bmp';
-        }
-        else if(imageFormatBox.value == "webp")
-        {
-            mimetype = 'image/webp';
-            filename = 'render.webp';
-        }
-        else
-        {
-            //How do I throw errors??
-        }
+        var mimetype = "image/" + imageFormatBox.value;
+        var filename = "render." + imageFormatBox.value;
+        renderer.render(view);
         var imgURL = document.getElementById("renderer-canvas").toDataURL(mimetype);
         document.getElementById("download-image-button").download = filename;
         document.getElementById("download-image-button").href = imgURL;
