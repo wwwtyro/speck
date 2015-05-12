@@ -257,20 +257,17 @@ window.onload = function() {
         var rcw = Math.round(wh * 1);
         var rcm = Math.round((wh - rcw) / 2);
 
-        renderContainer.style.height = rcw + "px";
-        renderContainer.style.width = rcw + "px";
-        renderContainer.style.left = rcm + "px";
-        renderContainer.style.top = rcm + "px";
+        renderContainer.style.height = rcw - 64 + "px";
+        renderContainer.style.width = rcw - 64+ "px";
+        renderContainer.style.left = rcm + 32 + "px";
+        renderContainer.style.top = rcm + 32 + "px";
 
-        menu.style.left = 32 + rcw + "px";
+        menu.style.left = rcw + "px";
         menu.style.top = 32 + "px";
 
         ccon.style.top = 32 + $(menu).innerHeight() + 32 + "px";
         ccon.style.left = menu.style.left;
-        ccon.style.bottom = "0px";
-
-        var aoi = document.getElementById("ao-indicator");
-        aoi.style.left = rcw + "px";
+        ccon.style.bottom = "32px";
     }
 
     reflow();
@@ -470,7 +467,7 @@ window.onload = function() {
         document.getElementById("dof-strength-text").innerHTML = Math.round(view.dofStrength * 100) + "%";
         document.getElementById("dof-position-text").innerHTML = Math.round(view.dofPosition * 100) + "%";
 
-        document.getElementById("ao-indicator").style.height = Math.min(100, (renderer.getAOProgress() * 100)) + "%";
+        document.getElementById("ao-indicator").style.width = Math.min(100, (renderer.getAOProgress() * 100)) + "%";
 
         if (needReset) {
             renderer.reset();

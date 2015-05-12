@@ -43,8 +43,9 @@ body {
 
 #ao-indicator {
     position: fixed;
-    border-left: 4px solid #777;
-    bottom: 0px;
+    border-top: 4px solid #3bf;
+    top: 0px;
+    left: 0px;
 }
 
 #error {
