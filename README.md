@@ -1,6 +1,6 @@
 # Speck
 
-Speck is a molecule renderer with the goal of producing high quality, attractive, but clear and practical figures.
+Speck is a molecule renderer with the goal of producing figures that are as attractive as they are practical. Express your molecule clearly _and_ with style.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/wwwtyro/speck/gh-pages/static/screenshots/demo-2.png">
@@ -17,7 +17,7 @@ Try speck out live in your browser here: http://wwwtyro.github.io/speck/
 Ambient occlusion provides much more information about molecule structure than simple direct lighting. It's incredibly useful for large and small molecule viewing alike. Easily Speck's most important feature.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/wwwtyro/speck/gh-pages/static/screenshots/demo-4.png">
+  <img src="https://raw.githubusercontent.com/wwwtyro/speck/gh-pages/static/screenshots/demo-9.png">
 </p>
 
 #### Pixel-perfect atoms and bonds
@@ -51,6 +51,7 @@ Speck goes to great lengths to decouple rendering options, so that you have the 
 <p align="center">
   <img src="https://raw.githubusercontent.com/wwwtyro/speck/gh-pages/static/screenshots/demo-3.png">
   <img src="https://raw.githubusercontent.com/wwwtyro/speck/gh-pages/static/screenshots/demo-6.png">
+  <img src="https://raw.githubusercontent.com/wwwtyro/speck/gh-pages/static/screenshots/demo-4.png">
   <img src="https://raw.githubusercontent.com/wwwtyro/speck/gh-pages/static/screenshots/demo-7.png">
   <img src="https://raw.githubusercontent.com/wwwtyro/speck/gh-pages/static/screenshots/demo-8.png">
 </p>
