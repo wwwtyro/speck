@@ -14,7 +14,7 @@ module.exports = function(component, renderer, container) {
     
     container.addEventListener("mousedown", (e) => {
 	if(e.button == 0) {
-
+	    
 	    let tmp_interactions = component.state.interactions;
 	    tmp_interactions.buttonDown = true;
 	    
@@ -54,7 +54,8 @@ module.exports = function(component, renderer, container) {
 	tmp_interactions.lastY = e.clientY;
 
 	component.setState({
-	    interactions: tmp_interactions
+	    interactions: tmp_interactions,
+	    refreshView: true
 	});
 	
 	speckView.rotate(component.props.view, dx, dy);
