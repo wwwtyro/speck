@@ -30,6 +30,9 @@ module.exports = function(component, renderer, container) {
 
 	    let tmp_interactions = component.state.interactions;
 	    tmp_interactions.buttonDown = false;
+
+	    tmp_interactions.lastX = 0.0;
+	    tmp_interactions.lastY = 0.0;
 	    
 	    component.setState({
 		interactions: tmp_interactions,
