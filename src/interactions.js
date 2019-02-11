@@ -17,11 +17,14 @@ module.exports = function(component, renderer, container) {
 	    
 	    let tmp_interactions = component.state.interactions;
 	    tmp_interactions.buttonDown = true;
+	    tmp_interactions.lastX = e.clientX;
+	    tmp_interactions.lastY = e.clientY; 
 	    
 	    component.setState({
 		interactions: tmp_interactions,
 		refreshView: true
-	    }); 
+	    });
+
 	}
     });
 
@@ -31,13 +34,11 @@ module.exports = function(component, renderer, container) {
 	    let tmp_interactions = component.state.interactions;
 	    tmp_interactions.buttonDown = false;
 
-	    tmp_interactions.lastX = 0.0;
-	    tmp_interactions.lastY = 0.0;
-	    
-	    component.setState({
+ 	    component.setState({
 		interactions: tmp_interactions,
 		refreshView: true
 	    });
+
 	}
     });
 
@@ -56,12 +57,12 @@ module.exports = function(component, renderer, container) {
 	tmp_interactions.lastX = e.clientX;
 	tmp_interactions.lastY = e.clientY;
 
+	speckView.rotate(component.props.view, dx, dy);
+	
 	component.setState({
 	    interactions: tmp_interactions,
 	    refreshView: true
 	});
-	
-	speckView.rotate(component.props.view, dx, dy);
 	
     });
 
