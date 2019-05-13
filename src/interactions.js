@@ -69,6 +69,9 @@ module.exports = function(component, renderer, container) {
     if(component.props.scrollZoom) {
 
 	container.addEventListener("wheel", (e) => {
+
+		// prevents the page from scrolling when using scroll wheel inside speck component
+		e.preventDefault();
 	    
 	    var wd = 0;
             if (e.deltaY < 0) {
