@@ -32,7 +32,7 @@ module.exports = function(component, renderer, container) {
 	if(e.button == 0) {
 
 	    let tmp_interactions = component.state.interactions;
-	    if(!tmp_interactions.buttonDown){
+	    if(!tmp_interactions.buttonDown) {
 	        return;
 	    }
 
