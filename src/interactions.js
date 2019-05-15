@@ -57,7 +57,12 @@ module.exports = function(component, renderer, container) {
 	tmp_interactions.lastX = e.clientX;
 	tmp_interactions.lastY = e.clientY;
 
-	speckView.rotate(component.props.view, dx, dy);
+	var view = Object.assign({}, component.props.view);
+	speckView.rotate(view, dx, dy);
+
+	component.props.setProps({
+		view: view,
+	});
 	
 	component.setState({
 	    interactions: tmp_interactions,
