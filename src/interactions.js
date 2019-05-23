@@ -28,26 +28,31 @@ module.exports = function(component, renderer, container) {
 	}
     });
 
-    container.addEventListener("mouseup", (e) => {
+    window.addEventListener("mouseup", (e) => {
 	if(e.button == 0) {
 
 	    let tmp_interactions = component.state.interactions;
+	    if(!tmp_interactions.buttonDown) {
+	        return;
+	    }
+
 	    tmp_interactions.buttonDown = false;
 
  	    component.setState({
 		interactions: tmp_interactions,
-		refreshView: true
+		refreshView: false
 	    });
 
 	}
     });
 
-    container.addEventListener("mousemove", (e) => {
+    window.addEventListener("mousemove", (e) => {
 
 	var tmp_interactions = component.state.interactions;
 	if(!tmp_interactions.buttonDown){
 	    return;
 	}
+
 	var dx = e.clientX - tmp_interactions.lastX;
 	var dy = e.clientY - tmp_interactions.lastY;
 	if(dx == 0 && dy == 0) {
