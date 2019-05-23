@@ -75,6 +75,9 @@ module.exports = function(component, renderer, container) {
 
 	container.addEventListener("wheel", (e) => {
 
+		// prevents the page from scrolling when using scroll wheel inside speck component
+		e.preventDefault();
+
         component.props.setProps({
             view: Object.assign(
                 component.props.view,
