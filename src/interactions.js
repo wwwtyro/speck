@@ -11,7 +11,7 @@ module.exports = function(component, renderer, container) {
         }
     });
 
-    container.addEventListener("mousedown", function(e) {
+    function mousedownFn(e) {
         if(e.button == 0) {
             let tmp_interactions = component.state.interactions;
             tmp_interactions.buttonDown = true;
@@ -23,9 +23,10 @@ module.exports = function(component, renderer, container) {
                 refreshView: true
             });
         }
-    });
+    }
+    container.addEventListener("mousedown", mousedownFn);
 
-    window.addEventListener("mouseup", function(e) {
+    function mouseupFn(e) {
         if(e.button == 0) {
             let tmp_interactions = component.state.interactions;
             if(!tmp_interactions.buttonDown) {
@@ -39,9 +40,10 @@ module.exports = function(component, renderer, container) {
                 refreshView: false
             });
         }
-    });
+    }
+    window.addEventListener("mouseup", mouseupFn);
 
-    window.addEventListener("mousemove", function(e) {
+    function mousemoveFn(e) {
         var tmp_interactions = component.state.interactions;
         if(!tmp_interactions.buttonDown){
             return;
@@ -67,23 +69,34 @@ module.exports = function(component, renderer, container) {
             interactions: tmp_interactions,
             refreshView: true
         });
-    });
+    }
+    window.addEventListener("mousemove", mousemoveFn);
 
-    if(component.props.scrollZoom) {
-        container.addEventListener("wheel", function(e) {
-            // prevents the page from scrolling when using scroll wheel inside speck component
-            e.preventDefault();
+    function wheelFn(e) {
+        // prevents the page from scrolling when using scroll wheel inside speck component
+        e.preventDefault();
 
-            component.props.setProps({
-                view: Object.assign(
-                    component.props.view,
-                    {zoom: component.props.view.zoom * (e.deltaY < 0 ? 1/0.9 : 0.9)}
-                )
-            });
+        component.props.setProps({
+            view: Object.assign(
+                component.props.view,
+                {zoom: component.props.view.zoom * (e.deltaY < 0 ? 1/0.9 : 0.9)}
+            )
+        });
 
-            component.setState({
-                refreshView: true
-            });
+        component.setState({
+            refreshView: true
         });
     }
+    if(component.props.scrollZoom) {
+        container.addEventListener("wheel", wheelFn);
+    }
+
+    function removeAllEventListeners() {
+        container.removeEventListener("mousedown", mousedownFn);
+        window.removeEventListener("mouseup", mouseupFn);
+        window.removeEventListener("mousemove", mousemoveFn);
+        container.removeEventListener("wheel", wheelFn);
+    }
+
+    return removeAllEventListeners;
 }
