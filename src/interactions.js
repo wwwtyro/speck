@@ -57,7 +57,12 @@ module.exports = function(component, renderer, container) {
 	tmp_interactions.lastX = e.clientX;
 	tmp_interactions.lastY = e.clientY;
 
-	speckView.rotate(component.props.view, dx, dy);
+	var view = Object.assign({}, component.props.view);
+	speckView.rotate(view, dx, dy);
+
+	component.props.setProps({
+		view: view,
+	});
 	
 	component.setState({
 	    interactions: tmp_interactions,
@@ -69,15 +74,13 @@ module.exports = function(component, renderer, container) {
     if(component.props.scrollZoom) {
 
 	container.addEventListener("wheel", (e) => {
-	    
-	    var wd = 0;
-            if (e.deltaY < 0) {
-		wd = 1;
-            }
-            else {
-		wd = -1;
-            }
-	    component.props.view.zoom = component.props.view.zoom * (wd === 1 ? 1/0.9 : 0.9);
+
+        component.props.setProps({
+            view: Object.assign(
+                component.props.view,
+                {zoom: component.props.view.zoom * (e.deltaY < 0 ? 1/0.9 : 0.9)}
+            )
+        });
 
 	    component.setState({
 		refreshView: true
