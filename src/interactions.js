@@ -45,7 +45,7 @@ module.exports = function(args) {
     window.addEventListener("mouseup", mouseupFn);
 
     function mousemoveFn(e) {
-        if(!interactions.buttonDown){
+        if(!interactions.buttonDown || (e.buttons === 0)){
             return;
         }
 
