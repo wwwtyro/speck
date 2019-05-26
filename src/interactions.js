@@ -3,18 +3,16 @@
 var speckView = require("./view.js");
 
 module.exports = function(args) {
-    const {
-        scrollZoom = true,
-        container,
+    var scrollZoom = args.scrollZoom === undefined ? true : args.scrollZoom;
+    var container = args.container;
 
-        getRotation,
-        setRotation,
+    var getRotation = args.getRotation;
+    var setRotation = args.setRotation;
 
-        getZoom,
-        setZoom,
+    var getZoom = args.getZoom;
+    var setZoom = args.setZoom;
 
-        refreshView
-    } = args;
+    var refreshView = args.refreshView;
 
     var interactions = {
         buttonDown: false,
