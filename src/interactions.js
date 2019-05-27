@@ -25,7 +25,7 @@ module.exports = function(args) {
     };
 
     function mousedownFn(e) {
-        if(e.button == 0) {
+        if(e.button === 0) {
             interactions = {
                 buttonDown: true,
                 lastX: e.clientX,
@@ -36,7 +36,7 @@ module.exports = function(args) {
     container.addEventListener("mousedown", mousedownFn);
 
     function mouseupFn(e) {
-        if(e.button == 0) {
+        if(e.button === 0) {
             if(!interactions.buttonDown) {
                 return;
             }
@@ -53,7 +53,7 @@ module.exports = function(args) {
 
         var dx = e.clientX - interactions.lastX;
         var dy = e.clientY - interactions.lastY;
-        if(dx == 0 && dy == 0) {
+        if(dx === 0 && dy === 0) {
             return;
         }
 
