@@ -6,6 +6,9 @@ module.exports = function(args) {
     if(arguments.length > 1) {
         throw "Error: The Speck Interactions module has changed!";
     }
+    else if((arguments.length) === 0 || (typeof arguments !== "object")) {
+        throw "Error: Arguments not provided to interactions";
+    }
 
     var scrollZoom = args.scrollZoom === undefined ? true : args.scrollZoom;
     var container = args.container;
