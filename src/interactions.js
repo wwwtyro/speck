@@ -51,6 +51,9 @@ module.exports = function(args) {
             return;
         }
 
+        // prevents interaction with other page elements while dragging
+        e.preventDefault();
+
         var dx = e.clientX - interactions.lastX;
         var dy = e.clientY - interactions.lastY;
         if(dx === 0 && dy === 0) {
