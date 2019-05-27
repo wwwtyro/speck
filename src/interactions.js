@@ -3,6 +3,10 @@
 var speckView = require("./view.js");
 
 module.exports = function(args) {
+    if(arguments.length > 1) {
+        throw "Error: The Speck Interactions module has changed!";
+    }
+
     var scrollZoom = args.scrollZoom === undefined ? true : args.scrollZoom;
     var container = args.container;
 
