@@ -6,7 +6,7 @@ module.exports = function(args) {
     if(arguments.length > 1) {
         throw "Error: The Speck Interactions module has changed!";
     }
-    else if((arguments.length) === 0 || (typeof arguments !== "object")) {
+    else if((arguments.length === 0) || (typeof arguments !== "object")) {
         throw "Error: Arguments not provided to interactions";
     }
 
@@ -16,6 +16,9 @@ module.exports = function(args) {
     var getRotation = args.getRotation;
     var setRotation = args.setRotation;
 
+    var getTranslation = args.getTranslation;
+    var setTranslation = args.setTranslation;
+
     var getZoom = args.getZoom;
     var setZoom = args.setZoom;
 
@@ -23,6 +26,7 @@ module.exports = function(args) {
 
     var interactions = {
         buttonDown: false,
+        shiftDown: false,
         lastX: 0.0,
         lastY: 0.0
     };
@@ -31,6 +35,7 @@ module.exports = function(args) {
         if(e.button === 0) {
             interactions = {
                 buttonDown: true,
+                shiftDown: interactions.shiftDown,
                 lastX: e.clientX,
                 lastY: e.clientY
             };
@@ -49,6 +54,12 @@ module.exports = function(args) {
     }
     window.addEventListener("mouseup", mouseupFn);
 
+    function keychangeFn(e) {
+        interactions.shiftDown = e.shiftKey;
+    }
+    window.addEventListener("keydown", keychangeFn);
+    window.addEventListener("keyup", keychangeFn);
+
     function mousemoveFn(e) {
         if(!interactions.buttonDown || (e.buttons === 0)){
             return;
@@ -66,12 +77,22 @@ module.exports = function(args) {
         interactions.lastX = e.clientX;
         interactions.lastY = e.clientY;
 
-        var viewDummyObj = {
-            rotation: new Float32Array(getRotation())
-        };
-        speckView.rotate(viewDummyObj, dx, dy);
+        if(interactions.shiftDown) {
+            var translation = getTranslation();
+            var inverseZoom = 0.001/getZoom();
+            setTranslation({
+                x: translation.x - dx * inverseZoom,
+                y: translation.y + dy * inverseZoom
+            });
+        }
+        else {
+            var viewDummyObj = {
+                rotation: new Float32Array(getRotation())
+            };
+            speckView.rotate(viewDummyObj, dx, dy);
 
-        setRotation(viewDummyObj.rotation);
+            setRotation(viewDummyObj.rotation);
+        }
         refreshView();
     }
     window.addEventListener("mousemove", mousemoveFn);
@@ -91,6 +112,8 @@ module.exports = function(args) {
     function removeAllEventListeners() {
         container.removeEventListener("mousedown", mousedownFn);
         window.removeEventListener("mouseup", mouseupFn);
+        window.removeEventListener("keydown", keychangeFn);
+        window.removeEventListener("keyup", keychangeFn);
         window.removeEventListener("mousemove", mousemoveFn);
         container.removeEventListener("wheel", wheelFn);
     }
