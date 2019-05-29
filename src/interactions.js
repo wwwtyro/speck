@@ -6,7 +6,7 @@ module.exports = function(args) {
     if(arguments.length > 1) {
         throw "Error: The Speck Interactions module has changed!";
     }
-    else if((arguments.length === 0) || (typeof arguments !== "object")) {
+    else if((arguments.length === 0) || (typeof args !== "object")) {
         throw "Error: Arguments not provided to interactions";
     }
 
