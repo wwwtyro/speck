@@ -6,6 +6,13 @@ Speck is a molecule renderer with the goal of producing figures that are as attr
   <img src="https://raw.githubusercontent.com/wwwtyro/speck/gh-pages/static/screenshots/demo-2.png">
 </p>
 
+<div align="center">
+  <a href="https://dash.plotly.com/project-maintenance">
+    <img src="https://dash.plotly.com/assets/images/maintained-by-plotly.png" width="400px" alt="Maintained by Plotly">
+  </a>
+</div>
+
+
 ## Try it live
 
 Try speck out live in your browser here: http://wwwtyro.github.io/speck/

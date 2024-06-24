@@ -116,7 +116,10 @@ var rotate = module.exports.rotate = function(v, dx, dy) {
     glm.mat4.rotateY(m, m, dx * 0.005);
     glm.mat4.rotateX(m, m, dy * 0.005);
     glm.mat4.multiply(v.rotation, m, v.rotation);
+    const ao = v.ao; 
+    v.ao = 0; 
     resolve(v);
+    v.ao = ao;
 };
 
 
